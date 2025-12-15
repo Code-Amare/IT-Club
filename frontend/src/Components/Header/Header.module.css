@@ -1,0 +1,123 @@
+.HeaderContainer {
+  width: 100%;
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-color);
+  box-shadow: 0 2px 6px var(--card-shadow);
+  transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.HeaderContent {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+}
+
+.Logo {
+  font-weight: 700;
+  font-size: 1.5rem;
+}
+
+.Version {
+  font-weight: 400;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-left: 0.25rem;
+}
+
+.Nav {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  transition: max-height 0.3s ease;
+}
+
+.NavLink {
+  text-decoration: none;
+  color: var(--text-primary);
+  font-weight: 500;
+  transition: color 0.3s;
+}
+
+.NavLink:hover {
+  color: var(--primary);
+}
+
+.RightControls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.MobileMenuBtn {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+/* Mobile Styles */
+@media (max-width: 768px) {
+  .Nav {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background-color: var(--bg-surface);
+    flex-direction: column;
+    overflow: hidden;
+    align-items: flex-start;
+    padding: 0.3em 1em;
+    max-height: 0;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .Nav.NavOpen {
+    max-height: 250px; /* adjust based on number of links */
+  }
+
+  .MobileMenuBtn {
+    display: block;
+  }
+}
+
+.LoginBtn,
+.RegisterBtn {
+  border: 1px solid var(--border-color);
+  border-radius: 0.375rem;
+  padding: 0.35rem 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+}
+
+.LoginBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+}
+
+.LoginBtn:hover {
+  background-color: var(--primary);
+  color: var(--primary-contrast);
+  border-color: var(--primary);
+}
+
+.RegisterBtn {
+  background-color: var(--primary);
+  color: var(--primary-contrast);
+  margin-left: 0.5rem;
+}
+
+.RegisterBtn:hover {
+  background-color: var(--primary-hover);
+}

@@ -1,0 +1,75 @@
+# ============================
+# Python / Django
+# ============================
+__pycache__/
+*.py[cod]
+*.sqlite3
+*.env
+.env*
+*.log
+db.sqlite3
+media/
+staticfiles/
+static/
+*.pot
+*.pyc
+*.pyo
+
+# Django secret keys
+/backend/backend/settings_local.py
+/backend/*secret*.py
+
+# Virtual environment
+venv/
+env/
+ENV/
+
+# Migrations (optional — keep them if project is stable)
+# */migrations/*
+# !*/migrations/__init__.py
+
+
+# ============================
+# Node / React
+# ============================
+node_modules/
+build/
+dist/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-store/
+.cache/
+.next/
+out/
+*.tsbuildinfo
+
+
+# ============================
+# VSCode / IDE
+# ============================
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+
+
+# ============================
+# OS-specific
+# ============================
+.DS_Store
+Thumbs.db
+
+
+# ============================
+# Docker
+# ============================
+/docker-data/
+*.pid
+*.seed
+
+# Prevent copying host compiled caches
+__pycache__/

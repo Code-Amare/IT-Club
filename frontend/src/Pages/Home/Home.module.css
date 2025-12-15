@@ -1,0 +1,339 @@
+.homeContainer {
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  background-color: var(--bg-body);
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.img {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #4141414f;
+  width: 200px;
+  overflow: hidden;
+  height: 200px;
+}
+
+.mainContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+}
+
+.drtHeader {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+  background-color: var(--bg-surface);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.drtHeaderContent {
+  max-width: 80rem;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.drtLogo {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--primary);
+  letter-spacing: -0.05em;
+}
+
+.drtLogoVersion {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-left: 0.25rem;
+}
+
+.drtNav {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.drtNavLink {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color 150ms ease-in-out;
+}
+
+.drtNavLink:hover {
+  color: var(--primary);
+}
+
+.drtThemeToggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-secondary);
+  padding: 0.5rem;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.drtThemeToggle:hover {
+  background-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+.drtMain {
+  max-width: 80rem;
+  margin: 0 auto;
+  padding: 3rem 1.5rem;
+}
+
+/* Hero Section */
+.drtHero {
+  text-align: center;
+  padding: 5rem 0;
+}
+
+.drtBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  background-color: var(--badge-bg);
+  color: var(--badge-text);
+  margin-bottom: 1rem;
+  box-shadow: 0 4px 6px -1px var(--card-shadow);
+}
+
+.drtTitle {
+  font-size: 3.75rem;
+  font-weight: 800;
+  letter-spacing: -0.05em;
+  color: var(--text-primary);
+  margin-bottom: 1.5rem;
+  line-height: 1.25;
+}
+
+@media (max-width: 768px) {
+  .drtTitle {
+    font-size: 3rem;
+  }
+}
+
+.drtTitle span {
+  color: var(--primary);
+}
+
+.drtSubtitle {
+  font-size: 1.25rem;
+  color: var(--text-secondary);
+  max-width: 42rem;
+  margin: 0 auto 2rem;
+}
+
+.drtActions {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+/* Buttons */
+.drtButton {
+  padding: 0.75rem 2rem;
+  font-weight: 600;
+  border-radius: 0.5rem;
+  transition: all 300ms ease-in-out;
+  cursor: pointer;
+  border: none;
+}
+
+.drtButtonPrimary {
+  background-color: var(--primary);
+  color: var(--primary-contrast);
+  box-shadow: 0 10px 15px -3px var(--card-shadow);
+}
+
+.drtButtonPrimary:hover {
+  background-color: var(--primary-hover);
+  transform: scale(1.02);
+}
+
+.drtButtonSecondary {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  box-shadow: 0 1px 3px 0 var(--card-shadow);
+}
+
+.drtButtonSecondary:hover {
+  background-color: var(--bg-body);
+  transform: scale(1.02);
+}
+
+/* Feature Grid */
+.drtFeaturesSection {
+  padding: 4rem 0;
+}
+
+.drtFeaturesGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+}
+
+@media (min-width: 768px) {
+  .drtFeaturesGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .drtFeaturesGrid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.drtFeatureCard {
+  background-color: var(--bg-surface);
+  padding: 1.5rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 15px -3px var(--card-shadow);
+  border: 1px solid var(--border-color);
+  transition: all 300ms ease-in-out;
+  cursor: default;
+}
+
+.drtFeatureCard:hover {
+  box-shadow: 0 20px 25px -5px var(--card-shadow);
+  border-color: var(--primary); /* using primary as highlight */
+}
+
+.drtFeatureCard h3 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0.75rem;
+}
+
+.drtFeatureCard p {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+.drtFeatureIconContainer {
+  padding: 0.75rem;
+  width: 3rem;
+  height: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background-color: var(--badge-bg);
+  color: var(--badge-text);
+  margin-bottom: 1rem;
+  transition: all 300ms ease-in-out;
+}
+
+.drtFeatureCard:hover .drtFeatureIconContainer {
+  background-color: var(--primary);
+  color: var(--primary-contrast);
+}
+
+/* CTA Section */
+.drtCtaSection {
+  margin: 5rem auto;
+  max-width: 70rem;
+  background-color: var(--primary);
+  padding: 2.5rem;
+  border-radius: 1rem;
+  box-shadow: 0 20px 25px -5px var(--card-shadow);
+  color: white;
+}
+
+.drtCtaContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+}
+
+@media (min-width: 768px) {
+  .drtCtaContent {
+    flex-direction: row;
+  }
+  .drtCtaText {
+    text-align: left;
+  }
+  .drtCtaActions {
+    margin-top: 0;
+  }
+}
+
+.drtCtaText {
+  text-align: center;
+}
+
+.drtCtaText h3 {
+  font-size: 1.875rem;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+}
+
+.drtCtaText p {
+  color: #c7d2fe; /* Keeping fixed colors for CTA as it's a solid block */
+}
+
+.drtCtaActions {
+  margin-top: 1.5rem;
+}
+
+.drtCtaButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1.5rem;
+  border: 1px solid transparent;
+  font-size: 1rem;
+  font-weight: 500;
+  border-radius: 0.375rem;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  color: var(--primary);
+  background-color: white;
+  text-decoration: none;
+  transition: background-color 300ms ease-in-out;
+}
+
+.drtCtaButton:hover {
+  background-color: #f3f4f6;
+}
+
+/* Footer */
+.drtFooter {
+  padding: 1.5rem 0;
+  border-top: 1px solid var(--border-color);
+  background-color: var(--bg-surface);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.drtFooterContent {
+  max-width: 80rem;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  text-align: center;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
