@@ -15,6 +15,7 @@ import {
 } from "react-icons/md";
 import { useUser } from "../../Context/UserContext";
 import ThemeToggle from "../ThemeToggle/ThemeToggle";
+import { useNavigate } from "react-router-dom";
 
 export default function SideBar({ children }) {
     const [open, setOpen] = useState(false);
@@ -24,9 +25,10 @@ export default function SideBar({ children }) {
     const [notificationOpen, setNotificationOpen] = useState(false);
     const initialRender = useRef(true);
     const { user, logout } = useUser();
+    const navigate = useNavigate();
 
     const menuItems = [
-        { icon: <MdInbox />, text: "Inbox" },
+        { icon: <MdAccountCircle />, text: "Inbox", to: "/profile" },
         { icon: <MdMail />, text: "Mail" },
     ];
 
@@ -117,7 +119,7 @@ export default function SideBar({ children }) {
 
                         <div className={styles.menuItems}>
                             {menuItems.map((item, i) => (
-                                <div key={i} className={styles.item}>
+                                <div key={i} className={styles.item} onClick={navigate(item.to)}>
                                     {item.icon}
                                     <span className={`${styles.text} ${open ? styles.showText : ""}`}>
                                         {item.text}
@@ -177,7 +179,8 @@ export default function SideBar({ children }) {
                                         aria-label="Profile menu"
                                     >
                                         <div className={styles.profileImage}>
-                                            <MdAccountCircle size={36} />
+                                            <img src={user.profilePicURL} className={styles.profilePic} alt={`${user.fullName} proilfe image.`} />
+
                                         </div>
                                         <div className={styles.profileInfo}>
                                             <span className={styles.profileName}>{user.fullName}</span>
@@ -280,8 +283,10 @@ export default function SideBar({ children }) {
                                             </button>
                                         </div>
                                         <div className={styles.mobileProfileMenuItems}>
+
                                             {profileMenuItems.map((item, index) => (
-                                                <button key={index} className={styles.mobileProfileMenuItem}>
+
+                                                <button key={index} className={styles.mobileProfileMenuItem} onClick={() => navigate(item.to)}>
                                                     {item.icon}
                                                     <span>{item.text}</span>
                                                 </button>
@@ -321,7 +326,7 @@ export default function SideBar({ children }) {
                         </div>
                         <div className={styles.mobileMenuItems}>
                             {menuItems.map((item, i) => (
-                                <div key={i} className={styles.mobileItem}>
+                                <div key={i} className={styles.mobileItem} onClick={() => navigate(item.to)}>
                                     {item.icon}
                                     <span className={styles.mobileText}>{item.text}</span>
                                 </div>
