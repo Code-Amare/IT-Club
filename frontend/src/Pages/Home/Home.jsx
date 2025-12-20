@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Rocket, Server, Code, Zap, CheckCircle, Moon, Sun } from 'lucide-react';
 import styles from "./Home.module.css"
-import ThemeToggle from '../../Components/ThemeToggle/ThemeToggle';
 import Header from "../../Components/Header/Header"
+import useSite from '../../Context/SiteContext';
 import ImageSpinner from '../../Components/ImageSpinner/ImageSpinner';
 
 const App = () => {

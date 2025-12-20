@@ -2,7 +2,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 from rest_framework.response import Response
 from rest_framework import status
-from utils.auth import JWTCookieAuthentication
+from utils.auth import JWTCookieAuthentication, RolePermissionFactory
 from rest_framework.permissions import IsAuthenticated
 from django.middleware.csrf import get_token
 from .models import VerifyEmail
@@ -18,7 +18,7 @@ from utils.cloudinary import upload_private_file
 
 # from axes.handlers.database import AxesDatabaseHandler
 from axes.handlers.proxy import AxesProxyHandler
-from utils.axes import get_lockout_remaining
+from utils.axes import get_lockout_remaining, get_client_ip
 
 
 IS_TWOFA_MANDATORY = settings.IS_TWOFA_MANDATORY
@@ -251,11 +251,15 @@ class LoginView(APIView):
         handler = AxesProxyHandler()
 
         if handler.is_locked(request._request, credentials={"email": email}):
-            minutes, seconds = get_lockout_remaining(email)
+            ip_address = get_client_ip(request)
+            print(ip_address)
+
+            # 2. Check lockout for this user + IP
+            minutes, seconds = get_lockout_remaining(email, ip_address=ip_address)
             if minutes == 0:
                 return Response(
                     {
-                        "error": f"User will be allowed to login again in {seconds} seconds."
+                        "error": f"User will be allowed to login again in {seconds} second{"" if seconds <= 1 else "s"}."
                     },
                     status=status.HTTP_401_UNAUTHORIZED,
                 )
@@ -387,10 +391,24 @@ class RefreshTokenView(APIView):
             )
 
 
+class UserDeleteView(APIView):
+    authentication_classes = [JWTCookieAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request):
+        try:
+            user = request.user
+            user.is_delete = True
+
+            user.save()
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
 @method_decorator(csrf_protect, name="dispatch")
 class EditProfileView(APIView):
     authentication_classes = [JWTCookieAuthentication]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, RolePermissionFactory(["admin", "staff"])]
 
     def patch(self, request):
         user = request.user

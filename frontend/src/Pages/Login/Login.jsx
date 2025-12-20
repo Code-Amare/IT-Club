@@ -18,7 +18,7 @@ const Login = () => {
 
         const login = async () => {
             try {
-                const res = await api.post("api/users/login/", { email, password });
+                const res = await api.post("api/users/login/", { email, password }, { publicApi: true });
                 console.log("Login successful:", res.data);
                 if (res.data.verify_email == true) {
                     return navigate(`/verify-email/?email=${email}`)
@@ -29,12 +29,8 @@ const Login = () => {
 
                 navigate(next);
             } catch (err) {
-                const email_sent = err.response?.data?.email_sent
-                console.log(`email_sent: ${email_sent}`)
-                if (!email_sent) {
-                    navigate(`/verify-email/?email=${email}`);
-                    return neonToast.error("Resend email!");
-                }
+                const email_sent = err.response?.data
+
                 console.log(err)
                 const errMsg = err.response?.data?.error || "Something went wrong";
                 neonToast.error(errMsg)

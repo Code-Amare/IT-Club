@@ -2,7 +2,7 @@ name: my-project
 
 services:
   app: 
-    container_name: django-react-template
+    container_name: it-club
     command: /app/entrypoint.sh
     build: .
     ports:
@@ -46,41 +46,6 @@ services:
       retries: 5
     volumes:
       - redis_data:/data
-
-  celery:
-    build: .
-    container_name: celery-container
-    command: celery -A core worker -E -l info
-    volumes:
-      - .:/app
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-
-  flower:
-    build: .
-    container_name: flower-container
-    command: celery -A core flower --base_auth=admin:password123
-    ports:
-      - "5555:5555"
-    depends_on:
-      redis:
-        condition: service_healthy
-
-  beat:
-    build: .
-    container_name: beat-container
-    command: celery -A core beat -l INFO --scheduler django_celery_beat.scheduler:DatabaseScheduler
-    volumes:
-      - .:/app
-
-    depends_on:
-      postgres: 
-        condition: service_healthy
-      redis:
-        condition: service_healthy
 
 volumes:
  postgres_data:

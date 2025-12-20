@@ -11,6 +11,7 @@ function ProtectedRoute({ requiredRole }) {
 
     if (!user.isAuthenticated || !requiredRole.includes(user.role)) {
         console.log("redirecting")
+        console.log(user)
         return <Navigate to={`/login?next=${encodeURIComponent(location.pathname)}`} replace />
     }
 

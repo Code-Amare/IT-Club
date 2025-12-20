@@ -52,8 +52,6 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "django_celery_results",
-    "django_celery_beat",
     "cloudinary",
     "cloudinary_storage",
     "axes",
@@ -113,7 +111,6 @@ if DEBUG:
     DATABASES = {
         "default": dj_database_url.config(default=env("DATABASE_URL")),
     }
-    CELERY_BROKER_URL = "redis://redis:6379/0"
 else:
 
     DATABASES = {
@@ -126,12 +123,6 @@ else:
             "PORT": 5432,
         }
     }
-
-
-# Celery
-
-CELERY_RESULT_BACKEND = "django-db"
-CELERY_RESULT_EXTENDED = True
 
 
 # Password validation

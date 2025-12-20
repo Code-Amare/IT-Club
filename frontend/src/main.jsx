@@ -6,6 +6,7 @@ import { BrowserRouter } from "react-router-dom";
 import { UserProvider } from "./Context/UserContext.jsx";
 import { LoadingProvider, LoadingContext } from "./Context/LoaderContext.jsx";
 import { setupAxiosInterceptors } from "./Utils/api.js";
+import SiteProvider from "./Context/SiteContext.jsx";
 
 // Wrapper to setup Axios interceptors with context
 const AppWithAxios = () => {
@@ -22,9 +23,11 @@ createRoot(document.getElementById("root")).render(
   <StrictMode>
     <BrowserRouter>
       <UserProvider>
-        <LoadingProvider>
-          <AppWithAxios />
-        </LoadingProvider>
+        <SiteProvider >
+          <LoadingProvider>
+            <AppWithAxios />
+          </LoadingProvider>
+        </SiteProvider>
       </UserProvider>
     </BrowserRouter>
   </StrictMode>

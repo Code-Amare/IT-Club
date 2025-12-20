@@ -10,12 +10,11 @@ function getCookie(name) {
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  withCredentials: true, // ensures cookies are sent
+  withCredentials: true,
 });
 
 // Setup interceptors
 export const setupAxiosInterceptors = () => {
-  // Attach CSRF token automatically to all unsafe requests
   api.interceptors.request.use((config) => {
     if (config.method !== "get") {
       const csrfToken = getCookie("csrftoken");
@@ -29,13 +28,16 @@ export const setupAxiosInterceptors = () => {
     async (error) => {
       const originalRequest = error.config;
 
-      // Handle 401 by refreshing token (cookie-based)
+      // Skip token refresh if request is marked as public
+      if (originalRequest?.publicApi) {
+        return Promise.reject(error);
+      }
+
       if (error.response?.status === 401 && !originalRequest._retry) {
         originalRequest._retry = true;
         try {
-          await api.post("/api/users/token/refresh/"); // refresh token in cookie
+          await api.post("/api/users/token/refresh/");
 
-          // Retry original request with CSRF token
           if (originalRequest.method !== "get") {
             const csrfToken = getCookie("csrftoken");
             if (csrfToken) originalRequest.headers["X-CSRFToken"] = csrfToken;

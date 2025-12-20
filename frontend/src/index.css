@@ -30,6 +30,10 @@ html.no-transition * {
   --toast-bg-error: rgba(255, 102, 163, 0.3);
   --toast-bg-warning: rgba(255, 224, 102, 0.3);
   --toast-bg-info: rgba(128, 221, 255, 0.3);
+  --mobile-bp: 576px;
+  --table-min-bp: 577px;
+  --table-max-bp: 768px;
+  --desktop-bp: 993px;
 }
 
 /* Dark Mode */

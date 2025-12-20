@@ -14,7 +14,7 @@ export function UserProvider({ children }) {
         twoFaEnabled: null,
         hasPassword: null,
         dateJoined: null,
-        username: null,
+        fullName: null,
     })
 
     // Exposed getUser function
@@ -31,7 +31,7 @@ export function UserProvider({ children }) {
                     twoFaEnabled: user.twofa_enabled,
                     hasPassword: user.has_password,
                     dateJoined: user.date_joined,
-                    username: user.username,
+                    fullName: user.full_name,
                 })
             }
         } catch (error) {
@@ -64,7 +64,7 @@ export function UserProvider({ children }) {
             twoFaEnabled: null,
             hasPassword: null,
             dateJoined: null,
-            username: null,
+            fullName: null,
         })
     }
 

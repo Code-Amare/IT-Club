@@ -9,7 +9,7 @@ import styles from "./EditProfile.module.css";
 export default function ProfileEdit() {
     const { user, refreshUser, login, getUser } = useUser();
     const navigate = useNavigate();
-    const [form, setForm] = useState({ username: "", email: "" });
+    const [form, setForm] = useState({ fullName: "", email: "" });
     const [profileImage, setProfileImage] = useState(null);
     const [preview, setPreview] = useState(null);
 
@@ -20,7 +20,7 @@ export default function ProfileEdit() {
             navigate("/login");
             return;
         }
-        setForm({ username: user.username || "", email: user.email || "" });
+        setForm({ fullName: user.fullName || "", email: user.email || "" });
     }, [user, navigate]);
 
     const handleChange = (e) => setForm((s) => ({ ...s, [e.target.name]: e.target.value }));
@@ -36,7 +36,7 @@ export default function ProfileEdit() {
     const handleSubmit = async () => {
         try {
             const data = new FormData();
-            data.append("username", form.username);
+            data.append("full_name", form.fullName);
             data.append("email", form.email);
             if (profileImage) data.append("profile_pic", profileImage);
 
@@ -67,14 +67,14 @@ export default function ProfileEdit() {
                 <div className={styles.avatar}>
                     {preview ? (
                         <img src={preview} alt="Profile Preview" className={styles.avatarImg} />
-                    ) : form.username ? (
-                        form.username[0].toUpperCase()
+                    ) : form.fullName ? (
+                        form.fullName[0].toUpperCase()
                     ) : (
                         "U"
                     )}
                 </div>
                 <div className={styles.headerInfo}>
-                    <h2 className={styles.username}>Edit Profile</h2>
+                    <h2 className={styles.fullName}>Edit Profile</h2>
                     <p className={styles.email}>{user.email}</p>
                 </div>
             </header>
@@ -88,10 +88,10 @@ export default function ProfileEdit() {
                         </div>
 
                         <div className={styles.fieldRow}>
-                            <label className={styles.label}>Username</label>
+                            <label className={styles.label}>Full Name</label>
                             <input
-                                name="username"
-                                value={form.username}
+                                name="fullName"
+                                value={form.fullName}
                                 onChange={handleChange}
                                 className={styles.input}
                             />

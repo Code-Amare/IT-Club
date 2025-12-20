@@ -8,6 +8,7 @@ from .views import (
     GetUserView,
     RefreshTokenView,
     EditProfileView,
+    UserDeleteView,
 )
 
 urlpatterns = [
@@ -19,4 +20,5 @@ urlpatterns = [
     path("logout/", LogoutView.as_view(), name="logout"),
     path("get/", GetUserView.as_view(), name="get-user"),
     path("edit/", EditProfileView.as_view(), name="edit-profile"),
+    path("delete/", UserDeleteView.as_view(), name="delete-user"),
 ]

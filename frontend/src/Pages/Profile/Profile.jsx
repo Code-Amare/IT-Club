@@ -24,10 +24,10 @@ export default function Profile() {
         <div className={styles.profileContainer}>
             <header className={styles.header}>
                 <div className={styles.avatar}>
-                    {user.username ? user.username[0].toUpperCase() : "U"}
+                    {user.fullName ? user.fullName[0].toUpperCase() : "U"}
                 </div>
                 <div className={styles.headerInfo}>
-                    <h2 className={styles.username}>{user.username || "User"}</h2>
+                    <h2 className={styles.fullName}>{user.fullName || "User"}</h2>
                     <p className={styles.email}>{user.email}</p>
                 </div>
                 <div className={styles.actions}>

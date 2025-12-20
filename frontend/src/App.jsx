@@ -10,6 +10,7 @@ import NeonToast from './Components/NeonToast/NeonToast'
 import Security from './Pages/Security/Security'
 import ProfileEdit from './Pages/EditProfile/EditProfile'
 import Notification from './Components/Notification/Notification'
+import AdminDashboard from './Pages/AdminDashboard/AdminDashboard'
 
 function App() {
   return (
@@ -25,6 +26,9 @@ function App() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/profile/edit" element={<ProfileEdit />} />
           <Route path="/security" element={<Security />} />
+        </Route>
+        <Route element={<ProtectedRoute requiredRole={["admin", "staff"]}/>}>
+          <Route path="/admin-dashboard" element={<AdminDashboard />} />
 
         </Route>
         <Route path='*' element={<NotFound />} />

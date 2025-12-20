@@ -6,12 +6,12 @@ from .models import User
 class SimpleUserAdmin(UserAdmin):
     model = User
     readonly_fields = ("password",)
-    list_display = ("email", "username", "role", "is_staff", "is_active")
+    list_display = ("email", "full_name", "role", "is_staff", "is_active")
     list_filter = ("role", "is_staff", "is_active")
-    search_fields = ("email", "username")
+    search_fields = ("email", "full_name")
     ordering = ("email",)
     fieldsets = (
-        (None, {"fields": ("email", "username", "password")}),
+        (None, {"fields": ("email", "full_name", "password")}),
         (
             "Permissions",
             {
@@ -34,7 +34,7 @@ class SimpleUserAdmin(UserAdmin):
                 "classes": ("wide",),
                 "fields": (
                     "email",
-                    "username",
+                    "full_name",
                     "password1",
                     "password2",
                     "role",

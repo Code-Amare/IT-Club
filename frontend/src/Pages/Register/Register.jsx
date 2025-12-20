@@ -8,7 +8,7 @@ import FullScreenSpinner from "../../Components/FullScreenSpinner/FullScreenSpin
 import { neonToast } from "../../Components/NeonToast/NeonToast";
 
 const Register = () => {
-    const [username, setUsername] = useState("");
+    const [fullName, setFullName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
@@ -27,10 +27,11 @@ const Register = () => {
         const register = async () => {
             try {
                 const res = await api.post("api/users/register/", {
-                    username,
+                    fullName,
                     email,
                     password,
-                });
+                }, { publicApi: true });
+                console.log(res)
 
                 neonToast.success("Register successful!");
                 navigate(`/verify-email/?email=${email}`);
@@ -61,13 +62,13 @@ const Register = () => {
                     <h2 className={styles.Title}>Create Account</h2>
                     <p className={styles.Subtitle}>Register a new account</p>
 
-                    <label className={styles.Label}>Username</label>
+                    <label className={styles.Label}>Full Name</label>
                     <input
                         type="text"
                         className={styles.Input}
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        placeholder="yourusername"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        placeholder="your Full Name"
                         required
                     />
 
