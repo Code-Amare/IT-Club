@@ -11,6 +11,7 @@ import Security from './Pages/Security/Security'
 import ProfileEdit from './Pages/EditProfile/EditProfile'
 import Notification from './Components/Notification/Notification'
 import AdminDashboard from './Pages/AdminDashboard/AdminDashboard'
+import Settings from './Pages/Settings/Settings'
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/profile/edit" element={<ProfileEdit />} />
           <Route path="/security" element={<Security />} />
+          <Route path="/settings" element={<Settings />} />
         </Route>
         <Route element={<ProtectedRoute requiredRole={["admin", "staff"]} />}>
           <Route path="/admin" element={<AdminDashboard />} />

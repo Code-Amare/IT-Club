@@ -4,6 +4,29 @@
   min-height: 100vh;
   width: 100%;
   background-color: var(--bg-body);
+  position: relative;
+}
+
+/* Desktop Overlay */
+.desktopOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.2);
+  z-index: 10;
+  cursor: pointer;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 /* Sidebar */
@@ -18,10 +41,12 @@
   top: 0;
   left: 0;
   z-index: 100;
+  display: flex;
+  flex-direction: column;
 }
 
 .sidebar.open {
-  width: 250px;
+  width: 280px;
 }
 
 .sidebar.closed {
@@ -33,6 +58,7 @@
   display: flex;
   justify-content: flex-end;
   border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
 }
 
 .toggleBtn {
@@ -52,21 +78,67 @@
   background-color: var(--border-color);
 }
 
-.menuItems {
-  margin-top: 20px;
-  padding: 0 10px;
-  height: 80%;
-  flex: 1;
+/* Sidebar Profile Section */
+.sidebarProfile {
+  padding: 20px 16px;
+  border-bottom: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
+  align-items: center;
+  text-align: center;
+  flex-shrink: 0;
 }
 
-.menuItems .desktopThemeToggle {
-  margin-top: auto;
+.sidebarProfileImage {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  margin-bottom: 12px;
+}
+
+.sidebarProfileImage .profilePic {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.sidebarProfileInfo {
+  width: 100%;
+}
+
+.sidebarProfileName {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 4px 0;
+  word-break: break-word;
+}
+
+.sidebarProfileEmail {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0 0 4px 0;
+  word-break: break-word;
+}
+
+.sidebarProfileRole {
+  font-size: 12px;
+  color: var(--primary);
+  background-color: rgba(79, 70, 229, 0.1);
+  padding: 2px 8px;
+  border-radius: 4px;
+  display: inline-block;
+  margin: 0;
+}
+
+.menuItems {
+  padding: 20px 10px;
   display: flex;
-  align-items: center;
-  gap: 1em;
-  flex-direction: row;
+  flex-direction: column;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .item {
@@ -80,10 +152,23 @@
   white-space: nowrap;
   overflow: hidden;
   color: var(--text-primary);
+  background: none;
+  border: none;
+  text-align: left;
+  font-size: 16px;
 }
 
 .item:hover {
   background-color: var(--border-color);
+}
+
+.item.active {
+  background-color: var(--primary);
+  color: var(--primary-contrast);
+}
+
+.item.active svg {
+  color: var(--primary-contrast);
 }
 
 .item svg {
@@ -100,11 +185,39 @@
   font-size: 16px;
   white-space: nowrap;
   overflow: hidden;
-  color: var(--text-primary);
+  color: inherit;
 }
 
 .showText {
   opacity: 1;
+}
+
+/* Theme Toggle at Bottom */
+.themeToggle {
+  margin-top: auto;
+  display: flex;
+  gap: 0.5em;
+  align-items: center;
+  padding: 12px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--text-primary);
+  background: none;
+  border: none;
+  text-align: left;
+  font-size: 16px;
+  transition: background-color 0.2s;
+  width: 100%;
+  border-top: 1px solid var(--border-color);
+}
+
+.themeToggle:hover {
+  background-color: var(--border-color);
+}
+
+.desktopThemeToggle {
+  flex-shrink: 0;
+  margin-top: auto;
 }
 
 /* Main Content Area */
@@ -115,6 +228,8 @@
   min-height: 100vh;
   transition: margin-left 0.3s ease;
   width: 100%;
+  position: relative;
+  /* z-index: 1; */
 }
 
 .mainContent.sidebarClosed {
@@ -122,7 +237,7 @@
 }
 
 .mainContent.sidebarOpen {
-  margin-left: 250px;
+  margin-left: 280px;
 }
 
 /* Header Styles */
@@ -136,7 +251,7 @@
   border-bottom: 1px solid var(--border-color);
   position: sticky;
   top: 0;
-  z-index: 99;
+  z-index: 20;
 }
 
 .headerLeft {
@@ -159,7 +274,7 @@
 /* Notification Styles */
 .notificationContainer {
   position: relative;
-  z-index: 10;
+  z-index: 15;
 }
 
 .notificationBtn {
@@ -206,7 +321,7 @@
   border-radius: 8px;
   box-shadow: 0 4px 12px var(--card-shadow);
   margin-top: 10px;
-  z-index: 1000;
+  z-index: 1001;
 }
 
 .notificationHeader {
@@ -264,6 +379,7 @@
 /* Profile Styles */
 .profileContainer {
   position: relative;
+  z-index: 20;
 }
 
 .profileBtn {
@@ -279,21 +395,38 @@
   color: var(--text-primary);
 }
 
-.profileBtn .profilePic {
+.profileImage {
+  position: relative;
   width: 32px;
   height: 32px;
+}
+
+.profileImage .profilePic {
+  width: 100%;
+  height: 100%;
   object-fit: cover;
   border-radius: 50%;
 }
 
-.profileBtn:hover {
-  background-color: var(--border-color);
-}
-
-.profileImage {
+.avatarFallback {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: var(--primary);
+  color: var(--primary-contrast);
   display: flex;
   align-items: center;
   justify-content: center;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.avatarFallback.hidden {
+  display: none;
+}
+
+.avatarFallback svg {
+  font-size: 20px;
 }
 
 .profileInfo {
@@ -307,6 +440,11 @@
   font-weight: 600;
   font-size: 14px;
   color: var(--text-primary);
+}
+
+.profileRole {
+  font-size: 12px;
+  color: var(--text-secondary);
 }
 
 .profileEmail {
@@ -336,8 +474,7 @@
   border-radius: 8px;
   box-shadow: 0 4px 12px var(--card-shadow);
   margin-top: 10px;
-  z-index: 1000;
-  overflow: hidden;
+  z-index: 1001;
 }
 
 .profileMenuItem {
@@ -362,6 +499,12 @@
 .profileMenuItem svg {
   color: var(--text-secondary);
   font-size: 20px;
+}
+
+.profileMenuDivider {
+  height: 1px;
+  background-color: var(--border-color);
+  margin: 4px 0;
 }
 
 /* Content Area */
@@ -428,7 +571,8 @@
   right: 0;
   bottom: 0;
   background-color: rgba(0, 0, 0, 0.3);
-  z-index: 10;
+  z-index: 100;
+  animation: fadeIn 0.2s ease;
 }
 
 /* Mobile Notification Container */
@@ -448,6 +592,7 @@
   box-shadow: 0 4px 12px var(--card-shadow);
   z-index: 1002;
   overflow: hidden;
+  transition: all 0.3s ease;
 }
 
 .mobileDropdownHeader {
@@ -524,9 +669,15 @@
   position: relative;
 }
 
-.mobileProfileHeader .profilePic {
+.mobileProfileImage {
+  position: relative;
   width: 50px;
   height: 50px;
+}
+
+.mobileProfileImage .profilePic {
+  width: 100%;
+  height: 100%;
   object-fit: cover;
   border-radius: 50%;
 }
@@ -554,7 +705,7 @@
 .mobileProfileMenuItem {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   width: 100%;
   padding: 12px 16px;
   background: none;
@@ -573,6 +724,12 @@
 .mobileProfileMenuItem svg {
   color: var(--text-secondary);
   font-size: 20px;
+}
+
+.mobileProfileMenuDivider {
+  height: 1px;
+  background-color: var(--border-color);
+  margin: 4px 16px;
 }
 
 /* Mobile Button */
@@ -609,18 +766,10 @@
   animation: fadeIn 0.3s ease;
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
 /* Mobile Drawer */
 .mobileDrawer {
   position: fixed;
+  padding: 0 0 1em 0;
   left: 0;
   top: 0;
   height: 100vh;
@@ -651,12 +800,19 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
+  flex-shrink: 0;
 }
 
 .drawerProfile {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.drawerProfileImage {
+  position: relative;
+  width: 45px;
+  height: 45px;
 }
 
 .drawerProfileInfo {
@@ -685,15 +841,25 @@
   padding: 20px 10px;
   display: flex;
   flex-direction: column;
-  height: 80%;
+  height: 100%;
+  flex: 1;
+  overflow-y: auto;
 }
 
 .mobileMenuItems .themeToggle {
-  padding: 0 0 0 0.5em;
+  padding: 2em 1em;
   display: flex;
   align-items: center;
-  gap: 1em;
+  justify-content: flex-start;
   margin-top: auto;
+  border-top: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+
+.mobileMenuItems .themeToggle span {
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
 }
 
 .mobileItem {
@@ -705,6 +871,10 @@
   margin-bottom: 8px;
   transition: background-color 0.2s;
   color: var(--text-primary);
+  background: none;
+  border: none;
+  text-align: left;
+  font-size: 16px;
 }
 
 .mobileItem:hover {

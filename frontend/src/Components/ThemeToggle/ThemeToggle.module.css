@@ -1,20 +1,31 @@
 .themeToggleBtn {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%; /* circle */
+  /* Force Dimensions */
+  width: 40px !important;
+  height: 40px !important;
+  padding: 0 !important;
+
+  /* The "Forced Center" Secret Sauce */
+  display: flex !important;
+  align-items: center !important; /* Vertical center */
+  justify-content: center !important; /* Horizontal center */
+  margin: 0 auto; /* Centers itself if in a block container */
+  line-height: 0 !important; /* Removes extra space below inline elements */
+
+  /* Visuals */
+  border-radius: 50%;
   background-color: var(--bg-surface);
   color: var(--text-primary);
   border: 1px solid var(--border-color);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
   transition: background-color 0.3s, color 0.3s, box-shadow 0.3s, transform 0.2s;
   box-shadow: 0 2px 6px var(--card-shadow);
-  padding: 0;
+
+  /* Ensure no inherited styles break it */
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .themeToggleBtn:hover {
+  cursor: pointer;
   transform: scale(1.1);
   box-shadow: 0 4px 12px var(--card-shadow);
 }

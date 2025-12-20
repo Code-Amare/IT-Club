@@ -25,7 +25,7 @@ const Login = () => {
         e.preventDefault();
 
         try {
-            const res = await api.post("api/users/login/", { email, password }, { publicApi: true });
+            await api.post("api/users/login/", { email, password }, { publicApi: true });
 
             user.getUser();
 
@@ -41,6 +41,7 @@ const Login = () => {
 
         } catch (err) {
             console.error(err);
+            alert(err)
             const errMsg = err.response?.data?.error || "Something went wrong";
             neonToast.error(errMsg);
         }

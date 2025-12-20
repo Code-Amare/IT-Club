@@ -1,34 +1,37 @@
-import { useEffect } from "react";
-import { neonToast } from "../../Components/NeonToast/NeonToast"
+    import { useEffect } from "react";
+    import { neonToast } from "../../Components/NeonToast/NeonToast";
 
-export default function Notification() {
-    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL.replace(/^https?:\/\//, '');
+    const WS_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+        ? import.meta.env.VITE_WS_URL
+        : import.meta.env.VITE_WS_URL_MOBILE;
 
-    useEffect(() => {
-        const url = `wss://${API_BASE_URL}ws/notification/`
-        const ws = new WebSocket(url);
+    export default function Notification() {
+        useEffect(() => {
+            const baseUrl = WS_URL.endsWith('/') ? WS_URL : `${WS_URL}/`;
+            const url = `${baseUrl}ws/notification/`;
+            const ws = new WebSocket(url);
 
-        ws.onopen = () => console.log("Connected to notification WebSocket");
-        ws.onclose = () => console.log("Disconnected from notification WebSocket");
+            ws.onopen = () => console.log("Connected:", url);
 
-        ws.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            neonToast.info(data.message);
-            console.log(data)
-            if (data?.is_push_notif) {
-                if (window.Notification.permission === "granted") {
-                    new window.Notification("MegaLearn", { body: data.message });
-                } else if (window.Notification.permission !== "denied") {
-                    window.Notification.requestPermission().then(permission => {
-                        if (permission === "granted") {
-                            new window.Notification("MegaLearn", { body: data.message });
-                        }
-                    });
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                neonToast.info(data.message);
+
+                if (data?.is_push_notif && "Notification" in window) {
+                    if (window.Notification.permission === "granted") {
+                        new window.Notification("MegaLearn", { body: data.message });
+                    } else if (window.Notification.permission !== "denied") {
+                        window.Notification.requestPermission().then(permission => {
+                            if (permission === "granted") {
+                                new window.Notification("MegaLearn", { body: data.message });
+                            }
+                        });
+                    }
                 }
-            }
-        };
+            };
 
-        return () => ws.close();
-    }, []);
+            return () => ws.close();
+        }, []);
 
-}
+        return null;
+    }
