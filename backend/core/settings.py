@@ -177,6 +177,7 @@ if IS_CLOUDINARY:
         "CLOUD_NAME": env("CLOUD_NAME"),
         "API_KEY": env("API_KEY"),
         "API_SECRET": env("API_SECRET"),
+        "SIGN_URL": True,
     }
     CLOUDINARY_STORAGE_DEFAULT_TYPE = "authenticated"
     DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
@@ -245,6 +246,7 @@ AXES_LOCKOUT_CALLABLE = None  # default logs attempts
 CSRF_COOKIE_SECURE = True
 CSRF_FAILURE_VIEW = "utils.csrf.csrf_failure_view"
 CSRF_TRUSTED_ORIGINS = [
+    "https://192.168.8.11:5173",
     "https://localhost:5173",
     "https://127.0.0.1:5173",
 ]

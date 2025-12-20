@@ -315,12 +315,7 @@ class LoginView(APIView):
         refresh = RefreshToken.for_user(user)
 
         response = Response(
-            {
-                "user": {
-                    "id": user.id,
-                    "email": user.email,
-                }
-            },
+            {"user": UserSerializer(user).data},
             status=200,
         )
 

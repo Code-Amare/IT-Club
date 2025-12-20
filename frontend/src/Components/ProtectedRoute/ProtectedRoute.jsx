@@ -9,7 +9,7 @@ function ProtectedRoute({ requiredRole }) {
 
     if (user.isAuthenticated === null) return <div><GetSpinner /></div>
 
-    if (!user.isAuthenticated || !requiredRole.includes(user.role)) {
+    if (user.isAuthenticated === false || !requiredRole.includes(user.role)) {
         return <Navigate to={`/login?next=${encodeURIComponent(location.pathname)}`} replace />
     }
 

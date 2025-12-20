@@ -55,13 +55,13 @@ class UserSerializer(serializers.ModelSerializer):
         )
         return result["public_id"]
 
-    def get_signed_url(self, public_id, expires_in=300):
+    def get_signed_url(self, public_id, expires_in=30):
         url, _ = cloudinary.utils.cloudinary_url(
             public_id,
             resource_type="image",
             type="authenticated",
             sign_url=True,
             secure=True,
-            expire_at=int(time.time()) + expires_in,
+            expires_at=int(time.time()) + expires_in,
         )
         return url

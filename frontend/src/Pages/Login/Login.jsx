@@ -1,43 +1,49 @@
 import { useState, useContext } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom"; // Added useLocation
 import styles from "./Login.module.css";
 import ThemeToggle from "../../Components/ThemeToggle/ThemeToggle";
 import api from "../../Utils/api";
 import { LoadingContext } from "../../Context/LoaderContext";
 import FullScreenSpinner from "../../Components/FullScreenSpinner/FullScreenSpinner";
 import { neonToast } from "../../Components/NeonToast/NeonToast";
+import { useSite } from "../../Context/SiteContext";
+import { useUser } from "../../Context/UserContext";
 
 const Login = () => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const { globalLoading } = useContext(LoadingContext);
-    const navigate = useNavigate();
 
-    const handleSubmit = (e) => {
+    // Destructure specifically and alias 'login' to 'updateUserContext'
+    const user = useUser();
+    const { site } = useSite(); // site.isTwoFaMandatory
+    const { globalLoading } = useContext(LoadingContext);
+
+    const navigate = useNavigate();
+    const location = useLocation();
+
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
-        const login = async () => {
-            try {
-                const res = await api.post("api/users/login/", { email, password }, { publicApi: true });
-                console.log("Login successful:", res.data);
-                if (res.data.verify_email == true) {
-                    return navigate(`/verify-email/?email=${email}`)
-                }
-                neonToast.success("Login successfull!")
-                const params = new URLSearchParams(location.search);
-                const next = params.get("next") || "/profile";
+        try {
+            const res = await api.post("api/users/login/", { email, password }, { publicApi: true });
 
-                navigate(next);
-            } catch (err) {
-                const email_sent = err.response?.data
+            user.getUser();
 
-                console.log(err)
-                const errMsg = err.response?.data?.error || "Something went wrong";
-                neonToast.error(errMsg)
+            if (site.isTwoFaMandatory) {
+                return navigate(`/verify-email/?email=${email}`);
             }
-        };
 
-        login();
+            neonToast.success("Login successful!");
+
+            const params = new URLSearchParams(location.search);
+            const next = params.get("next") || "/admin";
+            navigate(next);
+
+        } catch (err) {
+            console.error(err);
+            const errMsg = err.response?.data?.error || "Something went wrong";
+            neonToast.error(errMsg);
+        }
     };
 
     return (
