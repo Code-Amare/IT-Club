@@ -27,7 +27,7 @@ html.no-transition * {
   --toast-warning: #cea500;
   --toast-info: #1696c0;
   --toast-bg-success: rgba(102, 255, 161, 0.301);
-  --toast-bg-error: rgba(255, 102, 163, 0.3);
+  --toast-bg-error: rgba(71, 45, 55, 0.3);
   --toast-bg-warning: rgba(255, 224, 102, 0.3);
   --toast-bg-info: rgba(128, 221, 255, 0.3);
   --mobile-bp: 576px;
@@ -35,7 +35,7 @@ html.no-transition * {
   --table-max-bp: 768px;
   --desktop-bp: 993px;
 }
-
+ 
 /* Dark Mode */
 [data-theme="dark"] {
   --spinner-bg: rgba(41, 42, 43, 0.7);

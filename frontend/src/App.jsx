@@ -27,8 +27,8 @@ function App() {
           <Route path="/profile/edit" element={<ProfileEdit />} />
           <Route path="/security" element={<Security />} />
         </Route>
-        <Route element={<ProtectedRoute requiredRole={["admin", "staff"]}/>}>
-          <Route path="/admin-dashboard" element={<AdminDashboard />} />
+        <Route element={<ProtectedRoute requiredRole={["admin", "staff"]} />}>
+          <Route path="/admin" element={<AdminDashboard />} />
 
         </Route>
         <Route path='*' element={<NotFound />} />

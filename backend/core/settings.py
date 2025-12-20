@@ -38,7 +38,7 @@ DEBUG = env.bool("DEBUG")
 if DEBUG:
     ALLOWED_HOSTS = env.list("ALLOWED_HOSTS")
 else:
-    ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
+    ALLOWED_HOSTS = ["localhost", "127.0.0.1", "192.168.8.11"]
 
 
 # Application definition
@@ -325,6 +325,7 @@ IS_TWOFA_MANDATORY = env.bool("IS_TWOFA_MANDATORY")
 
 # Cors Headers
 CORS_ALLOWED_ORIGINS = [
+    "https://192.168.8.11:5173",
     "https://localhost:5173",
     "https://localhost:8000",
     "https://127.0.0.1:8000",
