@@ -10,8 +10,9 @@ import NeonToast from './Components/NeonToast/NeonToast'
 import Security from './Pages/Security/Security'
 import ProfileEdit from './Pages/EditProfile/EditProfile'
 import Notification from './Components/Notification/Notification'
-import AdminDashboard from './Pages/AdminDashboard/AdminDashboard'
+import Dashboard from './Pages/Admin/Dashboard/Dashboard'
 import Settings from './Pages/Settings/Settings'
+import Students from './Pages/Admin/Students/Students'
 
 function App() {
   return (
@@ -30,7 +31,8 @@ function App() {
           <Route path="/settings" element={<Settings />} />
         </Route>
         <Route element={<ProtectedRoute requiredRole={["admin", "staff"]} />}>
-          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/admin" element={<Dashboard />} />
+          <Route path="/admin/students" element={<Students />} />
 
         </Route>
         <Route path='*' element={<NotFound />} />

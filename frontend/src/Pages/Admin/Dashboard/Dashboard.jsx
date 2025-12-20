@@ -1,5 +1,5 @@
-import styles from "./AdminDashboard.module.css";
-import SideBar from "../../Components/SideBar/SideBar";
+import styles from "./Dashboard.module.css";
+import SideBar from "../../../Components/SideBar/SideBar";
 import {
     BarChart,
     Bar,
@@ -26,7 +26,7 @@ import {
 } from "react-icons/fa";
 import { FiTrendingUp, FiUser } from "react-icons/fi";
 
-const AdminDashboard = () => {
+const Dashboard = () => {
     // Sample data for stats
     const [stats] = useState({
         totalStudents: 1245,
@@ -204,7 +204,7 @@ const AdminDashboard = () => {
     }, []);
 
     return (
-        <div className={styles.AdminDashboardContainer}>
+        <div className={styles.DashboardContainer}>
             <SideBar>
                 <div className={styles.dashboard}>
                     <header className={styles.header}>
@@ -527,4 +527,4 @@ const AdminDashboard = () => {
     );
 };
 
-export default AdminDashboard;
+export default Dashboard;
