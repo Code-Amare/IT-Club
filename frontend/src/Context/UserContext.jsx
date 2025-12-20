@@ -15,6 +15,7 @@ export function UserProvider({ children }) {
         hasPassword: null,
         dateJoined: null,
         fullName: null,
+        profilePicURL: null,
     })
 
     // Exposed getUser function
@@ -32,8 +33,10 @@ export function UserProvider({ children }) {
                     hasPassword: user.has_password,
                     dateJoined: user.date_joined,
                     fullName: user.full_name,
+                    profilePicURL: user.profile_pic_url,
                 })
             }
+            console.log(res)
         } catch (error) {
             console.log(error)
             setUser(prev => ({ ...prev, isAuthenticated: false }))
@@ -65,6 +68,7 @@ export function UserProvider({ children }) {
             hasPassword: null,
             dateJoined: null,
             fullName: null,
+            profilePicURL: null,
         })
     }
 

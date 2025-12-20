@@ -124,7 +124,10 @@ export default function SideBar({ children }) {
                                     </span>
                                 </div>
                             ))}
-                            <ThemeToggle />
+                            <div className={`${styles.themeToggle} ${styles.desktopThemeToggle}`}>
+                                <ThemeToggle />
+                                <span className={`${styles.text} ${open ? styles.showText : ""}`}>Theme</span>
+                            </div>
                         </div>
                     </aside>
 
@@ -256,18 +259,18 @@ export default function SideBar({ children }) {
                                     onClick={handleMobileProfileClick}
                                     aria-label="Profile menu"
                                 >
-                                    <MdAccountCircle size={32} />
+                                    <img src={user.profilePicURL} className={styles.profilePic} alt={`${user.fullName} proilfe image.`} />
                                     <span className={styles.mobileProfileName}>{user.fullName}</span>
                                 </button>
 
                                 {profileMenuOpen && (
                                     <div className={styles.mobileProfileDropdown}>
                                         <div className={styles.mobileProfileHeader}>
-                                            <MdAccountCircle size={48} />
+                                            <img src={user.profilePicURL} className={styles.profilePic} alt={`${user.fullName} proilfe image.`} />
                                             <div className={styles.mobileProfileInfo}>
 
                                                 <span className={styles.profileName}>{user.fullName}</span>
-                                                <span className={styles.profileRole}>{user.role}</span>
+                                                <span className={styles.profileEmail}>{user.email}</span>
                                             </div>
                                             <button
                                                 className={styles.mobileCloseBtn}
@@ -305,10 +308,11 @@ export default function SideBar({ children }) {
                     <div className={`${styles.mobileDrawer} ${mobileOpen ? styles.mobileDrawerOpen : ''}`}>
                         <div className={styles.drawerHeader}>
                             <div className={styles.drawerProfile}>
-                                <MdAccountCircle size={48} />
+                                <img src={user.profilePicURL} className={styles.profilePic} alt={`${user.fullName} proilfe image.`} />
+
                                 <div className={styles.drawerProfileInfo}>
                                     <span className={styles.profileName}>{user.fullName}</span>
-                                    <span className={styles.profileRole}>{user.role}</span>
+                                    <span title={user.email} className={styles.profileEmail}>{user.email}</span>
                                 </div>
                             </div>
                             <button className={styles.closeBtn} onClick={closeMobileDrawer}>

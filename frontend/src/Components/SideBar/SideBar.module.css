@@ -55,7 +55,18 @@
 .menuItems {
   margin-top: 20px;
   padding: 0 10px;
+  height: 80%;
   flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.menuItems .desktopThemeToggle {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  gap: 1em;
+  flex-direction: row;
 }
 
 .item {
@@ -268,6 +279,11 @@
   color: var(--text-primary);
 }
 
+.profileBtn .profilePic {
+  width: 32px;
+  border-radius: 50%;
+}
+
 .profileBtn:hover {
   background-color: var(--border-color);
 }
@@ -291,8 +307,12 @@
   color: var(--text-primary);
 }
 
-.profileRole {
+.profileEmail {
   font-size: 12px;
+  width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   color: var(--text-secondary);
 }
 
@@ -502,10 +522,25 @@
   position: relative;
 }
 
+.mobileProfileHeader .profilePic {
+  width: 50px;
+  border-radius: 50%;
+}
+
 .mobileProfileInfo {
   display: flex;
   flex-direction: column;
+  max-width: 150px;
   flex: 1;
+}
+
+.mobileProfileInfo .profileEmail {
+  font-size: 12px;
+  width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--text-secondary);
 }
 
 .mobileProfileMenuItems {
@@ -521,7 +556,7 @@
   background: none;
   border: none;
   cursor: pointer;
-  color: var(--text-primary);
+  color: var(--text-secondary);
   font-size: 14px;
   text-align: left;
   transition: background-color 0.2s;
@@ -595,6 +630,11 @@
   flex-direction: column;
 }
 
+.mobileDrawer .profilePic {
+  width: 45px;
+  border-radius: 50%;
+}
+
 .mobileDrawer.mobileDrawerOpen {
   transform: translateX(0);
 }
@@ -616,6 +656,7 @@
 .drawerProfileInfo {
   display: flex;
   flex-direction: column;
+  max-width: 150px;
 }
 
 .closeBtn {
