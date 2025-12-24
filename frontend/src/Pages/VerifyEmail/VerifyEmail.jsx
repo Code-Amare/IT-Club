@@ -22,15 +22,7 @@ const VerifyEmail = () => {
             email = email.replaceAll("/", "")
             const res = await api.post("/api/users/verify-code/", { "code": code, "email": email, });
             neonToast.success("Login successfull")
-            user.login({
-                role: res.data.user.role,
-                email: res.data.user.email,
-                emailVerified: res.data.user.email_verified,
-                twoFaEnabled: res.data.user.twofa_enabled,
-                hasPassword: res.data.user.has_password,
-                dateJoined: res.data.user.date_joined,
-                username: res.data.user.username,
-            });
+            user.getUser();
             navigate("/profile");
         } catch (err) {
             // let errMsg = err.response?.data?.error

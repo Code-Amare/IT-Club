@@ -33,10 +33,11 @@ export default function SideBar({ children }) {
     const [notificationOpen, setNotificationOpen] = useState(false);
     const initialRender = useRef(true);
     const { user, logout } = useUser();
+    const role = user.role
     const navigate = useNavigate();
 
     const menuItems = [
-        { icon: <MdDashboard />, text: "Dashboard", to: "/admin" },
+        { icon: <MdDashboard />, text: "Dashboard", to: `/${role}` },
         { icon: <MdPeople />, text: "Students", to: "/admin/students" },
         { icon: <MdSchool />, text: "Learning Tasks", to: "/admin/learning-tasks" },
         { icon: <MdAssignment />, text: "Projects", to: "/admin/projects" },

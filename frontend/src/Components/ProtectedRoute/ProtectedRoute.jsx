@@ -1,6 +1,7 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useUser } from '../../Context/UserContext'
 import GetSpinner from "../../Components/GetSpinner/GetSpinner"
+import { neonToast } from "../../Components/NeonToast/NeonToast";
 
 
 function ProtectedRoute({ requiredRole }) {
@@ -11,6 +12,7 @@ function ProtectedRoute({ requiredRole }) {
     if (user.isAuthenticated === null) return <div><GetSpinner /></div>
 
     if (user.isAuthenticated === false || !requiredRole.includes(user.role)) {
+        neonToast.error("You do not have permission to view this page") // correct the grammer
         return <Navigate to={`/login?next=${encodeURIComponent(location.pathname)}`} replace />
     }
 

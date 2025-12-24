@@ -36,6 +36,7 @@ export function UserProvider({ children }) {
                     profilePicURL: user.profile_pic_url,
                 })
             }
+            console.log(res.data)
         } catch (error) {
             console.log(error)
             setUser(prev => ({ ...prev, isAuthenticated: false }))

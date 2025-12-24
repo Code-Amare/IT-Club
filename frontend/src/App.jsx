@@ -17,6 +17,8 @@ import StudentsBulk from './Pages/Admin/StudentsBulk/StudentsBulk'
 import StudentDetail from './Pages/Admin/StudentDetail/StudentDetail'
 import UserDashboard from './Pages/User/UserDashboard/UserDashboard'
 import AdminDashboard from './Pages/Admin/Dashboard/AdminDashboard'
+import MyLearningTask from './Pages/User/MyLearningTask/MyLearningTask'
+import CreateLearningTask from "./Pages/User/CreateLearningTask/CreateLearningTask"
 
 function App() {
   return (
@@ -43,6 +45,8 @@ function App() {
         </Route>
         <Route element={<ProtectedRoute requiredRole={["user"]} />}>
           <Route path='/user' element={<UserDashboard />} />
+          <Route path='/user/my-learning-task' element={<MyLearningTask />} />
+          <Route path='/user/learning-task/create' element={<CreateLearningTask />} />
         </Route>
         <Route path='*' element={<NotFound />} />
       </Routes>

@@ -182,7 +182,6 @@ if IS_CLOUDINARY:
         # "SIGN_URL": True,
     }
     cloudinary.config(**CLOUDINARY_STORAGE)
-    print(CLOUDINARY_STORAGE)
     CLOUDINARY_STORAGE_DEFAULT_TYPE = "authenticated"
     DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
 
