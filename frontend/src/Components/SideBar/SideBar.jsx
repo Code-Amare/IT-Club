@@ -61,7 +61,6 @@ export default function SideBar({ children }) {
         { id: 1, text: "New message received", time: "5 min ago" },
         { id: 2, text: "System update scheduled", time: "1 hour ago" },
     ];
-    console.log(window.location.pathname)
 
     useEffect(() => {
         const handleResize = () => {

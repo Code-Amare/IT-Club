@@ -3,8 +3,26 @@ from django.contrib.auth import get_user_model
 import cloudinary.uploader
 import cloudinary.utils
 import time
+from .models import Profile
 
 User = get_user_model()
+
+import time
+import environ
+import cloudinary
+import cloudinary.utils
+from pathlib import Path
+
+env = environ.Env()
+BASE_DIR = Path(__file__).resolve().parent
+environ.Env.read_env(str(BASE_DIR / ".env"))
+
+cloudinary.config(
+    cloud_name=env("CLOUD_NAME"),
+    api_key=env("API_KEY"),
+    api_secret=env("API_SECRET"),
+    secure=True,
+)
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -13,7 +31,21 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = "__all__"
+        fields = [
+            "email",
+            "full_name",
+            "role",
+            "email_verified",
+            "twofa_endabled",
+            "profile_pic_id",
+            "profile_pic_url",
+            "password",
+            "has_password",
+            "is_active",
+            "is_staff",
+            "is_deleted",
+            "date_joined",
+        ]
 
     def create(self, validated_data):
         password = validated_data.pop("password")
@@ -45,7 +77,12 @@ class UserSerializer(serializers.ModelSerializer):
 
     def get_profile_pic_url(self, obj):
         if obj.profile_pic_id:
-            return self.get_signed_url(obj.profile_pic_id)
+            try:
+                return self.get_signed_url(obj.profile_pic_id)
+            except Exception as e:
+                # Log the error but don't crash the whole API request
+                print(f"Cloudinary error: {e}")
+                return None
         return None
 
     # --- helper methods ---
@@ -65,3 +102,12 @@ class UserSerializer(serializers.ModelSerializer):
             expires_at=int(time.time()) + expires_in,
         )
         return url
+
+
+class ProfileSerializer(serializers.ModelSerializer):
+    # This nests the User data inside the Profile response
+    user = UserSerializer(read_only=True)
+
+    class Meta:
+        model = Profile
+        fields = ["user", "grade", "section", "field", "account", "phone_number"]

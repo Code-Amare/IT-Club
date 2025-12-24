@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from pathlib import Path
 import environ
 from datetime import timedelta
+import cloudinary
 
 # Initialize environment object
 env = environ.Env()
@@ -64,6 +65,7 @@ INSTALLED_APPS = [
     "api",
     "realtime",
     "website",
+    "management",
 ]
 
 ASGI_APPLICATION = "core.asgi.application"
@@ -177,8 +179,10 @@ if IS_CLOUDINARY:
         "CLOUD_NAME": env("CLOUD_NAME"),
         "API_KEY": env("API_KEY"),
         "API_SECRET": env("API_SECRET"),
-        "SIGN_URL": True,
+        # "SIGN_URL": True,
     }
+    cloudinary.config(**CLOUDINARY_STORAGE)
+    print(CLOUDINARY_STORAGE)
     CLOUDINARY_STORAGE_DEFAULT_TYPE = "authenticated"
     DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
 

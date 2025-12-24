@@ -101,6 +101,8 @@ class Profile(models.Model):
     field = models.CharField(max_length=50, choices=FIELD_CHOICE, default="frontend")
     account = models.CharField(max_length=100, default="N/A")
     phone_number = models.CharField(max_length=20)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.user.full_name

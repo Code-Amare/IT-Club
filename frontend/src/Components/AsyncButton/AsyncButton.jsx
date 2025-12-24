@@ -12,11 +12,10 @@ export default function AsyncButton({
     const [loading, setLoading] = useState(false);
 
     const handleClick = async (e) => {
-        if (e && type === "submit") e.preventDefault();
         if (loading) return;
+
         setLoading(true);
         try {
-            // allow onClick to accept the event if it wants
             await onClick?.(e);
         } finally {
             setLoading(false);
@@ -27,11 +26,11 @@ export default function AsyncButton({
         <button
             type={type}
             className={`${styles.customBtn} ${className}`}
-            onClick={handleClick}
+            onClick={onClick ? handleClick : undefined}
             disabled={disabled || loading}
             {...props}
         >
-            {loading ? <span className={styles.loader} aria-hidden="true" /> : children}
+            {loading ? <span className={styles.loader} aria-hidden /> : children}
         </button>
     );
 }

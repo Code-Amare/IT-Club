@@ -14,7 +14,6 @@ from .serializers import UserSerializer
 from django.conf import settings
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_protect
-from utils.cloudinary import upload_private_file
 
 # from axes.handlers.database import AxesDatabaseHandler
 from axes.handlers.proxy import AxesProxyHandler

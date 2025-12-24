@@ -6,6 +6,7 @@ import GetSpinner from "../../Components/GetSpinner/GetSpinner"
 function ProtectedRoute({ requiredRole }) {
     const { user } = useUser()
     const location = useLocation()
+    // console.log(user)
 
     if (user.isAuthenticated === null) return <div><GetSpinner /></div>
 

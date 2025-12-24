@@ -21,7 +21,7 @@ export function UserProvider({ children }) {
     // Exposed getUser function
     const getUser = async () => {
         try {
-            const res = await api.get("/api/users/get")
+            const res = await api.get("/api/users/get/")
             if (res.status === 200 && res.data) {
                 const user = res.data.user
                 setUser({

@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import { useUser } from "../../../Context/UserContext";
 import api from "../../../Utils/api";
 import { neonToast } from "../../../Components/NeonToast/NeonToast";
@@ -31,13 +31,7 @@ import {
     FaExclamationTriangle
 } from "react-icons/fa";
 import {
-    MdPerson,
-    MdEmail,
-    MdGrade,
     MdClass,
-    MdAccountCircle,
-    MdAdd,
-    MdDelete,
     MdRefresh
 } from "react-icons/md";
 import styles from "./Students.module.css";
@@ -48,29 +42,14 @@ export default function Students() {
 
     // State
     const [students, setStudents] = useState([]);
-    const [filteredStudents, setFilteredStudents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
-    const [selectedStudent, setSelectedStudent] = useState(null);
-    const [showDetails, setShowDetails] = useState(false);
-    const [showAddModal, setShowAddModal] = useState(false);
-    const [showBulkModal, setShowBulkModal] = useState(false);
-    const [bulkFile, setBulkFile] = useState(null);
-    const [bulkPreview, setBulkPreview] = useState([]);
     const [filters, setFilters] = useState({
         grade: "",
         section: "",
-        accountStatus: "",
-        dateRange: { start: "", end: "" }
+        accountStatus: ""
     });
     const [sortConfig, setSortConfig] = useState({ key: "full_name", direction: "asc" });
-    const [addForm, setAddForm] = useState({
-        full_name: "",
-        email: "",
-        grade: "",
-        section: "",
-        account_status: "active"
-    });
     const [pagination, setPagination] = useState({
         currentPage: 0,
         itemsPerPage: 10,
@@ -79,17 +58,7 @@ export default function Students() {
     const [stats, setStats] = useState({
         total: 0,
         active: 0,
-        inactive: 0,
-        byGrade: {}
-    });
-
-    // Filter operators
-    const [filterOperators, setFilterOperators] = useState({
-        full_name: "contains",
-        email: "contains",
-        grade: "equals",
-        section: "equals",
-        account_status: "equals"
+        inactive: 0
     });
 
     // Fetch students
@@ -99,20 +68,19 @@ export default function Students() {
             navigate("/login");
             return;
         }
+        getStats();
         fetchStudents();
     }, [user, navigate]);
 
     const fetchStudents = async () => {
         setLoading(true);
         try {
-            const response = await api.get("/api/students/");
+            const response = await api.get("/api/management/students/");
             setStudents(response.data.students || []);
-            setFilteredStudents(response.data.students || []);
             setPagination(prev => ({
                 ...prev,
                 totalItems: response.data.students?.length || 0
             }));
-            calculateStats(response.data.students || []);
         } catch (error) {
             console.error("Error fetching students:", error);
             neonToast.error("Failed to load students", "error");
@@ -121,97 +89,93 @@ export default function Students() {
         }
     };
 
-    const calculateStats = (studentList) => {
-        const statsData = {
-            total: studentList.length,
-            active: studentList.filter(s => s.account_status === "active").length,
-            inactive: studentList.filter(s => s.account_status === "inactive").length,
-            byGrade: {}
-        };
-
-        studentList.forEach(student => {
-            if (student.grade) {
-                statsData.byGrade[student.grade] = (statsData.byGrade[student.grade] || 0) + 1;
+    const getStats = async () => {
+        setLoading(true);
+        try {
+            const res = await api.get("/api/management/students/stats/");
+            const stats = res.data.overall || null;
+            if (!stats) {
+                return neonToast.error("Failed to load stats.", "error");
             }
-        });
-
-        setStats(statsData);
+            const statsData = {
+                total: stats.total,
+                active: stats.active,
+                inactive: stats.inactive,
+            };
+            setStats(statsData);
+        } catch (error) {
+            console.error("Error fetching stats:", error);
+            neonToast.error("Failed to load stats.", "error");
+        } finally {
+            setLoading(false);
+        }
     };
 
-    // Search and filter logic
-    useEffect(() => {
+    // Filter and sort students using useMemo
+    const filteredStudents = useMemo(() => {
         let result = [...students];
 
-        // Text search across all fields
+        // Apply text search
         if (searchQuery.trim()) {
-            const query = searchQuery.toLowerCase();
-            result = result.filter(student =>
-                Object.values(student).some(value =>
-                    value && value.toString().toLowerCase().includes(query)
-                )
-            );
+            const query = searchQuery.toLowerCase().trim();
+            result = result.filter(student => {
+                // Search in multiple fields
+                return (
+                    (student.full_name?.toLowerCase().includes(query)) ||
+                    (student.email?.toLowerCase().includes(query)) ||
+                    (student.grade?.toString().toLowerCase().includes(query)) ||
+                    (student.section?.toLowerCase().includes(query)) ||
+                    (student.id?.toString().includes(query))
+                );
+            });
         }
 
-        // Apply advanced filters
-        Object.keys(filters).forEach(key => {
-            if (filters[key] && filters[key] !== "") {
-                if (key === "dateRange") {
-                    if (filters.dateRange.start) {
-                        result = result.filter(student =>
-                            new Date(student.created_at) >= new Date(filters.dateRange.start)
-                        );
-                    }
-                    if (filters.dateRange.end) {
-                        result = result.filter(student =>
-                            new Date(student.created_at) <= new Date(filters.dateRange.end)
-                        );
-                    }
-                } else {
-                    result = result.filter(student =>
-                        student[key] === filters[key]
-                    );
-                }
-            }
-        });
-
-        // Apply custom operators
-        Object.keys(filterOperators).forEach(field => {
-            const operator = filterOperators[field];
-            if (operator === "greater_than" && filters[field]) {
-                result = result.filter(student =>
-                    parseFloat(student[field]) > parseFloat(filters[field])
-                );
-            } else if (operator === "less_than" && filters[field]) {
-                result = result.filter(student =>
-                    parseFloat(student[field]) < parseFloat(filters[field])
-                );
-            } else if (operator === "equals" && filters[field]) {
-                result = result.filter(student =>
-                    student[field] === filters[field]
-                );
-            }
-        });
+        // Apply filters
+        if (filters.grade) {
+            result = result.filter(student => student.grade === filters.grade);
+        }
+        if (filters.section) {
+            result = result.filter(student => student.section === filters.section);
+        }
+        if (filters.accountStatus) {
+            result = result.filter(student => student.account_status === filters.accountStatus);
+        }
 
         // Apply sorting
         if (sortConfig.key) {
             result.sort((a, b) => {
-                if (a[sortConfig.key] < b[sortConfig.key]) {
+                let aValue = a[sortConfig.key];
+                let bValue = b[sortConfig.key];
+
+                // Handle null/undefined values
+                if (aValue === null || aValue === undefined) aValue = "";
+                if (bValue === null || bValue === undefined) bValue = "";
+
+                // Convert to string for comparison
+                aValue = String(aValue).toLowerCase();
+                bValue = String(bValue).toLowerCase();
+
+                if (aValue < bValue) {
                     return sortConfig.direction === "asc" ? -1 : 1;
                 }
-                if (a[sortConfig.key] > b[sortConfig.key]) {
+                if (aValue > bValue) {
                     return sortConfig.direction === "asc" ? 1 : -1;
                 }
                 return 0;
             });
         }
 
-        setFilteredStudents(result);
+        return result;
+    }, [students, searchQuery, filters, sortConfig]);
+
+    // Update pagination when filtered students change
+    useEffect(() => {
         setPagination(prev => ({
             ...prev,
-            totalItems: result.length,
-            currentPage: 0
+            totalItems: filteredStudents.length,
+            currentPage: 0 // Reset to first page when filters change
         }));
-    }, [searchQuery, filters, filterOperators, sortConfig, students]);
+    }, [filteredStudents]);
 
     // Sorting
     const handleSort = (key) => {
@@ -235,85 +199,10 @@ export default function Students() {
         return filteredStudents.slice(start, end);
     }, [filteredStudents, pagination]);
 
-    // Add Student
-    const handleAddSubmit = async () => {
-        try {
-            const response = await api.post("/api/students/", addForm);
-            setStudents(prev => [response.data.student, ...prev]);
-            setAddForm({
-                full_name: "",
-                email: "",
-                grade: "",
-                section: "",
-                account_status: "active"
-            });
-            setShowAddModal(false);
-            neonToast.success("Student added successfully", "success");
-        } catch (error) {
-            console.error("Error adding student:", error);
-            neonToast.error(error.response?.data?.message || "Failed to add student", "error");
-        }
-    };
-
-    // Bulk Upload
-    const handleBulkFileChange = (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        // Validate file type
-        if (!file.name.endsWith('.csv') && !file.name.endsWith('.xlsx')) {
-            neonToast.error("Please upload a CSV or Excel file", "error");
-            return;
-        }
-
-        setBulkFile(file);
-
-        // Preview CSV content
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            const csv = event.target.result;
-            const lines = csv.split('\n');
-            const headers = lines[0].split(',');
-            const preview = lines.slice(1, 6).map(line => {
-                const values = line.split(',');
-                return headers.reduce((obj, header, index) => {
-                    obj[header.trim()] = values[index]?.trim() || '';
-                    return obj;
-                }, {});
-            });
-            setBulkPreview(preview);
-        };
-        reader.readAsText(file);
-    };
-
-    const handleBulkUpload = async () => {
-        if (!bulkFile) {
-            neonToast.error("Please select a file first", "error");
-            return;
-        }
-
-        const formData = new FormData();
-        formData.append("file", bulkFile);
-
-        try {
-            const response = await api.post("/api/students/bulk-upload/", formData, {
-                headers: { "Content-Type": "multipart/form-data" }
-            });
-            setStudents(prev => [...response.data.students, ...prev]);
-            setBulkFile(null);
-            setBulkPreview([]);
-            setShowBulkModal(false);
-            neonToast.success(`${response.data.count} students uploaded successfully`, "success");
-        } catch (error) {
-            console.error("Bulk upload error:", error);
-            neonToast.error(error.response?.data?.message || "Failed to upload students", "error");
-        }
-    };
-
     // Delete Student
     const handleDeleteStudent = async (studentId) => {
         try {
-            await api.delete(`/api/students/${studentId}/`);
+            await api.delete(`/api/management/student/${studentId}/`);
             setStudents(prev => prev.filter(s => s.id !== studentId));
             neonToast.success("Student deleted successfully", "success");
         } catch (error) {
@@ -323,7 +212,12 @@ export default function Students() {
     };
 
     // Export Students
-    const handleExport = () => {
+    const handleExport = useCallback(() => {
+        if (filteredStudents.length === 0) {
+            neonToast.warning("No students to export", "warning");
+            return;
+        }
+
         const csvContent = [
             ["Full Name", "Email", "Grade", "Section", "Account Status", "Created At"],
             ...filteredStudents.map(s => [
@@ -336,7 +230,7 @@ export default function Students() {
             ])
         ].map(row => row.join(",")).join("\n");
 
-        const blob = new Blob([csvContent], { type: "text/csv" });
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
@@ -345,33 +239,34 @@ export default function Students() {
         a.click();
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
-    };
+
+        neonToast.success("Students exported successfully", "success");
+    }, [filteredStudents]);
 
     // Filter handlers
     const handleFilterChange = (key, value) => {
         setFilters(prev => ({ ...prev, [key]: value }));
     };
 
-    const handleOperatorChange = (field, operator) => {
-        setFilterOperators(prev => ({ ...prev, [field]: operator }));
-    };
-
     const clearFilters = () => {
         setFilters({
             grade: "",
             section: "",
-            accountStatus: "",
-            dateRange: { start: "", end: "" }
-        });
-        setFilterOperators({
-            full_name: "contains",
-            email: "contains",
-            grade: "equals",
-            section: "equals",
-            account_status: "equals"
+            accountStatus: ""
         });
         setSearchQuery("");
     };
+
+    // Get unique values for filter dropdowns
+    const uniqueGrades = useMemo(() =>
+        [...new Set(students.map(s => s.grade).filter(Boolean))].sort(),
+        [students]
+    );
+
+    const uniqueSections = useMemo(() =>
+        [...new Set(students.map(s => s.section).filter(Boolean))].sort(),
+        [students]
+    );
 
     if (user.isAuthenticated === null) {
         return (
@@ -404,24 +299,25 @@ export default function Students() {
                             <button
                                 className={styles.exportBtn}
                                 onClick={handleExport}
+                                disabled={filteredStudents.length === 0}
                             >
                                 <FaDownload />
                                 <span>Export CSV</span>
                             </button>
-                            <button
+                            <Link
+                                to="/admin/students/bulk"
                                 className={styles.secondaryBtn}
-                                onClick={() => setShowBulkModal(true)}
                             >
                                 <FaUpload />
                                 <span>Bulk Upload</span>
-                            </button>
-                            <button
+                            </Link>
+                            <Link
+                                to="/admin/student/add"
                                 className={styles.primaryBtn}
-                                onClick={() => setShowAddModal(true)}
                             >
                                 <FaUserPlus />
                                 <span>Add Student</span>
-                            </button>
+                            </Link>
                         </div>
                     </div>
                 </div>
@@ -439,7 +335,7 @@ export default function Students() {
                     </div>
                     <div className={styles.statCard}>
                         <div className={styles.statIcon} style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}>
-                            <FaUser />
+                            <FaCheck />
                         </div>
                         <div className={styles.statContent}>
                             <h3>Active Accounts</h3>
@@ -451,10 +347,8 @@ export default function Students() {
                             <FaChartBar />
                         </div>
                         <div className={styles.statContent}>
-                            <h3>By Grade</h3>
-                            <p className={styles.statNumber}>
-                                {Object.keys(stats.byGrade).length} grades
-                            </p>
+                            <h3>Inactive</h3>
+                            <p className={styles.statNumber}>{stats.inactive}</p>
                         </div>
                     </div>
                 </div>
@@ -466,7 +360,7 @@ export default function Students() {
                             <FaSearch className={styles.searchIcon} />
                             <input
                                 type="text"
-                                placeholder="Search students by name, email, grade..."
+                                placeholder="Search students by name, email, grade, section or ID..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className={styles.searchInput}
@@ -486,21 +380,21 @@ export default function Students() {
                                 onClick={() => document.getElementById("advancedFilters").classList.toggle(styles.show)}
                             >
                                 <FaFilter />
-                                <span>Advanced Filters</span>
+                                <span>Filters</span>
                             </button>
-                            {(filters.grade || filters.section || filters.accountStatus) && (
+                            {(filters.grade || filters.section || filters.accountStatus || searchQuery) && (
                                 <button
                                     className={styles.clearFilters}
                                     onClick={clearFilters}
                                 >
                                     <FaTimes />
-                                    <span>Clear Filters</span>
+                                    <span>Clear All</span>
                                 </button>
                             )}
                         </div>
                     </div>
 
-                    {/* Advanced Filters */}
+                    {/* Filters */}
                     <div id="advancedFilters" className={styles.advancedFilters}>
                         <div className={styles.filterGrid}>
                             <div className={styles.filterGroup}>
@@ -510,20 +404,10 @@ export default function Students() {
                                     onChange={(e) => handleFilterChange("grade", e.target.value)}
                                 >
                                     <option value="">All Grades</option>
-                                    {Array.from(new Set(students.map(s => s.grade))).sort().map(grade => (
+                                    {uniqueGrades.map(grade => (
                                         <option key={grade} value={grade}>{grade}</option>
                                     ))}
                                 </select>
-                                <div className={styles.operatorSelect}>
-                                    <select
-                                        value={filterOperators.grade}
-                                        onChange={(e) => handleOperatorChange("grade", e.target.value)}
-                                    >
-                                        <option value="equals">Equals</option>
-                                        <option value="greater_than">Greater Than</option>
-                                        <option value="less_than">Less Than</option>
-                                    </select>
-                                </div>
                             </div>
 
                             <div className={styles.filterGroup}>
@@ -533,14 +417,14 @@ export default function Students() {
                                     onChange={(e) => handleFilterChange("section", e.target.value)}
                                 >
                                     <option value="">All Sections</option>
-                                    {Array.from(new Set(students.map(s => s.section))).sort().map(section => (
+                                    {uniqueSections.map(section => (
                                         <option key={section} value={section}>{section}</option>
                                     ))}
                                 </select>
                             </div>
 
                             <div className={styles.filterGroup}>
-                                <label>Account Status</label>
+                                <label>Status</label>
                                 <select
                                     value={filters.accountStatus}
                                     onChange={(e) => handleFilterChange("accountStatus", e.target.value)}
@@ -551,31 +435,6 @@ export default function Students() {
                                     <option value="pending">Pending</option>
                                 </select>
                             </div>
-
-                            <div className={styles.filterGroup}>
-                                <label>Date Range</label>
-                                <div className={styles.dateRange}>
-                                    <input
-                                        type="date"
-                                        value={filters.dateRange.start}
-                                        onChange={(e) => handleFilterChange("dateRange", {
-                                            ...filters.dateRange,
-                                            start: e.target.value
-                                        })}
-                                        placeholder="Start Date"
-                                    />
-                                    <span>to</span>
-                                    <input
-                                        type="date"
-                                        value={filters.dateRange.end}
-                                        onChange={(e) => handleFilterChange("dateRange", {
-                                            ...filters.dateRange,
-                                            end: e.target.value
-                                        })}
-                                        placeholder="End Date"
-                                    />
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -585,6 +444,9 @@ export default function Students() {
                     <div className={styles.tableHeader}>
                         <h3>Students List</h3>
                         <div className={styles.tableControls}>
+                            <div className={styles.resultsInfo}>
+                                Showing {filteredStudents.length} of {students.length} students
+                            </div>
                             <select
                                 value={pagination.itemsPerPage}
                                 onChange={(e) => setPagination(prev => ({
@@ -592,6 +454,7 @@ export default function Students() {
                                     itemsPerPage: parseInt(e.target.value),
                                     currentPage: 0
                                 }))}
+                                className={styles.pageSelect}
                             >
                                 <option value={5}>5 per page</option>
                                 <option value={10}>10 per page</option>
@@ -622,7 +485,7 @@ export default function Students() {
                                         <tr>
                                             <th onClick={() => handleSort("full_name")}>
                                                 <div className={styles.tableHeaderCell}>
-                                                    <span>Full Name</span>
+                                                    <span>Student</span>
                                                     <SortIcon column="full_name" />
                                                 </div>
                                             </th>
@@ -646,7 +509,7 @@ export default function Students() {
                                             </th>
                                             <th onClick={() => handleSort("account_status")}>
                                                 <div className={styles.tableHeaderCell}>
-                                                    <span>Account Status</span>
+                                                    <span>Status</span>
                                                     <SortIcon column="account_status" />
                                                 </div>
                                             </th>
@@ -711,23 +574,20 @@ export default function Students() {
                                                 </td>
                                                 <td>
                                                     <div className={styles.actionButtons}>
-                                                        <button
+                                                        <Link
+                                                            to={`/admin/student/${student.id}`}
                                                             className={styles.viewBtn}
-                                                            onClick={() => {
-                                                                setSelectedStudent(student);
-                                                                setShowDetails(true);
-                                                            }}
                                                         >
                                                             <FaEye />
                                                             <span>View</span>
-                                                        </button>
-                                                        <button
+                                                        </Link>
+                                                        <Link
+                                                            to={`/admin/student/edit/${student.id}`}
                                                             className={styles.editBtn}
-                                                            onClick={() => navigate(`/admin/students/${student.id}/edit`)}
                                                         >
                                                             <FaEdit />
                                                             <span>Edit</span>
-                                                        </button>
+                                                        </Link>
                                                         <ConfirmAction
                                                             onConfirm={() => handleDeleteStudent(student.id)}
                                                             title="Delete Student"
@@ -752,7 +612,7 @@ export default function Students() {
                                 <div className={styles.emptyState}>
                                     <FaUsers size={48} />
                                     <h3>No students found</h3>
-                                    <p>Try adjusting your search or filters</p>
+                                    <p>{students.length === 0 ? "No students available. Add some students first." : "Try adjusting your search or filters"}</p>
                                 </div>
                             )}
 
@@ -790,312 +650,6 @@ export default function Students() {
                     )}
                 </div>
             </SideBar>
-
-            {/* Add Student Modal */}
-            {showAddModal && (
-                <div className={styles.modalOverlay}>
-                    <div className={styles.modal}>
-                        <div className={styles.modalHeader}>
-                            <h2>
-                                <FaUserPlus />
-                                <span>Add New Student</span>
-                            </h2>
-                            <button
-                                className={styles.closeModal}
-                                onClick={() => setShowAddModal(false)}
-                            >
-                                <FaTimes />
-                            </button>
-                        </div>
-                        <div className={styles.modalContent}>
-                            <div className={styles.formGrid}>
-                                <div className={styles.formGroup}>
-                                    <label>Full Name *</label>
-                                    <input
-                                        type="text"
-                                        value={addForm.full_name}
-                                        onChange={(e) => setAddForm(prev => ({ ...prev, full_name: e.target.value }))}
-                                        placeholder="Enter full name"
-                                    />
-                                </div>
-                                <div className={styles.formGroup}>
-                                    <label>Email *</label>
-                                    <input
-                                        type="email"
-                                        value={addForm.email}
-                                        onChange={(e) => setAddForm(prev => ({ ...prev, email: e.target.value }))}
-                                        placeholder="student@example.com"
-                                    />
-                                </div>
-                                <div className={styles.formGroup}>
-                                    <label>Grade</label>
-                                    <input
-                                        type="text"
-                                        value={addForm.grade}
-                                        onChange={(e) => setAddForm(prev => ({ ...prev, grade: e.target.value }))}
-                                        placeholder="e.g., 10th"
-                                    />
-                                </div>
-                                <div className={styles.formGroup}>
-                                    <label>Section</label>
-                                    <input
-                                        type="text"
-                                        value={addForm.section}
-                                        onChange={(e) => setAddForm(prev => ({ ...prev, section: e.target.value }))}
-                                        placeholder="e.g., A"
-                                    />
-                                </div>
-                                <div className={styles.formGroup}>
-                                    <label>Account Status</label>
-                                    <select
-                                        value={addForm.account_status}
-                                        onChange={(e) => setAddForm(prev => ({ ...prev, account_status: e.target.value }))}
-                                    >
-                                        <option value="active">Active</option>
-                                        <option value="inactive">Inactive</option>
-                                        <option value="pending">Pending</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                        <div className={styles.modalActions}>
-                            <button
-                                className={styles.secondaryBtn}
-                                onClick={() => setShowAddModal(false)}
-                            >
-                                Cancel
-                            </button>
-                            <AsyncButton
-                                className={styles.primaryBtn}
-                                onClick={handleAddSubmit}
-                                disabled={!addForm.full_name || !addForm.email}
-                            >
-                                <FaUserPlus />
-                                <span>Add Student</span>
-                            </AsyncButton>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Bulk Upload Modal */}
-            {showBulkModal && (
-                <div className={styles.modalOverlay}>
-                    <div className={styles.modal}>
-                        <div className={styles.modalHeader}>
-                            <h2>
-                                <FaUpload />
-                                <span>Bulk Upload Students</span>
-                            </h2>
-                            <button
-                                className={styles.closeModal}
-                                onClick={() => {
-                                    setShowBulkModal(false);
-                                    setBulkFile(null);
-                                    setBulkPreview([]);
-                                }}
-                            >
-                                <FaTimes />
-                            </button>
-                        </div>
-                        <div className={styles.modalContent}>
-                            <div className={styles.uploadArea}>
-                                <div className={styles.uploadPrompt}>
-                                    <FaUpload size={48} />
-                                    <h3>Upload CSV or Excel File</h3>
-                                    <p>File should contain columns: full_name, email, grade, section, account_status</p>
-                                    <input
-                                        type="file"
-                                        id="bulkUpload"
-                                        accept=".csv,.xlsx,.xls"
-                                        onChange={handleBulkFileChange}
-                                        style={{ display: 'none' }}
-                                    />
-                                    <label htmlFor="bulkUpload" className={styles.uploadBtn}>
-                                        Choose File
-                                    </label>
-                                    {bulkFile && (
-                                        <div className={styles.fileInfo}>
-                                            <FaCheck />
-                                            <span>{bulkFile.name} ({Math.round(bulkFile.size / 1024)} KB)</span>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {bulkPreview.length > 0 && (
-                                    <div className={styles.previewSection}>
-                                        <h4>Preview (first 5 rows)</h4>
-                                        <div className={styles.previewTable}>
-                                            <table>
-                                                <thead>
-                                                    <tr>
-                                                        {Object.keys(bulkPreview[0]).map(key => (
-                                                            <th key={key}>{key}</th>
-                                                        ))}
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {bulkPreview.map((row, index) => (
-                                                        <tr key={index}>
-                                                            {Object.values(row).map((value, i) => (
-                                                                <td key={i}>{value}</td>
-                                                            ))}
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                        <div className={styles.modalActions}>
-                            <button
-                                className={styles.secondaryBtn}
-                                onClick={() => {
-                                    setShowBulkModal(false);
-                                    setBulkFile(null);
-                                    setBulkPreview([]);
-                                }}
-                            >
-                                Cancel
-                            </button>
-                            <AsyncButton
-                                className={styles.primaryBtn}
-                                onClick={handleBulkUpload}
-                                disabled={!bulkFile}
-                            >
-                                <FaUpload />
-                                <span>Upload Students</span>
-                            </AsyncButton>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Student Details Modal */}
-            {showDetails && selectedStudent && (
-                <div className={styles.modalOverlay}>
-                    <div className={`${styles.modal} ${styles.detailsModal}`}>
-                        <div className={styles.modalHeader}>
-                            <h2>
-                                <FaIdCard />
-                                <span>Student Details</span>
-                            </h2>
-                            <button
-                                className={styles.closeModal}
-                                onClick={() => {
-                                    setShowDetails(false);
-                                    setSelectedStudent(null);
-                                }}
-                            >
-                                <FaTimes />
-                            </button>
-                        </div>
-                        <div className={styles.modalContent}>
-                            <div className={styles.detailsHeader}>
-                                <div className={styles.detailsAvatar}>
-                                    {selectedStudent.full_name?.charAt(0) || "S"}
-                                </div>
-                                <div className={styles.detailsTitle}>
-                                    <h3>{selectedStudent.full_name}</h3>
-                                    <p>ID: {selectedStudent.id}</p>
-                                </div>
-                            </div>
-
-                            <div className={styles.detailsGrid}>
-                                <div className={styles.detailItem}>
-                                    <div className={styles.detailIcon}>
-                                        <FaEnvelope />
-                                    </div>
-                                    <div>
-                                        <label>Email</label>
-                                        <p>{selectedStudent.email}</p>
-                                    </div>
-                                </div>
-                                <div className={styles.detailItem}>
-                                    <div className={styles.detailIcon}>
-                                        <FaGraduationCap />
-                                    </div>
-                                    <div>
-                                        <label>Grade</label>
-                                        <p>{selectedStudent.grade}</p>
-                                    </div>
-                                </div>
-                                <div className={styles.detailItem}>
-                                    <div className={styles.detailIcon}>
-                                        <MdClass />
-                                    </div>
-                                    <div>
-                                        <label>Section</label>
-                                        <p>{selectedStudent.section}</p>
-                                    </div>
-                                </div>
-                                <div className={styles.detailItem}>
-                                    <div className={styles.detailIcon}>
-                                        <FaUser />
-                                    </div>
-                                    <div>
-                                        <label>Account Status</label>
-                                        <p className={`${styles.statusText} ${selectedStudent.account_status === "active" ? styles.active :
-                                            selectedStudent.account_status === "inactive" ? styles.inactive :
-                                                styles.pending
-                                            }`}>
-                                            {selectedStudent.account_status}
-                                        </p>
-                                    </div>
-                                </div>
-                                <div className={styles.detailItem}>
-                                    <div className={styles.detailIcon}>
-                                        <FaChartBar />
-                                    </div>
-                                    <div>
-                                        <label>Created</label>
-                                        <p>{new Date(selectedStudent.created_at).toLocaleDateString()}</p>
-                                    </div>
-                                </div>
-                                <div className={styles.detailItem}>
-                                    <div className={styles.detailIcon}>
-                                        <MdRefresh />
-                                    </div>
-                                    <div>
-                                        <label>Last Updated</label>
-                                        <p>{new Date(selectedStudent.updated_at).toLocaleDateString()}</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {selectedStudent.notes && (
-                                <div className={styles.notesSection}>
-                                    <h4>Notes</h4>
-                                    <p>{selectedStudent.notes}</p>
-                                </div>
-                            )}
-                        </div>
-                        <div className={styles.modalActions}>
-                            <button
-                                className={styles.secondaryBtn}
-                                onClick={() => {
-                                    setShowDetails(false);
-                                    setSelectedStudent(null);
-                                }}
-                            >
-                                Close
-                            </button>
-                            <button
-                                className={styles.primaryBtn}
-                                onClick={() => {
-                                    setShowDetails(false);
-                                    navigate(`/admin/students/${selectedStudent.id}/edit`);
-                                }}
-                            >
-                                <FaEdit />
-                                <span>Edit Student</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 }

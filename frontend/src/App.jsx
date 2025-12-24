@@ -10,9 +10,13 @@ import NeonToast from './Components/NeonToast/NeonToast'
 import Security from './Pages/Security/Security'
 import ProfileEdit from './Pages/EditProfile/EditProfile'
 import Notification from './Components/Notification/Notification'
-import Dashboard from './Pages/Admin/Dashboard/Dashboard'
 import Settings from './Pages/Settings/Settings'
 import Students from './Pages/Admin/Students/Students'
+import StudentAdd from './Pages/Admin/StudentAdd/StudentAdd'
+import StudentsBulk from './Pages/Admin/StudentsBulk/StudentsBulk'
+import StudentDetail from './Pages/Admin/StudentDetail/StudentDetail'
+import UserDashboard from './Pages/User/UserDashboard/UserDashboard'
+import AdminDashboard from './Pages/Admin/Dashboard/AdminDashboard'
 
 function App() {
   return (
@@ -31,9 +35,14 @@ function App() {
           <Route path="/settings" element={<Settings />} />
         </Route>
         <Route element={<ProtectedRoute requiredRole={["admin", "staff"]} />}>
-          <Route path="/admin" element={<Dashboard />} />
+          <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/admin/students" element={<Students />} />
-
+          <Route path="/admin/student/add" element={<StudentAdd />} />
+          <Route path="/admin/students/bulk" element={<StudentsBulk />} />
+          <Route path="/admin/student/:id" element={<StudentDetail />} />
+        </Route>
+        <Route element={<ProtectedRoute requiredRole={["user"]} />}>
+          <Route path='/user' element={<UserDashboard />} />
         </Route>
         <Route path='*' element={<NotFound />} />
       </Routes>
