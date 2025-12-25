@@ -402,7 +402,10 @@ class UserDeleteView(APIView):
 @method_decorator(csrf_protect, name="dispatch")
 class EditProfileView(APIView):
     authentication_classes = [JWTCookieAuthentication]
-    permission_classes = [IsAuthenticated, RolePermissionFactory(["admin", "staff"])]
+    permission_classes = [
+        IsAuthenticated,
+        RolePermissionFactory(["admin", "staff"]),
+    ]
 
     def patch(self, request):
         user = request.user

@@ -234,7 +234,7 @@ const CreateLearningTask = () => {
 
         // Redirect after success
         setTimeout(() => {
-            navigate("/learning-tasks");
+            navigate("/user/my-learning-task");
         }, 1500);
     };
 
@@ -294,7 +294,7 @@ const CreateLearningTask = () => {
                 <SideBar>
                     <div className={styles.CreateLearningTask}>
                         <header className={styles.header}>
-                            <button className={styles.backButton} onClick={() => navigate("/learning-tasks")}>
+                            <button className={styles.backButton} onClick={() => navigate("/user/my-learning-task")}>
                                 <FaArrowLeft />
                                 <span>Back to Tasks</span>
                             </button>
@@ -355,7 +355,7 @@ const CreateLearningTask = () => {
                     )}
 
                     <header className={styles.header}>
-                        <button className={styles.backButton} onClick={() => navigate("/learning-tasks")}>
+                        <button className={styles.backButton} onClick={() => navigate("/user/my-learning-task")}>
                             <FaArrowLeft />
                             <span>Back to Tasks</span>
                         </button>

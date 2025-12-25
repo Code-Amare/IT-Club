@@ -1,20 +1,20 @@
 import styles from "./MyLearningTask.module.css";
 import SideBar from "../../../Components/SideBar/SideBar";
+import LearningTaskCard from "../../../Components/LearningTaskCard/LearningTaskCard";
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
     FaPlus,
     FaTasks,
-    FaEdit,
-    FaTrash,
-    FaClock,
     FaCheckCircle,
-    FaStar,
-    FaCodeBranch,
+    FaClock,
+    FaEdit,
     FaExclamationTriangle,
 } from "react-icons/fa";
-import { FiGitPullRequest, FiLock } from "react-icons/fi";
 
 const MyLearningTask = () => {
+    const navigate = useNavigate();
+
     // Mock data for student's learning tasks
     const [learningTasks, setLearningTasks] = useState([
         {
@@ -22,7 +22,7 @@ const MyLearningTask = () => {
             title: "Database Entity Creation",
             description: "Building a complete database system with entities, relationships, and migrations",
             githubLink: "https://github.com/john/database-project",
-            language: "JavaScript",
+            languages: ["JavaScript", "SQL"],
             frameworks: ["Node.js", "Sequelize", "PostgreSQL"],
             status: "submitted", // draft, submitted, graded, locked
             grade: 0,
@@ -35,7 +35,7 @@ const MyLearningTask = () => {
             title: "React E-commerce Dashboard",
             description: "Creating a responsive admin dashboard with charts and analytics",
             githubLink: "",
-            language: "TypeScript",
+            languages: ["TypeScript"],
             frameworks: ["React", "Redux", "Tailwind CSS"],
             status: "draft",
             grade: 0,
@@ -48,7 +48,7 @@ const MyLearningTask = () => {
             title: "Authentication System",
             description: "JWT-based authentication with refresh tokens and role-based access",
             githubLink: "https://github.com/john/auth-system",
-            language: "Python",
+            languages: ["Python", "JavaScript"],
             frameworks: ["Django", "Django REST", "PostgreSQL"],
             status: "graded",
             grade: 4.5,
@@ -61,7 +61,7 @@ const MyLearningTask = () => {
             title: "Real-time Chat Application",
             description: "WebSocket-based chat with rooms, user presence, and file sharing",
             githubLink: "https://github.com/john/chat-app",
-            language: "JavaScript",
+            languages: ["JavaScript"],
             frameworks: ["Socket.io", "Express", "React"],
             status: "locked",
             grade: 4.8,
@@ -74,7 +74,6 @@ const MyLearningTask = () => {
     // Task limit configuration
     const [taskLimit, setTaskLimit] = useState(5); // Max tasks per student
     const [isLoading, setIsLoading] = useState(false);
-    const [showCreateForm, setShowCreateForm] = useState(false);
 
     // Mock fetch to check task limit and current count
     useEffect(() => {
@@ -97,54 +96,13 @@ const MyLearningTask = () => {
         fetchTaskLimit();
     }, [learningTasks.length]);
 
-    // Get status badge with appropriate styling
-    const getStatusBadge = (status, grade) => {
-        const badges = {
-            draft: {
-                text: "Draft",
-                icon: <FaEdit />,
-                className: styles.badgeDraft,
-            },
-            submitted: {
-                text: "Under Review",
-                icon: <FaClock />,
-                className: styles.badgeSubmitted,
-            },
-            graded: {
-                text: `Graded: ${grade}/5`,
-                icon: <FaStar />,
-                className: styles.badgeGraded,
-            },
-            locked: {
-                text: "Locked",
-                icon: <FiLock />,
-                className: styles.badgeLocked,
-            },
-        };
-
-        const badge = badges[status] || badges.draft;
-        return (
-            <span className={`${styles.statusBadge} ${badge.className}`}>
-                {badge.icon}
-                <span>{badge.text}</span>
-            </span>
-        );
-    };
-
-    // Check if task can be edited
-    const canEditTask = (task) => {
-        if (task.status === "locked") return false;
-        if (task.status === "graded" && !task.adminEditable) return false;
-        return task.status === "draft" || task.status === "submitted";
-    };
-
     // Handle task creation
     const handleCreateTask = () => {
         if (learningTasks.length >= taskLimit) {
             alert(`You have reached the maximum limit of ${taskLimit} learning tasks.`);
             return;
         }
-        setShowCreateForm(true);
+        navigate("/user/learning-task/create");
     };
 
     // Handle task deletion (only for drafts)
@@ -160,89 +118,18 @@ const MyLearningTask = () => {
         }
     };
 
-    // Render task card
-    const renderTaskCard = (task) => {
-        return (
-            <div key={task.id} className={styles.taskCard}>
-                <div className={styles.taskHeader}>
-                    <div className={styles.taskTitleSection}>
-                        <h3>{task.title}</h3>
-                        {getStatusBadge(task.status, task.grade)}
-                    </div>
-                    <div className={styles.taskActions}>
-                        {canEditTask(task) && (
-                            <button
-                                className={styles.actionBtn}
-                                onClick={() => console.log("Edit task", task.id)}
-                            >
-                                <FaEdit />
-                            </button>
-                        )}
-                        {task.status === "draft" && (
-                            <button
-                                className={`${styles.actionBtn} ${styles.deleteBtn}`}
-                                onClick={() => handleDeleteTask(task.id)}
-                            >
-                                <FaTrash />
-                            </button>
-                        )}
-                    </div>
-                </div>
+    // Handle task edit
+    const handleEditTask = (task) => {
+        console.log("Edit task:", task.id);
+        // Navigate to edit page or open modal
+        navigate(`/edit-learning-task/${task.id}`);
+    };
 
-                <p className={styles.taskDescription}>{task.description}</p>
-
-                <div className={styles.taskMeta}>
-                    <div className={styles.metaItem}>
-                        <strong>Language:</strong>
-                        <span className={styles.languageTag}>{task.language}</span>
-                    </div>
-                    {task.frameworks.length > 0 && (
-                        <div className={styles.metaItem}>
-                            <strong>Frameworks:</strong>
-                            <div className={styles.frameworkTags}>
-                                {task.frameworks.map((fw, index) => (
-                                    <span key={index} className={styles.frameworkTag}>
-                                        {fw}
-                                    </span>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-                </div>
-
-                {task.githubLink && (
-                    <a
-                        href={task.githubLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={styles.githubLink}
-                    >
-                        <FiGitPullRequest />
-                        View on GitHub
-                    </a>
-                )}
-
-                {task.status === "graded" || task.status === "locked" ? (
-                    <div className={styles.gradeSection}>
-                        <div className={styles.gradeDisplay}>
-                            <FaStar className={styles.starIcon} />
-                            <span className={styles.gradeValue}>{task.grade}/5</span>
-                        </div>
-                        {task.adminFeedback && (
-                            <div className={styles.feedbackSection}>
-                                <strong>Admin Feedback:</strong>
-                                <p>{task.adminFeedback}</p>
-                            </div>
-                        )}
-                    </div>
-                ) : (
-                    <div className={styles.createdInfo}>
-                        <FaClock />
-                        Created: {task.createdAt}
-                    </div>
-                )}
-            </div>
-        );
+    // Handle task view
+    const handleViewTask = (task) => {
+        console.log("View task:", task.id);
+        // Navigate to task detail page
+        navigate(`/learning-task/${task.id}`);
     };
 
     return (
@@ -251,7 +138,7 @@ const MyLearningTask = () => {
                 <div className={styles.MyLearningTask}>
                     <header className={styles.header}>
                         <div className={styles.headerContent}>
-                            <div>
+                            <div className={styles.headerText}>
                                 <h1>My Learning Tasks</h1>
                                 <p className={styles.subtitle}>
                                     Create, manage, and track your personalized learning journey
@@ -279,14 +166,16 @@ const MyLearningTask = () => {
                         </div>
 
                         {/* Create Task Button */}
-                        <button
-                            className={styles.createTaskBtn}
-                            onClick={handleCreateTask}
-                            disabled={learningTasks.length >= taskLimit || isLoading}
-                        >
-                            <FaPlus />
-                            <span>Create Learning Task</span>
-                        </button>
+                        <div className={styles.createButtonContainer}>
+                            <button
+                                className={styles.createTaskBtn}
+                                onClick={handleCreateTask}
+                                disabled={learningTasks.length >= taskLimit || isLoading}
+                            >
+                                <FaPlus />
+                                <span>Create Learning Task</span>
+                            </button>
+                        </div>
                     </header>
 
                     {/* Loading State */}
@@ -385,7 +274,16 @@ const MyLearningTask = () => {
                                     </div>
 
                                     <div className={styles.tasksGrid}>
-                                        {learningTasks.map(renderTaskCard)}
+                                        {learningTasks.map((task) => (
+                                            <LearningTaskCard
+                                                key={task.id}
+                                                task={task}
+                                                isOwner={true}
+                                                onEdit={handleEditTask}
+                                                onDelete={handleDeleteTask}
+                                                onView={handleViewTask}
+                                            />
+                                        ))}
                                     </div>
                                 </>
                             )}
