@@ -52,7 +52,6 @@ const Login = () => {
             {globalLoading && <FullScreenSpinner />}
             <header className={styles.TopBar}>
                 <Link to="/" className={styles.HomeLink}>← Back to Home</Link>
-                <ThemeToggle />
             </header>
 
             <main className={styles.LoginContainer}>
@@ -83,8 +82,7 @@ const Login = () => {
                     <button type="submit" className={styles.LoginBtn}>Login</button>
 
                     <p className={styles.RegisterPrompt}>
-                        Don’t have an account yet? <Link to="/register" className={styles.RegisterLink}>Register</Link>
-                    </p>
+                        Log in with email: <Link to="/login/email" className={styles.RegisterLink}>Click here</Link>                    </p>
                 </form>
             </main>
         </div>

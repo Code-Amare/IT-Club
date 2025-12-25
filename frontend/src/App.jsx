@@ -19,6 +19,7 @@ import UserDashboard from './Pages/User/UserDashboard/UserDashboard'
 import AdminDashboard from './Pages/Admin/Dashboard/AdminDashboard'
 import MyLearningTask from './Pages/User/MyLearningTask/MyLearningTask'
 import CreateLearningTask from "./Pages/User/CreateLearningTask/CreateLearningTask"
+import EmailLogin from "./Pages/EmailLogin/EmailLogin"
 
 function App() {
   return (
@@ -30,6 +31,8 @@ function App() {
         <Route path='/login' element={<Login />} />
         <Route path='/register' element={<Register />} />
         <Route path='/verify-email' element={<VerifyEmail />} />
+        <Route path='/login/email' element={<EmailLogin />} />
+
         <Route element={<ProtectedRoute requiredRole={["admin", "staff", "user"]} />}>
           <Route path="/profile" element={<Profile />} />
           <Route path="/profile/edit" element={<ProfileEdit />} />

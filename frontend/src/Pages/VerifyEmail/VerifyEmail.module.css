@@ -2,88 +2,221 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
   background-color: var(--bg-body);
   font-family: "Inter", sans-serif;
   color: var(--text-primary);
 }
 
 .MainContainer {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
+  padding: 2rem 1rem;
 }
 
 .VerificationBox {
   background-color: var(--bg-surface);
   padding: 3rem;
   border-radius: 1rem;
-  box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.2);
-  max-width: 400px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  max-width: 450px;
   width: 100%;
   text-align: center;
 }
 
+.IconContainer {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(var(--primary-rgb), 0.1);
+  border-radius: 50%;
+}
+
+.IconContainer svg {
+  width: 36px;
+  height: 36px;
+}
+
 .Title {
   font-size: 2rem;
-  font-weight: 800;
-  margin-bottom: 1rem;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+  color: var(--text-primary);
 }
 
 .Subtitle {
   font-size: 1rem;
   color: var(--text-secondary);
   margin-bottom: 2rem;
+  line-height: 1.5;
+}
+
+.InputWrapper {
+  margin-bottom: 2rem;
 }
 
 .Input {
   width: 100%;
-  padding: 0.75rem 1rem;
+  padding: 1rem 1.5rem;
   border: 1px solid var(--border-color);
   border-radius: 0.5rem;
-  margin-bottom: 1rem;
-  font-size: 1rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: 0.5em;
+  text-align: center;
+  background-color: var(--bg-body);
+  color: var(--text-primary);
+  transition: border-color 0.2s;
+}
+
+.Input:focus {
+  outline: none;
+  border-color: var(--primary);
 }
 
 .ButtonGroup {
   display: flex;
+  flex-direction: column;
   gap: 1rem;
-  justify-content: center;
+  margin-bottom: 2rem;
 }
 
 .PrimaryBtn {
-  padding: 0.75rem 1.5rem;
+  padding: 1rem 1.5rem;
   background-color: var(--primary);
   color: var(--primary-contrast);
   border: none;
   border-radius: 0.5rem;
   font-weight: 600;
+  font-size: 1rem;
   cursor: pointer;
-  transition: transform 0.2s ease;
+  transition: background-color 0.2s, transform 0.1s;
 }
 
-.PrimaryBtn:hover {
-  transform: scale(1.05);
+.PrimaryBtn:hover:not(.Disabled) {
+  background-color: var(--primary-dark);
+}
+
+.PrimaryBtn:active:not(.Disabled) {
+  transform: translateY(1px);
+}
+
+.PrimaryBtn.Disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .SecondaryBtn {
-  padding: 0.75rem 1.5rem;
-  background-color: var(--bg-body);
+  padding: 1rem 1.5rem;
+  background-color: transparent;
   color: var(--text-primary);
   border: 1px solid var(--border-color);
   border-radius: 0.5rem;
   font-weight: 600;
+  font-size: 1rem;
   cursor: pointer;
-  transition: transform 0.2s ease;
+  transition: background-color 0.2s, border-color 0.2s;
 }
 
 .SecondaryBtn:hover {
-  transform: scale(1.05);
+  background-color: var(--bg-body);
+  border-color: var(--text-secondary);
 }
 
-.ErrorMsg {
-  color: red;
-  margin-bottom: 1rem;
+.HelpText {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.HelpText p {
+  margin: 0.25rem 0;
+}
+
+/* Mobile Responsive Styles */
+@media (max-width: 768px) {
+  .MainContainer {
+    padding: 1rem;
+  }
+
+  .VerificationBox {
+    padding: 2.5rem 2rem;
+    border-radius: 0.875rem;
+  }
+
+  .IconContainer {
+    width: 72px;
+    height: 72px;
+    margin-bottom: 1.25rem;
+  }
+
+  .IconContainer svg {
+    width: 32px;
+    height: 32px;
+  }
+
+  .Title {
+    font-size: 1.75rem;
+  }
+
+  .Subtitle {
+    font-size: 0.9375rem;
+    margin-bottom: 1.75rem;
+  }
+
+  .Input {
+    font-size: 1.125rem;
+    padding: 0.875rem 1.25rem;
+    letter-spacing: 0.4em;
+  }
+
+  .ButtonGroup {
+    margin-bottom: 1.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .VerificationBox {
+    padding: 2rem 1.5rem;
+  }
+
+  .IconContainer {
+    width: 64px;
+    height: 64px;
+    margin-bottom: 1rem;
+  }
+
+  .IconContainer svg {
+    width: 28px;
+    height: 28px;
+  }
+
+  .Title {
+    font-size: 1.5rem;
+  }
+
+  .Subtitle {
+    font-size: 0.875rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .Input {
+    font-size: 1rem;
+    padding: 0.75rem 1rem;
+    letter-spacing: 0.3em;
+  }
+
+  .PrimaryBtn,
+  .SecondaryBtn {
+    padding: 0.875rem 1.25rem;
+    font-size: 0.9375rem;
+  }
+
+  .HelpText {
+    font-size: 0.8125rem;
+  }
 }
