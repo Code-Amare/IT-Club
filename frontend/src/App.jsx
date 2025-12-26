@@ -25,7 +25,7 @@ import PublicRoute from './Components/PublicRoute/PublicRoute'
 function App() {
   return (
     <>
-      <Notification />
+      <Notification /> 
       <NeonToast />
       <Routes>
         <Route element={<PublicRoute />}>
