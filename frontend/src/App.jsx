@@ -20,6 +20,7 @@ import AdminDashboard from './Pages/Admin/Dashboard/AdminDashboard'
 import MyLearningTask from './Pages/User/MyLearningTask/MyLearningTask'
 import CreateLearningTask from "./Pages/User/CreateLearningTask/CreateLearningTask"
 import EmailLogin from "./Pages/EmailLogin/EmailLogin"
+import PublicRoute from './Components/PublicRoute/PublicRoute'
 
 function App() {
   return (
@@ -27,12 +28,15 @@ function App() {
       <Notification />
       <NeonToast />
       <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path='/login' element={<Login />} />
-        <Route path='/register' element={<Register />} />
-        <Route path='/verify-email' element={<VerifyEmail />} />
-        <Route path='/login/email' element={<EmailLogin />} />
+        <Route element={<PublicRoute />}>
 
+          <Route path="/" element={<Home />} />
+          <Route path='/login' element={<Login />} />
+          <Route path='/register' element={<Register />} />
+          <Route path='/verify-email' element={<VerifyEmail />} />
+          <Route path='/login/email' element={<EmailLogin />} />
+
+        </Route>
         <Route element={<ProtectedRoute requiredRole={["admin", "staff", "user"]} />}>
           <Route path="/profile" element={<Profile />} />
           <Route path="/profile/edit" element={<ProfileEdit />} />

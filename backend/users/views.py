@@ -51,7 +51,7 @@ class SendVerificationCodeView(APIView):
         if request.user.is_authenticated:
             return Response(
                 {"detail": "Already authenticated."},
-                status=status.HTTP_400_BAD_REQUEST,
+                status=status.HTTP_200_OK,
             )
 
         email = request.data.get("email", "").strip()
