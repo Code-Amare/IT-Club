@@ -21,11 +21,12 @@ import MyLearningTask from './Pages/User/MyLearningTask/MyLearningTask'
 import CreateLearningTask from "./Pages/User/CreateLearningTask/CreateLearningTask"
 import EmailLogin from "./Pages/EmailLogin/EmailLogin"
 import PublicRoute from './Components/PublicRoute/PublicRoute'
+import LearningTaskDetail from './Pages/LearningTaskDetail/LearningTaskDetail'
 
 function App() {
   return (
     <>
-      <Notification /> 
+      <Notification />
       <NeonToast />
       <Routes>
         <Route element={<PublicRoute />}>
@@ -42,6 +43,7 @@ function App() {
           <Route path="/profile/edit" element={<ProfileEdit />} />
           <Route path="/security" element={<Security />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/learning-task/:taskId" element={<LearningTaskDetail />} />
         </Route>
         <Route element={<ProtectedRoute requiredRole={["admin", "staff"]} />}>
           <Route path="/admin" element={<AdminDashboard />} />

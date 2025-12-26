@@ -7,9 +7,11 @@
   min-height: 100vh;
   max-width: 1400px;
   margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-/* Header Styles - Fixed to be equal in size */
+/* Header Styles */
 .header {
   background: var(--bg-surface);
   border: 1px solid var(--border-color);
@@ -30,7 +32,7 @@
 
 .headerText {
   flex: 1;
-  min-width: 300px;
+  min-width: 0; /* Crucial for text truncation on small screens */
 }
 
 .header h1 {
@@ -38,6 +40,8 @@
   font-weight: 700;
   color: var(--text-primary);
   margin-bottom: 8px;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .subtitle {
@@ -45,15 +49,16 @@
   color: var(--text-secondary);
   line-height: 1.5;
   max-width: 600px;
+  word-wrap: break-word;
 }
 
-/* Task Limit Card - Fixed size */
+/* Task Limit Card */
 .taskLimitCard {
   background: var(--bg-surface);
   border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 20px;
-  min-width: 240px;
+  min-width: 200px;
   flex-shrink: 0;
 }
 
@@ -67,12 +72,14 @@
   width: 24px;
   height: 24px;
   color: var(--primary);
+  flex-shrink: 0;
 }
 
 .limitText {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  min-width: 0;
 }
 
 .limitCount {
@@ -88,6 +95,7 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .limitWarning {
@@ -102,12 +110,14 @@
   font-weight: 600;
   margin-top: 12px;
   border: 1px solid rgba(239, 68, 68, 0.2);
+  flex-wrap: wrap;
 }
 
-/* Create Button Container - Fixed size */
+/* Create Button Container */
 .createButtonContainer {
   display: flex;
   justify-content: flex-end;
+  width: 100%;
 }
 
 .createTaskBtn {
@@ -124,6 +134,8 @@
   cursor: pointer;
   transition: all 0.2s ease;
   white-space: nowrap;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .createTaskBtn:hover:not(:disabled) {
@@ -182,6 +194,7 @@
   border: 1px solid rgba(245, 158, 11, 0.3);
   border-radius: 8px;
   margin-bottom: 24px;
+  flex-wrap: wrap;
 }
 
 .alertIcon {
@@ -194,19 +207,22 @@
   display: block;
   color: var(--text-primary);
   margin-bottom: 4px;
+  width: 100%;
 }
 
 .alertBox p {
   color: var(--text-secondary);
   font-size: 14px;
   line-height: 1.5;
+  width: 100%;
+  margin: 0;
 }
 
 /* Stats Grid */
 .statsGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
   margin-bottom: 32px;
 }
 
@@ -214,11 +230,12 @@
   background: var(--bg-surface);
   border: 1px solid var(--border-color);
   border-radius: 12px;
-  padding: 20px;
+  padding: 16px;
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+  min-width: 0;
 }
 
 .statCard:hover {
@@ -227,28 +244,36 @@
 }
 
 .statIcon {
-  width: 48px;
-  height: 48px;
+  width: 40px;
+  height: 40px;
   border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  font-size: 20px;
+  font-size: 18px;
   color: var(--primary);
 }
 
+.statContent {
+  min-width: 0;
+}
+
 .statContent h3 {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   color: var(--text-secondary);
   margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .statValue {
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 700;
   color: var(--text-primary);
+  line-height: 1;
 }
 
 /* Empty State */
@@ -257,12 +282,13 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 80px 20px;
+  padding: 60px 20px;
   text-align: center;
   background: var(--bg-surface);
   border: 2px dashed var(--border-color);
   border-radius: 16px;
   margin-top: 32px;
+  box-sizing: border-box;
 }
 
 .emptyIcon {
@@ -277,6 +303,7 @@
   font-weight: 600;
   color: var(--text-primary);
   margin-bottom: 8px;
+  padding: 0 10px;
 }
 
 .emptyState p {
@@ -284,10 +311,12 @@
   font-size: 14px;
   margin-bottom: 24px;
   max-width: 400px;
+  padding: 0 10px;
 }
 
 .emptyState .createTaskBtn {
   width: auto;
+  max-width: 90%;
 }
 
 /* Tasks Header */
@@ -302,27 +331,30 @@
   font-weight: 600;
   color: var(--text-primary);
   margin-bottom: 4px;
+  word-wrap: break-word;
 }
 
 .tasksSubtitle {
   font-size: 14px;
   color: var(--text-secondary);
+  word-wrap: break-word;
 }
 
-/* Tasks Grid */
+/* Tasks Grid - UPDATED FOR RESPONSIVENESS */
 .tasksGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
-  gap: 24px;
-}
-
-@media (max-width: 768px) {
-  .tasksGrid {
-    grid-template-columns: 1fr;
-  }
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+  width: 100%;
 }
 
 /* Responsive Design */
+@media (max-width: 1200px) {
+  .tasksGrid {
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  }
+}
+
 @media (max-width: 992px) {
   .headerContent {
     flex-direction: column;
@@ -331,11 +363,16 @@
 
   .taskLimitCard {
     width: 100%;
-    max-width: 300px;
+    max-width: 100%;
+    min-width: auto;
   }
 
   .createButtonContainer {
     justify-content: flex-start;
+  }
+
+  .statsGrid {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
@@ -345,15 +382,39 @@
   }
 
   .header {
-    padding: 20px;
+    padding: 16px;
+  }
+
+  .header h1 {
+    font-size: 24px;
   }
 
   .statsGrid {
     grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
   }
 
   .taskLimitCard {
-    min-width: auto;
+    padding: 16px;
+  }
+
+  .tasksGrid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .statCard {
+    padding: 14px;
+  }
+
+  .statIcon {
+    width: 36px;
+    height: 36px;
+    font-size: 16px;
+  }
+
+  .statValue {
+    font-size: 20px;
   }
 }
 
@@ -362,12 +423,48 @@
     grid-template-columns: 1fr;
   }
 
-  .header h1 {
-    font-size: 24px;
+  .headerContent {
+    gap: 16px;
+  }
+
+  .createButtonContainer {
+    justify-content: stretch;
   }
 
   .createTaskBtn {
     width: 100%;
     justify-content: center;
+    padding: 12px 20px;
+    font-size: 13px;
+  }
+
+  .limitInfo {
+    gap: 12px;
+  }
+
+  .limitCount {
+    font-size: 20px;
+  }
+
+  .tasksHeader h2 {
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 400px) {
+  .MyLearningTask {
+    padding: 12px;
+  }
+
+  .header {
+    padding: 12px;
+  }
+
+  .statCard {
+    padding: 12px;
+  }
+
+  .tasksGrid {
+    gap: 12px;
   }
 }
