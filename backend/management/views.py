@@ -1,4 +1,3 @@
-# students/views.py
 import pandas as pd
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -19,6 +18,11 @@ from users.models import Profile
 from users.serializers import UserSerializer, ProfileSerializer
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
+from .serializers import LanguageSerializer, FrameworkSerializer
+from .models import Framework, Language
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_protect
+
 
 User = get_user_model()
 
@@ -810,9 +814,6 @@ class StudentsStatsView(APIView):
 
 
 class StudentTemplateView(APIView):
-    """
-    View for downloading bulk upload template
-    """
 
     authentication_classes = [JWTCookieAuthentication]
     permission_classes = [IsAuthenticated, RolePermissionFactory(["admin", "staff"])]
@@ -857,3 +858,115 @@ class StudentTemplateView(APIView):
                 {"error": str(e), "detail": "Failed to download template"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+
+
+class LanguageGetAPIView(APIView):
+    authentication_classes = [JWTCookieAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        languages = Language.objects.all()
+        serializer = LanguageSerializer(languages, many=True)
+        return Response(serializer.data)
+
+
+@method_decorator(csrf_protect, name="dispatch")
+class LanguageAPIView(APIView):
+    authentication_classes = [JWTCookieAuthentication]
+    permission_classes = [IsAuthenticated, RolePermissionFactory(["admin", "staff"])]
+
+    def post(self, request):
+        serializer = LanguageSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def patch(self, request, pk=None):
+        if not pk:
+            return Response(
+                {"detail": "Language ID is required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            language = Language.objects.get(pk=pk)
+        except Language.DoesNotExist:
+            return Response(
+                {"detail": "Language not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        serializer = LanguageSerializer(language, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@method_decorator(csrf_protect, name="dispatch")
+class LanguageBulkAPIView(APIView):
+    authentication_classes = [JWTCookieAuthentication]
+    permission_classes = [IsAuthenticated, RolePermissionFactory(["admin", "staff"])]
+
+    def post(self, request):
+        serializer = LanguageSerializer(data=request.data, many=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class FrameworkGetAPIView(APIView):
+    authentication_classes = [JWTCookieAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        frameworks = Framework.objects.all()
+        serializer = FrameworkSerializer(frameworks, many=True)
+        return Response(serializer.data)
+
+
+@method_decorator(csrf_protect, name="dispatch")
+class FrameworkAPIView(APIView):
+    authentication_classes = [JWTCookieAuthentication]
+    permission_classes = [IsAuthenticated, RolePermissionFactory(["admin", "staff"])]
+
+    def post(self, request):
+        serializer = FrameworkSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def patch(self, request, pk=None):
+        if not pk:
+            return Response(
+                {"detail": "Framework ID is required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            framework = Framework.objects.get(pk=pk)
+        except Framework.DoesNotExist:
+            return Response(
+                {"detail": "Framework not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        serializer = FrameworkSerializer(framework, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@method_decorator(csrf_protect, name="dispatch")
+class FrameworkBulkAPIView(APIView):
+    authentication_classes = [JWTCookieAuthentication]
+    permission_classes = [IsAuthenticated, RolePermissionFactory(["admin", "staff"])]
+
+    def post(self, request):
+        serializer = FrameworkSerializer(data=request.data, many=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

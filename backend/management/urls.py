@@ -1,4 +1,3 @@
-# students/urls.py
 from django.urls import path
 from .views import (
     StudentsView,
@@ -8,6 +7,11 @@ from .views import (
     StudentsExportView,
     StudentsStatsView,
     StudentTemplateView,
+    LanguageAPIView,
+    LanguageBulkAPIView,
+    FrameworkGetAPIView,
+    FrameworkAPIView,
+    FrameworkBulkAPIView,
 )
 
 urlpatterns = [
@@ -21,4 +25,10 @@ urlpatterns = [
     path("export/", StudentsExportView.as_view(), name="students-export"),
     path("stats/", StudentsStatsView.as_view(), name="students-stats"),
     path("template/", StudentTemplateView.as_view(), name="student-template"),
+    path("languages/", LanguageAPIView.as_view(), name="languages-list"),
+    path("languages/<int:pk>/", LanguageAPIView.as_view(), name="language-update"),
+    path("languages/bulk/", LanguageBulkAPIView.as_view(), name="languages-bulk"),
+    path("frameworks/", FrameworkGetAPIView.as_view(), name="frameworks-list"),
+    path("frameworks/<int:pk>/", FrameworkAPIView.as_view(), name="framework-update"),
+    path("frameworks/bulk/", FrameworkBulkAPIView.as_view(), name="frameworks-bulk"),
 ]

@@ -30,25 +30,15 @@ class TaskReview(models.Model):
     task = models.ForeignKey(
         LearningTask, on_delete=models.CASCADE, related_name="reviews"
     )
-    admin = models.ForeignKey(
+    user = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="task_reviews"
     )
     rating = models.PositiveSmallIntegerField(
         validators=[MinValueValidator(0), MaxValueValidator(5)]
-    )  # 0–5
+    )
     feedback = models.TextField()
+    is_admin = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.task.title} - {self.rating}/5"
-
-
-class TaskFeedbacks(models.Model):
-    task = models.ForeignKey(LearningTask, on_delete=models.CASCADE)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    feedback = models.CharField(300)
-    created_at = models.DateTimeField(auto_now_add=True)
-    rating = models.PositiveSmallIntegerField()
-
-    def __str__(self):
-        return f"{self.user.full_name} - {self.task.title}"
+        return f"{self.user} - {self.task.title} ({self.rating}/5)"
