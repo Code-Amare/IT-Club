@@ -8,10 +8,13 @@ from .views import (
     StudentsStatsView,
     StudentTemplateView,
     LanguageAPIView,
+    LanguageGetAPIView,
     LanguageBulkAPIView,
     FrameworkGetAPIView,
     FrameworkAPIView,
+    FrameworkGetAPIView,
     FrameworkBulkAPIView,
+    LanguageDetailAPIView,
 )
 
 urlpatterns = [
@@ -25,10 +28,16 @@ urlpatterns = [
     path("export/", StudentsExportView.as_view(), name="students-export"),
     path("stats/", StudentsStatsView.as_view(), name="students-stats"),
     path("template/", StudentTemplateView.as_view(), name="student-template"),
-    path("languages/", LanguageAPIView.as_view(), name="languages-list"),
-    path("languages/<int:pk>/", LanguageAPIView.as_view(), name="language-update"),
+    path("languages/", LanguageGetAPIView.as_view(), name="languages-list"),
+    path("languages/<int:pk>/", LanguageDetailAPIView.as_view(), name="languages-list"),
+    path("languages/create/", LanguageAPIView.as_view(), name="language-create"),
+    path("languages/edit/<int:pk>/", LanguageAPIView.as_view(), name="language-update"),
+    path(
+        "languages/delete/<int:pk>/", LanguageAPIView.as_view(), name="language-delete"
+    ),
     path("languages/bulk/", LanguageBulkAPIView.as_view(), name="languages-bulk"),
     path("frameworks/", FrameworkGetAPIView.as_view(), name="frameworks-list"),
     path("frameworks/<int:pk>/", FrameworkAPIView.as_view(), name="framework-update"),
+    path("frameworks/create/", FrameworkAPIView.as_view(), name="framework-create"),
     path("frameworks/bulk/", FrameworkBulkAPIView.as_view(), name="frameworks-bulk"),
 ]

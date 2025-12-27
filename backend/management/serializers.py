@@ -5,7 +5,7 @@ from .models import Language, Framework
 class LanguageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Language
-        fields = ["id", "name", "color"]
+        fields = ["id", "name", "color", "code"]
 
 
 class FrameworkSerializer(serializers.ModelSerializer):

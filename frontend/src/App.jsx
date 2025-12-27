@@ -23,6 +23,9 @@ import EmailLogin from "./Pages/EmailLogin/EmailLogin"
 import PublicRoute from './Components/PublicRoute/PublicRoute'
 import LearningTaskDetail from './Pages/LearningTaskDetail/LearningTaskDetail'
 import EditLearningTask from "./Pages/EditLearningTask/EditLearningTask"
+import LanguagesAdd from './Pages/Admin/LanguagesAdd/LanguagesAdd'
+import LanguagesList from './Pages/Admin/LanguagesList/LanguagesList'
+import LanguagesEdit from './Pages/Admin/LanguagesEdit/LanguagesEdit'
 
 function App() {
   return (
@@ -53,6 +56,9 @@ function App() {
           <Route path="/admin/student/add" element={<StudentAdd />} />
           <Route path="/admin/students/bulk" element={<StudentsBulk />} />
           <Route path="/admin/student/:id" element={<StudentDetail />} />
+          <Route path="/admin/languages/add" element={<LanguagesAdd />} />
+          <Route path="/admin/languages/edit/:id" element={<LanguagesEdit />} />
+          <Route path="/admin/languages" element={<LanguagesList />} />
         </Route>
         <Route element={<ProtectedRoute requiredRole={["user"]} />}>
           <Route path='/user' element={<UserDashboard />} />

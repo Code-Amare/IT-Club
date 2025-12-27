@@ -870,6 +870,19 @@ class LanguageGetAPIView(APIView):
         return Response(serializer.data)
 
 
+class LanguageDetailAPIView(APIView):
+    authentication_classes = [JWTCookieAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        try:
+            languages = Language.objects.get(pk=pk)
+        except Language.DoesNotExist:
+            return Response({"error": f"Language with {pk} doesn't exist."}, status=status.HTTP_404_NOT_FOUND)
+        serializer = LanguageSerializer(languages)
+        return Response(serializer.data)
+
+
 @method_decorator(csrf_protect, name="dispatch")
 class LanguageAPIView(APIView):
     authentication_classes = [JWTCookieAuthentication]
@@ -881,6 +894,16 @@ class LanguageAPIView(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
+    
+    def delete(self, request, pk):
+        try:
+            languages = Language.objects.get(pk=pk)
+        except Language.DoesNotExist:
+            return Response({"error": f"Language with {pk} doesn't exist."}, status=status.HTTP_404_NOT_FOUND)
+        languages.delete()
+        return Response({"message": "Language deleted successfully"}, status=status.HTTP_200_OK)
 
     def patch(self, request, pk=None):
         if not pk:
