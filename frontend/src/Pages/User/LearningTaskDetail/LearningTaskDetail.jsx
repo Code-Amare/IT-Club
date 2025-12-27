@@ -112,7 +112,7 @@ export default function LearningTaskDetail() {
             } else {
                 neonToast.error("Failed to load task", "error");
             }
-            navigate("/learning-tasks");
+            navigate("/user/learning-tasks");
         } finally {
             setLoading(false);
         }
@@ -175,7 +175,7 @@ export default function LearningTaskDetail() {
         }
 
         // Check if user is task owner
-        if (task && user.username === task.user) {
+        if (task && user.id === task.user.id) {
             neonToast.error("You cannot review your own task", "error");
             return;
         }
@@ -222,31 +222,6 @@ export default function LearningTaskDetail() {
         }
     };
 
-    // Handle task deletion
-    const handleDeleteTask = async () => {
-        if (!task || user.username !== task.user) {
-            neonToast.error("You can only delete your own tasks", "error");
-            return;
-        }
-
-        if (task.is_rated || (task.reviews && task.reviews.length > 0)) {
-            neonToast.error("This task has been reviewed and cannot be deleted", "error");
-            return;
-        }
-
-        try {
-            await api.delete(`/api/learning-task/delete/${id}/`);
-            neonToast.success("Task deleted successfully", "success");
-            navigate("/learning-tasks");
-        } catch (error) {
-            console.error("Error deleting task:", error);
-            if (error.response?.data?.error) {
-                neonToast.error(error.response.data.error, "error");
-            } else {
-                neonToast.error("Failed to delete task", "error");
-            }
-        }
-    };
 
     // Get language/framework name by ID
     const getLanguageName = (id) => {
@@ -305,7 +280,7 @@ export default function LearningTaskDetail() {
                         <p>The requested learning task could not be found.</p>
                         <button
                             className={styles.primaryBtn}
-                            onClick={() => navigate("/learning-tasks")}
+                            onClick={() => navigate("/user/learning-tasks")}
                         >
                             Back to Tasks
                         </button>
@@ -315,8 +290,9 @@ export default function LearningTaskDetail() {
         );
     }
 
-    const isOwner = user.username === task.user;
+    const isOwner = user.id === task.user.id;
     const canReview = user.is_staff && !isOwner && task.is_public;
+
 
     return (
         <div className={styles.container}>
@@ -326,7 +302,7 @@ export default function LearningTaskDetail() {
                     <div className={styles.headerContent}>
                         <button
                             className={styles.backBtn}
-                            onClick={() => navigate("/learning-tasks")}
+                            onClick={() => navigate("/user/learning-tasks")}
                         >
                             <FaArrowLeft /> Back to Tasks
                         </button>
@@ -335,7 +311,7 @@ export default function LearningTaskDetail() {
                                 <h1>{task.title}</h1>
                                 <div className={styles.subtitle}>
                                     <span className={styles.userInfo}>
-                                        <FaUser /> {task.user}
+                                        <FaUser /> {task.user.full_name}
                                     </span>
                                     <span className={styles.dateInfo}>
                                         <FaCalendar /> {formatDate(task.created_at)}
@@ -366,28 +342,22 @@ export default function LearningTaskDetail() {
                                     <span>{likeCount}</span>
                                 </button>
 
-                                {/* Edit/Delete for owner */}
+                                {/* Edit for owner */}
                                 {isOwner && !task.is_rated && (
                                     <>
                                         <button
                                             className={styles.editBtn}
-                                            onClick={() => navigate(`/learning-task/edit/${id}`)}
+                                            onClick={() => navigate(`/user/learning-task/edit/${id}`)}
                                             title="Edit task"
                                         >
                                             <FaEdit />
                                         </button>
-                                        <button
-                                            className={styles.deleteBtn}
-                                            onClick={handleDeleteTask}
-                                            title="Delete task"
-                                            disabled={task.reviews && task.reviews.length > 0}
-                                        >
-                                            <FaTrash />
-                                        </button>
+
                                     </>
                                 )}
                             </div>
                         </div>
+
                     </div>
                 </div>
 

@@ -2,6 +2,7 @@ from rest_framework import serializers
 from .models import LearningTask, TaskReview
 from management.models import Language, Framework
 from django.contrib.auth import get_user_model
+from users.serializers import UserSerializer
 
 User = get_user_model()
 
@@ -20,9 +21,8 @@ class TaskReviewSerializer(serializers.ModelSerializer):
             "created_at",
         ]
 
-
 class LearningTaskSerializer(serializers.ModelSerializer):
-    user = serializers.StringRelatedField(read_only=True)
+    user = UserSerializer(read_only=True)
     languages = serializers.PrimaryKeyRelatedField(
         queryset=Language.objects.all(), many=True
     )

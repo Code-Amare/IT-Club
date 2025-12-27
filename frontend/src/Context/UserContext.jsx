@@ -7,6 +7,7 @@ const UserContext = createContext()
 export function UserProvider({ children }) {
     const navigate = useNavigate()
     const [user, setUser] = useState({
+        id: null,
         isAuthenticated: null,
         role: null,
         email: null,
@@ -25,6 +26,7 @@ export function UserProvider({ children }) {
             if (res.status === 200 && res.data) {
                 const user = res.data.user
                 setUser({
+                    id: user.id,
                     isAuthenticated: true,
                     role: user.role,
                     email: user.email,
@@ -36,7 +38,6 @@ export function UserProvider({ children }) {
                     profilePicURL: user.profile_pic_url,
                 })
             }
-            console.log(res.data)
         } catch (error) {
             console.log(error)
             setUser(prev => ({ ...prev, isAuthenticated: false }))
@@ -60,6 +61,7 @@ export function UserProvider({ children }) {
             console.log(err)
         }
         setUser({
+            id: null,
             isAuthenticated: null,
             role: null,
             email: null,

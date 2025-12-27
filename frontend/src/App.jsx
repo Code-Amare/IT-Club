@@ -21,7 +21,8 @@ import MyLearningTask from './Pages/User/MyLearningTask/MyLearningTask'
 import CreateLearningTask from "./Pages/User/CreateLearningTask/CreateLearningTask"
 import EmailLogin from "./Pages/EmailLogin/EmailLogin"
 import PublicRoute from './Components/PublicRoute/PublicRoute'
-import LearningTaskDetail from './Pages/LearningTaskDetail/LearningTaskDetail'
+// import AdminLearningTaskDetail from './Pages/LearningTaskDetail/LearningTaskDetail'
+import UserLearningTaskDetail from './Pages/User/LearningTaskDetail/LearningTaskDetail'
 import EditLearningTask from "./Pages/EditLearningTask/EditLearningTask"
 import LanguagesAdd from './Pages/Admin/LanguagesAdd/LanguagesAdd'
 import LanguagesList from './Pages/Admin/LanguagesList/LanguagesList'
@@ -32,6 +33,7 @@ import FrameworksEdit from './Pages/Admin/FrameworksEdit/FrameworksEdit'
 import AdminLearningTasksList from './Pages/Admin/LearningTasksList/LearningTasksList';
 import UserLearningTasksList from './Pages/User/LearningTasksList/LearningTasksList';
 import LearningTaskCreate from './Pages/User/LearningTaskCreate/LearningTaskCreate'
+import LearningTaskEdit from './Pages/User/LearningTaskEdit/LearningTaskEdit'
 
 function App() {
   return (
@@ -53,7 +55,7 @@ function App() {
           <Route path="/profile/edit" element={<ProfileEdit />} />
           <Route path="/security" element={<Security />} />
           <Route path="/settings" element={<Settings />} />
-          <Route path="/learning-task/:taskId" element={<LearningTaskDetail />} />
+          {/* <Route path="/learning-task/:taskId" element={<LearningTaskDetail />} /> */}
         </Route>
         <Route element={<ProtectedRoute requiredRole={["admin", "staff"]} />}>
           <Route path="/admin" element={<AdminDashboard />} />
@@ -75,6 +77,8 @@ function App() {
           <Route path='/user/my-learning-task' element={<MyLearningTask />} />
           <Route path='/user/learning-tasks' element={<UserLearningTasksList />} />
           <Route path='/user/learning-task/create' element={<LearningTaskCreate />} />
+          <Route path='/user/learning-task/:id' element={<UserLearningTaskDetail />} />
+          <Route path='/user/learning-task/edit/:id' element={<LearningTaskEdit />} />
         </Route>
         <Route path='*' element={<NotFound />} />
       </Routes>

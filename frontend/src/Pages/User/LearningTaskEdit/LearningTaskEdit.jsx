@@ -67,14 +67,14 @@ export default function LearningTaskEdit() {
             // Check if task is rated
             if (taskData.is_rated || (taskData.reviews && taskData.reviews.length > 0)) {
                 neonToast.error("This task has been rated and cannot be edited", "error");
-                navigate(`/learning-task/${id}`);
+                navigate(`/user/learning-task/${id}`);
                 return;
             }
 
             // Check if user owns the task
-            if (user.username !== taskData.user) {
+            if (user.id !== taskData.user.id) {
                 neonToast.error("You can only edit your own tasks", "error");
-                navigate("/learning-tasks");
+                navigate("/user/learning-tasks");
                 return;
             }
 
@@ -105,7 +105,7 @@ export default function LearningTaskEdit() {
             } else {
                 neonToast.error("Failed to load task data", "error");
             }
-            navigate("/learning-tasks");
+            navigate("/user/learning-tasks");
         } finally {
             setFetching(false);
         }
@@ -179,7 +179,7 @@ export default function LearningTaskEdit() {
 
             await api.patch(`/api/learning-task/edit/${id}/`, taskData);
             neonToast.success("Learning task updated successfully!", "success");
-            navigate(`/learning-task/${id}`);
+            navigate(`/user/learning-task/${id}`);
 
         } catch (error) {
             console.error("Error updating learning task:", error?.response?.data || error);
@@ -271,7 +271,7 @@ export default function LearningTaskEdit() {
                             <div className={styles.ratedActions}>
                                 <button
                                     className={styles.secondaryBtn}
-                                    onClick={() => navigate(`/learning-task/${id}`)}
+                                    onClick={() => navigate(`/user/learning-task/${id}`)}
                                 >
                                     View Task
                                 </button>
@@ -297,7 +297,7 @@ export default function LearningTaskEdit() {
                     <div className={styles.headerContent}>
                         <button
                             className={styles.backBtn}
-                            onClick={() => navigate(`/learning-task/${id}`)}
+                            onClick={() => navigate(`/user/learning-task/${id}`)}
                         >
                             <FaArrowLeft /> Back to Task
                         </button>
@@ -579,7 +579,7 @@ export default function LearningTaskEdit() {
                             <button
                                 type="button"
                                 className={styles.secondaryBtn}
-                                onClick={() => navigate(`/learning-task/${id}`)}
+                                onClick={() => navigate(`/user/learning-task/${id}`)}
                                 disabled={loading}
                             >
                                 Cancel

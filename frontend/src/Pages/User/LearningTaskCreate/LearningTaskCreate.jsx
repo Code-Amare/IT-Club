@@ -132,7 +132,7 @@ export default function LearningTaskCreate() {
 
             await api.post("/api/learning-task/create/", taskData);
             neonToast.success("Learning task created successfully!", "success");
-            navigate("/learning-tasks");
+            navigate("/user/learning-tasks");
 
         } catch (error) {
             console.error("Error creating learning task:", error?.response?.data || error);
@@ -174,7 +174,7 @@ export default function LearningTaskCreate() {
                     <div className={styles.headerContent}>
                         <button
                             className={styles.backBtn}
-                            onClick={() => navigate("/learning-tasks")}
+                            onClick={() => navigate("/user/learning-tasks")}
                         >
                             <FaArrowLeft /> Back to Tasks
                         </button>
@@ -428,7 +428,7 @@ export default function LearningTaskCreate() {
                             <button
                                 type="button"
                                 className={styles.secondaryBtn}
-                                onClick={() => navigate("/learning-tasks")}
+                                onClick={() => navigate("/user/learning-tasks")}
                                 disabled={loading}
                             >
                                 Cancel

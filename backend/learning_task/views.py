@@ -11,6 +11,7 @@ from django.views.decorators.csrf import csrf_protect
 
 @method_decorator(csrf_protect, name="dispatch")
 class LearningTaskAPIView(APIView):
+    authentication_classes = [JWTCookieAuthentication]
     permission_classes = [IsAuthenticated]
 
     def get(self, request, task_id=None):
@@ -21,6 +22,7 @@ class LearningTaskAPIView(APIView):
             else:
                 tasks = LearningTask.objects.all()
                 serializer = LearningTaskSerializer(tasks, many=True)
+
 
             return Response(serializer.data)
 

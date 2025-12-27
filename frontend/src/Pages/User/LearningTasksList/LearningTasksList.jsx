@@ -175,11 +175,11 @@ export default function LearningTasksList() {
 
     // Handle task actions
     const handleViewTask = (task) => {
-        navigate(`/learning-task/${task.id}`);
+        navigate(`/user/learning-task/${task.id}`);
     };
 
     const handleEditTask = (task) => {
-        navigate(`/learning-task/edit/${task.id}`);
+        navigate(`/user/learning-task/edit/${task.id}`);
     };
 
     const handleDeleteTask = async (taskId) => {
@@ -257,7 +257,7 @@ export default function LearningTasksList() {
                         <div className={styles.headerActions}>
                             {canCreateTask() && (
                                 <Link
-                                    to="/learning-task/create"
+                                    to="/user/learning-task/create"
                                     className={styles.primaryBtn}
                                 >
                                     <FaPlus />
@@ -450,7 +450,7 @@ export default function LearningTasksList() {
                             </p>
                             {canCreateTask() && tasks.length === 0 && (
                                 <Link
-                                    to="/learning-task/create"
+                                    to="/user/learning-task/create"
                                     className={styles.emptyActionBtn}
                                 >
                                     <FaPlus />
