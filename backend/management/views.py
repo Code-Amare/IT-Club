@@ -22,7 +22,7 @@ from .serializers import LanguageSerializer, FrameworkSerializer
 from .models import Framework, Language
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_protect
-
+ 
 
 User = get_user_model()
 

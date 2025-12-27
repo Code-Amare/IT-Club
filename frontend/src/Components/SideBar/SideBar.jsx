@@ -53,7 +53,7 @@ export default function SideBar({ children }) {
     const userMenuItems = [
         { icon: <MdDashboard />, text: "Dashboard", to: `/${role}` },
         { icon: <MdAssignment />, text: "My Learning Task", to: "/user/my-learning-task" },
-        { icon: <MdSchool />, text: "Learning Tasks", to: "/learning-tasks" },
+        { icon: <MdSchool />, text: "Learning Tasks", to: "/user/learning-tasks" },
         { icon: <MdWork />, text: "Projects", to: "/admin/projects" },
         { icon: <MdAnalytics />, text: "Analytics", to: "/admin/analytics" },
     ];
