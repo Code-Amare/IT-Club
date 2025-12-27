@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth import get_user_model
-from website.models import Language, Framework
+from management.models import Language, Framework
 from django.core.validators import MinValueValidator, MaxValueValidator
 
 
