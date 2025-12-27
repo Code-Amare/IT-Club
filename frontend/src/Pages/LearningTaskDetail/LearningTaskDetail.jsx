@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import styles from "./LearningTaskDetail.module.css";
 import SideBar from "../../Components/SideBar/SideBar";
 import {
@@ -14,141 +14,128 @@ import {
     FaLayerGroup,
     FaCalendarAlt,
     FaUser,
-    FaPaperclip,
     FaExternalLinkAlt,
-    FaTrash
+    FaTrash,
+    FaComment,
+    FaThumbsUp,
+    FaReply,
+    FaPaperPlane,
+    FaRegStar,
+    FaTimes,
+    FaCheck,
+    FaInfoCircle,
+    FaFilter,
+    FaSort,
+    FaEye,
+    FaDownload,
+    FaShareAlt
 } from "react-icons/fa";
 import { FiGitPullRequest } from "react-icons/fi";
 
 const LearningTaskDetail = () => {
     const { taskId } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
+
     const [task, setTask] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [isOwner, setIsOwner] = useState(true); // Mock ownership check
-    const [activeTab, setActiveTab] = useState("details"); // details, feedback, history
+    const [activeTab, setActiveTab] = useState("details");
+    const [newFeedback, setNewFeedback] = useState("");
+    const [rating, setRating] = useState(0);
+    const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
 
-    // Mock task data - in real app, fetch from API
+    // Mock user info - in real app, get from auth context
+    const [currentUser] = useState({
+        id: "user123",
+        role: "student", // "admin", "instructor", "student"
+        name: "John Doe"
+    });
+
+    // Mock data
     const mockTasks = [
         {
             id: 1,
             title: "Database Entity Creation",
             description: "Building a complete database system with entities, relationships, and migrations",
-            fullDescription: `
-        This learning task focuses on designing and implementing a robust database system from scratch. 
-        You will be creating entities, defining relationships, and writing migrations.
-
-        ## Objectives
-        - Design a normalized database schema for an e-commerce platform
-        - Implement one-to-many and many-to-many relationships
-        - Write efficient SQL queries with proper indexing
-        - Create migration scripts for database versioning
-        
-        ## Requirements
-        - Minimum of 5 entities with proper relationships
-        - At least 3 complex queries with JOIN operations
-        - Proper indexing strategy for performance
-        - Migration scripts for all schema changes
-        
-        ## Submission Guidelines
-        - Push your code to GitHub with proper commit messages
-        - Include a README with database schema diagram
-        - Submit the GitHub link before the deadline
-      `,
+            fullDescription: `This learning task focuses on designing and implementing a robust database system from scratch. You will be creating entities, defining relationships, and writing migrations.`,
             githubLink: "https://github.com/john/database-project",
             languages: ["JavaScript", "SQL", "TypeScript"],
             frameworks: ["Node.js", "Sequelize", "PostgreSQL", "Express"],
-            status: "submitted", // draft, submitted, graded, locked
-            grade: 4.5,
-            adminFeedback: "Great implementation! Consider adding rate limiting for security. The database schema is well-designed but could benefit from additional indexes for the frequently queried fields.",
-            feedbackHistory: [
+            status: "submitted",
+            grade: 0,
+            adminFeedback: "",
+            publicFeedbacks: [
                 {
                     id: 1,
-                    date: "2024-01-18",
-                    admin: "Dr. Smith",
-                    feedback: "Initial review: Good schema design, but missing indexes.",
-                    grade: null
+                    userId: "user123",
+                    userName: "Alex Chen",
+                    comment: "Great implementation! The database schema is well-designed.",
+                    rating: 5,
+                    likes: 24,
+                    liked: false,
+                    timestamp: "2024-01-20 14:30",
+                    isExpert: true
                 },
                 {
                     id: 2,
-                    date: "2024-01-20",
-                    admin: "Dr. Smith",
-                    feedback: "Indexes added. Great job on the relationships!",
-                    grade: 4.5
+                    userId: "user456",
+                    userName: "Maria Garcia",
+                    comment: "Consider adding more comments to your migration scripts.",
+                    rating: 4,
+                    likes: 12,
+                    liked: true,
+                    timestamp: "2024-01-20 12:15",
+                    isExpert: false
                 }
             ],
+            stats: {
+                totalFeedbacks: 15,
+                averageRating: 4.3,
+                helpfulVotes: 42
+            },
             createdAt: "2024-01-15",
-            updatedAt: "2024-01-20",
-            submittedAt: "2024-01-18",
-            gradedAt: "2024-01-20",
             dueDate: "2024-01-25",
             difficulty: "Intermediate",
             estimatedHours: 20,
             tags: ["Database", "Backend", "SQL"],
-            attachments: [
-                { name: "schema-diagram.png", type: "image", url: "#" },
-                { name: "requirements.pdf", type: "document", url: "#" }
-            ],
-            adminEditable: false,
             adminName: "Dr. Smith",
-            submissionNotes: "Implemented all required entities with proper relationships. Added indexes as suggested in first review."
+            ownerId: "user123", // Current user owns this task
+            canEdit: true,
+            canDelete: true
         },
         {
-            id: 3,
-            title: "Authentication System",
-            description: "JWT-based authentication with refresh tokens and role-based access",
-            fullDescription: `
-        Build a secure authentication system using JWT tokens with refresh token rotation.
-        
-        ## Security Requirements
-        - Implement refresh token rotation for enhanced security
-        - Add rate limiting on authentication endpoints
-        - Store passwords with bcrypt hashing
-        - Implement proper CORS policies
-        
-        ## Bonus Points
-        - Multi-factor authentication
-        - OAuth 2.0 integration
-        - Session management dashboard
-      `,
-            githubLink: "https://github.com/john/auth-system",
-            languages: ["Python", "JavaScript"],
-            frameworks: ["Django", "Django REST", "PostgreSQL", "Redis"],
-            status: "graded",
-            grade: 4.8,
-            adminFeedback: "Excellent implementation! The refresh token rotation is particularly well-done. Consider adding audit logging for security monitoring.",
-            feedbackHistory: [
-                {
-                    id: 1,
-                    date: "2024-01-12",
-                    admin: "Prof. Johnson",
-                    feedback: "Excellent security implementation. Full marks!",
-                    grade: 4.8
-                }
-            ],
-            createdAt: "2024-01-10",
-            updatedAt: "2024-01-12",
-            submittedAt: "2024-01-11",
-            gradedAt: "2024-01-12",
-            dueDate: "2024-01-15",
-            difficulty: "Advanced",
+            id: 2,
+            title: "React E-commerce Dashboard",
+            description: "Creating a responsive admin dashboard with charts and analytics",
+            fullDescription: `Build a comprehensive e-commerce dashboard with React and modern tools.`,
+            githubLink: "",
+            languages: ["TypeScript"],
+            frameworks: ["React", "Redux", "Tailwind CSS"],
+            status: "draft",
+            grade: 0,
+            adminFeedback: "",
+            publicFeedbacks: [],
+            stats: {
+                totalFeedbacks: 0,
+                averageRating: 0,
+                helpfulVotes: 0
+            },
+            createdAt: "2024-01-20",
+            dueDate: "2024-02-01",
+            difficulty: "Intermediate",
             estimatedHours: 25,
-            tags: ["Security", "Authentication", "Backend"],
-            attachments: [
-                { name: "api-docs.pdf", type: "document", url: "#" }
-            ],
-            adminEditable: true,
+            tags: ["React", "Frontend", "Dashboard"],
             adminName: "Prof. Johnson",
-            submissionNotes: "Implemented JWT with refresh tokens, rate limiting, and proper password hashing."
+            ownerId: "user456", // Different user owns this
+            canEdit: true,
+            canDelete: true
         }
     ];
 
     useEffect(() => {
-        // Simulate API call
         const fetchTask = async () => {
             setLoading(true);
-            await new Promise(resolve => setTimeout(resolve, 500));
-
+            await new Promise(resolve => setTimeout(resolve, 300));
             const foundTask = mockTasks.find(t => t.id === parseInt(taskId));
             setTask(foundTask);
             setLoading(false);
@@ -157,430 +144,559 @@ const LearningTaskDetail = () => {
         fetchTask();
     }, [taskId]);
 
-    const getStatusIcon = (status) => {
-        switch (status) {
-            case "draft": return <FaEdit />;
-            case "submitted": return <FaClock />;
-            case "graded": return <FaCheckCircle />;
-            case "locked": return <FaLock />;
-            default: return <FaClock />;
-        }
+    // Helper functions
+    const getStatusInfo = (status) => {
+        const info = {
+            draft: { icon: <FaEdit />, color: "#f59e0b", text: "Draft" },
+            submitted: { icon: <FaClock />, color: "#3b82f6", text: "Under Review" },
+            graded: { icon: <FaCheckCircle />, color: "#10b981", text: "Graded" },
+            locked: { icon: <FaLock />, color: "#6b7280", text: "Locked" }
+        };
+        return info[status] || info.draft;
     };
 
-    const getStatusColor = (status) => {
-        switch (status) {
-            case "draft": return "#f59e0b";
-            case "submitted": return "#3b82f6";
-            case "graded": return "#10b981";
-            case "locked": return "#6b7280";
-            default: return "#6b7280";
-        }
+    // Check if current user can edit this task
+    const canEdit = () => {
+        if (!task) return false;
+        if (currentUser.role === "admin") return true;
+        if (currentUser.id === task.ownerId && task.status !== "locked") return true;
+        return false;
     };
 
-    const getStatusText = (status) => {
-        switch (status) {
-            case "draft": return "Draft";
-            case "submitted": return "Under Review";
-            case "graded": return "Graded";
-            case "locked": return "Locked";
-            default: return "Unknown";
-        }
+    // Check if current user can delete this task
+    const canDelete = () => {
+        if (!task) return false;
+        if (currentUser.role === "admin") return true;
+        if (currentUser.id === task.ownerId && task.status === "draft") return true;
+        return false;
+    };
+
+    // Check if current user can submit feedback
+    const canSubmitFeedback = () => {
+        if (!task) return false;
+        if (currentUser.role === "admin") return true;
+        if (currentUser.id === task.ownerId) return false; // Owners can't give feedback on their own tasks
+        return task.status !== "draft"; // Only give feedback on published tasks
+    };
+
+    // Check if current user can see feedback form
+    const canSeeFeedbackForm = () => {
+        if (!task) return false;
+        return canSubmitFeedback() && task.status !== "locked";
+    };
+
+    const handleSubmitFeedback = async (e) => {
+        e.preventDefault();
+        if (!newFeedback.trim()) return;
+
+        setIsSubmittingFeedback(true);
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        const newFeedbackObj = {
+            id: task.publicFeedbacks.length + 1,
+            userId: currentUser.id,
+            userName: currentUser.name,
+            comment: newFeedback,
+            rating: rating,
+            likes: 0,
+            liked: false,
+            timestamp: new Date().toLocaleDateString() + " " +
+                new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            isExpert: currentUser.role === "admin" || currentUser.role === "instructor"
+        };
+
+        setTask({
+            ...task,
+            publicFeedbacks: [newFeedbackObj, ...task.publicFeedbacks],
+            stats: {
+                ...task.stats,
+                totalFeedbacks: task.stats.totalFeedbacks + 1,
+                averageRating: ((task.stats.averageRating * task.stats.totalFeedbacks) + rating) /
+                    (task.stats.totalFeedbacks + 1)
+            }
+        });
+
+        setNewFeedback("");
+        setRating(0);
+        setIsSubmittingFeedback(false);
+    };
+
+    const handleLikeFeedback = (feedbackId) => {
+        const updatedFeedbacks = task.publicFeedbacks.map(fb => {
+            if (fb.id === feedbackId) {
+                return {
+                    ...fb,
+                    likes: fb.liked ? fb.likes - 1 : fb.likes + 1,
+                    liked: !fb.liked
+                };
+            }
+            return fb;
+        });
+
+        setTask({
+            ...task,
+            publicFeedbacks: updatedFeedbacks,
+            stats: {
+                ...task.stats,
+                helpfulVotes: fb.liked ? task.stats.helpfulVotes - 1 : task.stats.helpfulVotes + 1
+            }
+        });
     };
 
     const handleEdit = () => {
-        if (task && (task.status === "draft" || (task.status === "graded" && task.adminEditable))) {
-            navigate(`/user/learning-task/edit/${task.id}`);
-        } else if (task.status === "locked") {
-            alert("This task is locked and cannot be edited.");
+        if (canEdit()) {
+            navigate(`/learning-task/edit/${task.id}`);
         }
     };
 
     const handleDelete = () => {
-        if (task && task.status === "draft") {
-            if (window.confirm("Are you sure you want to delete this task? This action cannot be undone.")) {
-                // In real app, call API to delete
-                navigate("/user/learning-tasks");
-            }
-        } else {
-            alert("Only draft tasks can be deleted.");
+        if (canDelete() && window.confirm("Are you sure you want to delete this task?")) {
+            // In real app, call API to delete
+            navigate("/user/learning-tasks");
         }
     };
 
-    const handleGoBack = () => {
-        navigate(-1);
+    const renderStars = (rating) => {
+        return Array.from({ length: 5 }, (_, i) => (
+            <FaStar
+                key={i}
+                className={i < rating ? styles.starFilled : styles.starEmpty}
+            />
+        ));
     };
 
     if (loading) {
         return (
-            <div className={styles.loadingContainer}>
-                <div className={styles.loadingSpinner}></div>
-                <p>Loading task details...</p>
+            <div className={styles.container}>
+                <SideBar>
+                    <div className={styles.loadingContainer}>
+                        <div className={styles.spinner}></div>
+                        <p>Loading task details...</p>
+                    </div>
+                </SideBar>
             </div>
         );
     }
 
     if (!task) {
         return (
-            <div className={styles.errorContainer}>
-                <h2>Task Not Found</h2>
-                <p>The requested learning task could not be found.</p>
-                <button onClick={handleGoBack} className={styles.backButton}>
-                    <FaArrowLeft /> Back to Tasks
-                </button>
+            <div className={styles.container}>
+                <SideBar>
+                    <div className={styles.errorContainer}>
+                        <h2>Task Not Found</h2>
+                        <p>The requested learning task could not be found.</p>
+                        <button onClick={() => navigate(-1)} className={styles.primaryBtn}>
+                            <FaArrowLeft /> Back to Tasks
+                        </button>
+                    </div>
+                </SideBar>
             </div>
         );
     }
 
-    return (
-        <div className={styles.learningTaskDetailContainer}>
-            <SideBar>
-                <div className={styles.learningTaskDetail}>
-                    {/* Header with Back Button */}
-                    <header className={styles.header}>
-                        <button onClick={handleGoBack} className={styles.backButton}>
-                            <FaArrowLeft /> Back to Tasks
-                        </button>
+    const statusInfo = getStatusInfo(task.status);
+    const isOwner = currentUser.id === task.ownerId;
+    const showFeedbackForm = canSeeFeedbackForm();
 
-                        <div className={styles.headerActions}>
-                            {isOwner && (
-                                <>
-                                    {(task.status === "draft" || (task.status === "graded" && task.adminEditable)) && (
-                                        <button onClick={handleEdit} className={styles.editButton}>
-                                            <FaEdit /> Edit Task
-                                        </button>
+    return (
+        <div className={styles.container}>
+            <SideBar>
+                {/* Back Button */}
+                <div className={styles.header}>
+                    <button onClick={() => navigate(-1)} className={styles.backBtn}>
+                        <FaArrowLeft /> Back
+                    </button>
+
+                    {/* Action Buttons - Conditionally shown */}
+                    <div className={styles.actions}>
+                        {canEdit() && (
+                            <button onClick={handleEdit} className={styles.editBtn}>
+                                <FaEdit /> Edit
+                            </button>
+                        )}
+                        {canDelete() && (
+                            <button onClick={handleDelete} className={styles.deleteBtn}>
+                                <FaTrash /> Delete
+                            </button>
+                        )}
+                        {task.githubLink && (
+                            <a
+                                href={task.githubLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={styles.githubBtn}
+                            >
+                                <FaGithub /> GitHub
+                            </a>
+                        )}
+                    </div>
+                </div>
+
+                <div className={styles.content}>
+                    {/* Main Task Card */}
+                    <div className={styles.mainCard}>
+                        {/* Task Header */}
+                        <div className={styles.taskHeader}>
+                            <div className={styles.taskTitleSection}>
+                                <h1 className={styles.title}>{task.title}</h1>
+                                <div
+                                    className={styles.statusBadge}
+                                    style={{
+                                        backgroundColor: `${statusInfo.color}15`,
+                                        borderColor: `${statusInfo.color}30`
+                                    }}
+                                >
+                                    {statusInfo.icon}
+                                    <span style={{ color: statusInfo.color }}>{statusInfo.text}</span>
+                                    {task.status === "graded" && (
+                                        <span className={styles.gradeBadge}>
+                                            <FaStar /> {task.grade}/5
+                                        </span>
                                     )}
-                                    {task.status === "draft" && (
-                                        <button onClick={handleDelete} className={styles.deleteButton}>
-                                            <FaTrash /> Delete
-                                        </button>
-                                    )}
-                                </>
+                                </div>
+                            </div>
+
+                            <p className={styles.description}>{task.description}</p>
+
+                            <div className={styles.taskMeta}>
+                                <div className={styles.metaItem}>
+                                    <FaUser /> {task.adminName}
+                                </div>
+                                <div className={styles.metaItem}>
+                                    <FaCalendarAlt /> {task.createdAt}
+                                </div>
+                                <div className={styles.metaItem}>
+                                    <FaClock /> {task.estimatedHours}h
+                                </div>
+                                {isOwner && (
+                                    <div className={styles.ownerBadge}>
+                                        Your Task
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Tabs */}
+                        <div className={styles.tabs}>
+                            <button
+                                className={`${styles.tab} ${activeTab === "details" ? styles.activeTab : ""}`}
+                                onClick={() => setActiveTab("details")}
+                            >
+                                Details
+                            </button>
+                            <button
+                                className={`${styles.tab} ${activeTab === "feedback" ? styles.activeTab : ""}`}
+                                onClick={() => setActiveTab("feedback")}
+                            >
+                                Feedback ({task.publicFeedbacks?.length || 0})
+                            </button>
+                            {showFeedbackForm && (
+                                <button
+                                    className={`${styles.tab} ${activeTab === "giveFeedback" ? styles.activeTab : ""}`}
+                                    onClick={() => setActiveTab("giveFeedback")}
+                                >
+                                    <FaPaperPlane /> Add Feedback
+                                </button>
                             )}
                         </div>
-                    </header>
 
-                    {/* Main Content */}
-                    <main className={styles.mainContent}>
-                        {/* Left Column - Task Details */}
-                        <div className={styles.leftColumn}>
-                            {/* Task Header */}
-                            <div className={styles.taskHeader}>
-                                <div className={styles.titleSection}>
-                                    <h1 className={styles.taskTitle}>{task.title}</h1>
-                                    <div
-                                        className={styles.statusBadge}
-                                        style={{ backgroundColor: `${getStatusColor(task.status)}15`, color: getStatusColor(task.status) }}
-                                    >
-                                        {getStatusIcon(task.status)}
-                                        <span>{getStatusText(task.status)}</span>
-                                        {task.status === "graded" && (
-                                            <span className={styles.gradeBadge}>
-                                                <FaStar /> {task.grade}/5
-                                            </span>
-                                        )}
+                        {/* Tab Content */}
+                        <div className={styles.tabContent}>
+                            {activeTab === "details" && (
+                                <div className={styles.detailsContent}>
+                                    {/* Full Description */}
+                                    <div className={styles.section}>
+                                        <h3>Full Description</h3>
+                                        <div className={styles.fullDescription}>
+                                            {task.fullDescription}
+                                        </div>
                                     </div>
-                                </div>
 
-                                <p className={styles.taskDescription}>{task.description}</p>
-                            </div>
-
-                            {/* Tabs */}
-                            <div className={styles.tabs}>
-                                <button
-                                    className={`${styles.tab} ${activeTab === "details" ? styles.activeTab : ""}`}
-                                    onClick={() => setActiveTab("details")}
-                                >
-                                    Task Details
-                                </button>
-                                <button
-                                    className={`${styles.tab} ${activeTab === "feedback" ? styles.activeTab : ""}`}
-                                    onClick={() => setActiveTab("feedback")}
-                                >
-                                    Feedback & Grade
-                                </button>
-                                <button
-                                    className={`${styles.tab} ${activeTab === "history" ? styles.activeTab : ""}`}
-                                    onClick={() => setActiveTab("history")}
-                                >
-                                    Review History
-                                </button>
-                            </div>
-
-                            {/* Tab Content */}
-                            <div className={styles.tabContent}>
-                                {activeTab === "details" && (
-                                    <div className={styles.detailsContent}>
-                                        {/* Full Description */}
-                                        <section className={styles.section}>
-                                            <h2 className={styles.sectionTitle}>Full Description</h2>
-                                            <div className={styles.fullDescription}>
-                                                {task.fullDescription.split('\n').map((paragraph, index) => (
-                                                    <p key={index} className={styles.descriptionParagraph}>
-                                                        {paragraph}
-                                                    </p>
-                                                ))}
-                                            </div>
-                                        </section>
-
-                                        {/* Meta Information */}
-                                        <section className={styles.section}>
-                                            <h2 className={styles.sectionTitle}>Technical Details</h2>
-                                            <div className={styles.metaGrid}>
-                                                <div className={styles.metaItem}>
-                                                    <FaCode className={styles.metaIcon} />
-                                                    <div>
-                                                        <label>Languages</label>
-                                                        <div className={styles.tags}>
-                                                            {task.languages.map((lang, index) => (
-                                                                <span key={index} className={styles.tag}>{lang}</span>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <div className={styles.metaItem}>
-                                                    <FaLayerGroup className={styles.metaIcon} />
-                                                    <div>
-                                                        <label>Frameworks & Tools</label>
-                                                        <div className={styles.tags}>
-                                                            {task.frameworks.map((fw, index) => (
-                                                                <span key={index} className={styles.tag}>{fw}</span>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <div className={styles.metaItem}>
-                                                    <FaCalendarAlt className={styles.metaIcon} />
-                                                    <div>
-                                                        <label>Timeline</label>
-                                                        <div className={styles.timeline}>
-                                                            <span>Created: {task.createdAt}</span>
-                                                            <span>Submitted: {task.submittedAt || "Not submitted"}</span>
-                                                            <span>Due: {task.dueDate}</span>
-                                                            {task.gradedAt && <span>Graded: {task.gradedAt}</span>}
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <div className={styles.metaItem}>
-                                                    <FaUser className={styles.metaIcon} />
-                                                    <div>
-                                                        <label>Reviewer</label>
-                                                        <div className={styles.reviewerInfo}>
-                                                            <span>{task.adminName || "Not assigned"}</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </section>
-
-                                        {/* GitHub Link */}
-                                        {task.githubLink && (
-                                            <section className={styles.section}>
-                                                <h2 className={styles.sectionTitle}>GitHub Repository</h2>
-                                                <a
-                                                    href={task.githubLink}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className={styles.githubLink}
-                                                >
-                                                    <FiGitPullRequest />
-                                                    <span>View on GitHub</span>
-                                                    <FaExternalLinkAlt className={styles.externalIcon} />
-                                                </a>
-                                            </section>
-                                        )}
-
-                                        {/* Attachments */}
-                                        {task.attachments && task.attachments.length > 0 && (
-                                            <section className={styles.section}>
-                                                <h2 className={styles.sectionTitle}>Attachments</h2>
-                                                <div className={styles.attachments}>
-                                                    {task.attachments.map((attachment, index) => (
-                                                        <a
-                                                            key={index}
-                                                            href={attachment.url}
-                                                            className={styles.attachment}
-                                                        >
-                                                            <FaPaperclip />
-                                                            <span>{attachment.name}</span>
-                                                        </a>
+                                    {/* Tech Stack */}
+                                    <div className={styles.section}>
+                                        <h3>Tech Stack</h3>
+                                        <div className={styles.techStack}>
+                                            <div className={styles.techSection}>
+                                                <h4>Languages</h4>
+                                                <div className={styles.tags}>
+                                                    {task.languages.map((lang, idx) => (
+                                                        <span key={idx} className={styles.tag}>{lang}</span>
                                                     ))}
                                                 </div>
-                                            </section>
-                                        )}
-                                    </div>
-                                )}
-
-                                {activeTab === "feedback" && (
-                                    <div className={styles.feedbackContent}>
-                                        {/* Grade Display */}
-                                        {(task.status === "graded" || task.status === "locked") && (
-                                            <div className={styles.gradeDisplay}>
-                                                <div className={styles.gradeHeader}>
-                                                    <FaStar className={styles.gradeStar} />
-                                                    <h2>Final Grade</h2>
-                                                </div>
-                                                <div className={styles.gradeValue}>
-                                                    <span className={styles.gradeNumber}>{task.grade}</span>
-                                                    <span className={styles.gradeMax}>/5</span>
-                                                </div>
-                                                <div className={styles.gradeProgress}>
-                                                    <div
-                                                        className={styles.progressBar}
-                                                        style={{ width: `${(task.grade / 5) * 100}%` }}
-                                                    ></div>
-                                                </div>
                                             </div>
-                                        )}
-
-                                        {/* Admin Feedback */}
-                                        <div className={styles.feedbackSection}>
-                                            <h3 className={styles.feedbackTitle}>
-                                                <FaUser className={styles.feedbackIcon} />
-                                                Admin Feedback
-                                            </h3>
-                                            <div className={styles.feedbackText}>
-                                                {task.adminFeedback || "No feedback provided yet."}
+                                            <div className={styles.techSection}>
+                                                <h4>Frameworks & Tools</h4>
+                                                <div className={styles.tags}>
+                                                    {task.frameworks.map((fw, idx) => (
+                                                        <span key={idx} className={styles.tag}>{fw}</span>
+                                                    ))}
+                                                </div>
                                             </div>
                                         </div>
+                                    </div>
 
-                                        {/* Submission Notes (if any) */}
-                                        {task.submissionNotes && (
-                                            <div className={styles.submissionNotes}>
-                                                <h3 className={styles.notesTitle}>Your Submission Notes</h3>
-                                                <div className={styles.notesText}>{task.submissionNotes}</div>
+                                    {/* Additional Info */}
+                                    <div className={styles.infoGrid}>
+                                        <div className={styles.infoItem}>
+                                            <div className={styles.infoIcon}>
+                                                <FaClock />
+                                            </div>
+                                            <div>
+                                                <label>Difficulty</label>
+                                                <p>{task.difficulty}</p>
+                                            </div>
+                                        </div>
+                                        <div className={styles.infoItem}>
+                                            <div className={styles.infoIcon}>
+                                                <FaCalendarAlt />
+                                            </div>
+                                            <div>
+                                                <label>Due Date</label>
+                                                <p>{task.dueDate}</p>
+                                            </div>
+                                        </div>
+                                        {task.githubLink && (
+                                            <div className={styles.infoItem}>
+                                                <div className={styles.infoIcon}>
+                                                    <FaGithub />
+                                                </div>
+                                                <div>
+                                                    <label>Repository</label>
+                                                    <a
+                                                        href={task.githubLink}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className={styles.repoLink}
+                                                    >
+                                                        View on GitHub <FaExternalLinkAlt />
+                                                    </a>
+                                                </div>
                                             </div>
                                         )}
                                     </div>
-                                )}
+                                </div>
+                            )}
 
-                                {activeTab === "history" && (
-                                    <div className={styles.historyContent}>
-                                        <h2 className={styles.historyTitle}>Review History</h2>
-                                        <div className={styles.timeline}>
-                                            {task.feedbackHistory && task.feedbackHistory.length > 0 ? (
-                                                task.feedbackHistory.map((item, index) => (
-                                                    <div key={item.id} className={styles.timelineItem}>
-                                                        <div className={styles.timelineDot}></div>
-                                                        <div className={styles.timelineContent}>
-                                                            <div className={styles.timelineHeader}>
-                                                                <span className={styles.timelineDate}>{item.date}</span>
-                                                                <span className={styles.timelineAdmin}>by {item.admin}</span>
-                                                                {item.grade && (
-                                                                    <span className={styles.timelineGrade}>
-                                                                        <FaStar /> {item.grade}/5
-                                                                    </span>
+                            {activeTab === "feedback" && (
+                                <div className={styles.feedbackContent}>
+                                    {/* Admin Feedback */}
+                                    {task.adminFeedback && (
+                                        <div className={styles.adminFeedback}>
+                                            <div className={styles.adminHeader}>
+                                                <FaUser />
+                                                <h3>Admin Feedback</h3>
+                                            </div>
+                                            <div className={styles.adminContent}>
+                                                <p>{task.adminFeedback}</p>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Public Feedback Stats */}
+                                    <div className={styles.feedbackStats}>
+                                        <div className={styles.stat}>
+                                            <FaComment />
+                                            <div>
+                                                <span className={styles.statValue}>{task.stats?.totalFeedbacks || 0}</span>
+                                                <span className={styles.statLabel}>Feedbacks</span>
+                                            </div>
+                                        </div>
+                                        <div className={styles.stat}>
+                                            <FaStar />
+                                            <div>
+                                                <span className={styles.statValue}>{task.stats?.averageRating?.toFixed(1) || "0.0"}</span>
+                                                <span className={styles.statLabel}>Avg Rating</span>
+                                            </div>
+                                        </div>
+                                        <div className={styles.stat}>
+                                            <FaThumbsUp />
+                                            <div>
+                                                <span className={styles.statValue}>{task.stats?.helpfulVotes || 0}</span>
+                                                <span className={styles.statLabel}>Helpful</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Feedback List */}
+                                    <div className={styles.feedbackList}>
+                                        {task.publicFeedbacks?.length > 0 ? (
+                                            task.publicFeedbacks.map(feedback => (
+                                                <div key={feedback.id} className={styles.feedbackItem}>
+                                                    <div className={styles.feedbackHeader}>
+                                                        <div className={styles.userInfo}>
+                                                            <div className={styles.userName}>
+                                                                {feedback.userName}
+                                                                {feedback.isExpert && (
+                                                                    <span className={styles.expertBadge}>Expert</span>
                                                                 )}
                                                             </div>
-                                                            <div className={styles.timelineFeedback}>
-                                                                {item.feedback}
+                                                            <div className={styles.feedbackTime}>
+                                                                <FaClock /> {feedback.timestamp}
                                                             </div>
                                                         </div>
+                                                        <div className={styles.feedbackRating}>
+                                                            {renderStars(feedback.rating)}
+                                                        </div>
                                                     </div>
-                                                ))
-                                            ) : (
-                                                <div className={styles.noHistory}>
-                                                    No review history available.
+                                                    <p className={styles.feedbackText}>{feedback.comment}</p>
+                                                    <div className={styles.feedbackActions}>
+                                                        <button
+                                                            className={`${styles.likeBtn} ${feedback.liked ? styles.liked : ''}`}
+                                                            onClick={() => handleLikeFeedback(feedback.id)}
+                                                        >
+                                                            <FaThumbsUp /> {feedback.likes}
+                                                        </button>
+                                                        <button className={styles.replyBtn}>
+                                                            <FaReply /> Reply
+                                                        </button>
+                                                    </div>
                                                 </div>
-                                            )}
-                                        </div>
+                                            ))
+                                        ) : (
+                                            <div className={styles.noFeedback}>
+                                                <FaComment />
+                                                <p>No feedback yet. Be the first to share your thoughts!</p>
+                                                {showFeedbackForm && (
+                                                    <button
+                                                        onClick={() => setActiveTab("giveFeedback")}
+                                                        className={styles.addFeedbackBtn}
+                                                    >
+                                                        <FaPaperPlane /> Add Feedback
+                                                    </button>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
+                                </div>
+                            )}
+
+                            {activeTab === "giveFeedback" && showFeedbackForm && (
+                                <div className={styles.giveFeedbackContent}>
+                                    <h3>Add Your Feedback</h3>
+                                    <p className={styles.feedbackSubtitle}>
+                                        Share your thoughts to help improve this task
+                                    </p>
+
+                                    <form onSubmit={handleSubmitFeedback} className={styles.feedbackForm}>
+                                        {/* Rating */}
+                                        <div className={styles.formGroup}>
+                                            <label>Rating</label>
+                                            <div className={styles.rating}>
+                                                {[1, 2, 3, 4, 5].map(star => (
+                                                    <button
+                                                        key={star}
+                                                        type="button"
+                                                        className={`${styles.starBtn} ${star <= rating ? styles.selected : ''}`}
+                                                        onClick={() => setRating(star)}
+                                                    >
+                                                        {star <= rating ? <FaStar /> : <FaRegStar />}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {/* Comment */}
+                                        <div className={styles.formGroup}>
+                                            <label>Your Feedback</label>
+                                            <textarea
+                                                value={newFeedback}
+                                                onChange={(e) => setNewFeedback(e.target.value)}
+                                                placeholder="Share your constructive feedback..."
+                                                rows={5}
+                                                className={styles.feedbackTextarea}
+                                                maxLength={500}
+                                            />
+                                            <div className={styles.charCount}>
+                                                {newFeedback.length}/500 characters
+                                            </div>
+                                        </div>
+
+                                        {/* Submit Button */}
+                                        <div className={styles.formActions}>
+                                            <button
+                                                type="button"
+                                                onClick={() => setActiveTab("feedback")}
+                                                className={styles.cancelBtn}
+                                            >
+                                                Cancel
+                                            </button>
+                                            <button
+                                                type="submit"
+                                                disabled={!newFeedback.trim() || isSubmittingFeedback}
+                                                className={styles.submitBtn}
+                                            >
+                                                {isSubmittingFeedback ? "Submitting..." : "Submit Feedback"}
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Sidebar - Hidden on mobile */}
+                    <div className={styles.sidebar}>
+                        <div className={styles.sidebarCard}>
+                            <h3>Quick Info</h3>
+
+                            <div className={styles.sidebarInfo}>
+                                <div className={styles.infoRow}>
+                                    <span>Status</span>
+                                    <span className={styles.statusText} style={{ color: statusInfo.color }}>
+                                        {statusInfo.text}
+                                    </span>
+                                </div>
+
+                                <div className={styles.infoRow}>
+                                    <span>Owner</span>
+                                    <span>{isOwner ? "You" : task.adminName}</span>
+                                </div>
+
+                                <div className={styles.infoRow}>
+                                    <span>Created</span>
+                                    <span>{task.createdAt}</span>
+                                </div>
+
+                                <div className={styles.infoRow}>
+                                    <span>Due Date</span>
+                                    <span>{task.dueDate}</span>
+                                </div>
+                            </div>
+
+                            {/* Quick Actions */}
+                            <div className={styles.sidebarActions}>
+                                {task.githubLink && (
+                                    <a
+                                        href={task.githubLink}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className={styles.sidebarBtn}
+                                    >
+                                        <FaGithub /> View Code
+                                    </a>
+                                )}
+
+                                {showFeedbackForm && (
+                                    <button
+                                        onClick={() => setActiveTab("giveFeedback")}
+                                        className={styles.sidebarBtn}
+                                    >
+                                        <FaComment /> Add Feedback
+                                    </button>
+                                )}
+
+                                <button className={styles.sidebarBtn}>
+                                    <FaShareAlt /> Share
+                                </button>
+
+                                {currentUser.role === "admin" && (
+                                    <button className={styles.sidebarBtn}>
+                                        <FaDownload /> Export
+                                    </button>
                                 )}
                             </div>
                         </div>
-
-                        {/* Right Column - Status Card */}
-                        <div className={styles.rightColumn}>
-                            <div className={styles.statusCard}>
-                                <h3 className={styles.statusTitle}>Task Status</h3>
-
-                                <div className={styles.statusInfo}>
-                                    <div className={styles.statusItem}>
-                                        <span className={styles.statusLabel}>Current Status</span>
-                                        <div className={styles.statusValue}>
-                                            {getStatusIcon(task.status)}
-                                            <span style={{ color: getStatusColor(task.status) }}>
-                                                {getStatusText(task.status)}
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    <div className={styles.statusItem}>
-                                        <span className={styles.statusLabel}>Difficulty</span>
-                                        <span className={styles.statusValue}>{task.difficulty}</span>
-                                    </div>
-
-                                    <div className={styles.statusItem}>
-                                        <span className={styles.statusLabel}>Estimated Hours</span>
-                                        <span className={styles.statusValue}>{task.estimatedHours} hours</span>
-                                    </div>
-
-                                    <div className={styles.statusItem}>
-                                        <span className={styles.statusLabel}>Tags</span>
-                                        <div className={styles.taskTags}>
-                                            {task.tags.map((tag, index) => (
-                                                <span key={index} className={styles.taskTag}>{tag}</span>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Status Timeline */}
-                                <div className={styles.statusTimeline}>
-                                    <h4>Status Timeline</h4>
-                                    <div className={styles.timelineSteps}>
-                                        <div className={`${styles.timelineStep} ${styles.completed}`}>
-                                            <div className={styles.stepDot}></div>
-                                            <span className={styles.stepLabel}>Created</span>
-                                            <span className={styles.stepDate}>{task.createdAt}</span>
-                                        </div>
-
-                                        <div className={`${styles.timelineStep} ${task.submittedAt ? styles.completed : styles.pending}`}>
-                                            <div className={styles.stepDot}></div>
-                                            <span className={styles.stepLabel}>Submitted</span>
-                                            <span className={styles.stepDate}>{task.submittedAt || "Pending"}</span>
-                                        </div>
-
-                                        <div className={`${styles.timelineStep} ${task.gradedAt ? styles.completed : styles.pending}`}>
-                                            <div className={styles.stepDot}></div>
-                                            <span className={styles.stepLabel}>Graded</span>
-                                            <span className={styles.stepDate}>{task.gradedAt || "Pending"}</span>
-                                        </div>
-
-                                        <div className={`${styles.timelineStep} ${task.status === "locked" ? styles.completed : styles.pending}`}>
-                                            <div className={styles.stepDot}></div>
-                                            <span className={styles.stepLabel}>Locked</span>
-                                            <span className={styles.stepDate}>
-                                                {task.status === "locked" ? task.updatedAt : "Pending"}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Actions */}
-                                <div className={styles.actionButtons}>
-                                    {task.githubLink && (
-                                        <a
-                                            href={task.githubLink}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className={styles.githubButton}
-                                        >
-                                            <FaGithub /> View on GitHub
-                                        </a>
-                                    )}
-
-                                    {isOwner && task.status === "draft" && (
-                                        <button onClick={handleEdit} className={styles.editButton}>
-                                            <FaEdit /> Continue Editing
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    </main>
+                    </div>
                 </div>
             </SideBar>
         </div>

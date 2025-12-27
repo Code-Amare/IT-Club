@@ -22,6 +22,7 @@ import CreateLearningTask from "./Pages/User/CreateLearningTask/CreateLearningTa
 import EmailLogin from "./Pages/EmailLogin/EmailLogin"
 import PublicRoute from './Components/PublicRoute/PublicRoute'
 import LearningTaskDetail from './Pages/LearningTaskDetail/LearningTaskDetail'
+import EditLearningTask from "./Pages/EditLearningTask/EditLearningTask"
 
 function App() {
   return (
@@ -44,6 +45,7 @@ function App() {
           <Route path="/security" element={<Security />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/learning-task/:taskId" element={<LearningTaskDetail />} />
+          <Route path="/learning-task/edit/:taskId" element={<EditLearningTask />} />
         </Route>
         <Route element={<ProtectedRoute requiredRole={["admin", "staff"]} />}>
           <Route path="/admin" element={<AdminDashboard />} />

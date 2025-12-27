@@ -66,6 +66,7 @@ INSTALLED_APPS = [
     "realtime",
     "website",
     "management",
+    "learning_task",
 ]
 
 ASGI_APPLICATION = "core.asgi.application"
