@@ -26,6 +26,9 @@ import EditLearningTask from "./Pages/EditLearningTask/EditLearningTask"
 import LanguagesAdd from './Pages/Admin/LanguagesAdd/LanguagesAdd'
 import LanguagesList from './Pages/Admin/LanguagesList/LanguagesList'
 import LanguagesEdit from './Pages/Admin/LanguagesEdit/LanguagesEdit'
+import FrameworkAdd from './Pages/Admin/FrameworkAdd/FrameworkAdd'
+import FrameworksList from './Pages/Admin/FrameworksList/FrameworksList'
+import FrameworksEdit from './Pages/Admin/FrameworksEdit/FrameworksEdit'
 
 function App() {
   return (
@@ -48,7 +51,6 @@ function App() {
           <Route path="/security" element={<Security />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/learning-task/:taskId" element={<LearningTaskDetail />} />
-          <Route path="/learning-task/edit/:taskId" element={<EditLearningTask />} />
         </Route>
         <Route element={<ProtectedRoute requiredRole={["admin", "staff"]} />}>
           <Route path="/admin" element={<AdminDashboard />} />
@@ -59,8 +61,12 @@ function App() {
           <Route path="/admin/languages/add" element={<LanguagesAdd />} />
           <Route path="/admin/languages/edit/:id" element={<LanguagesEdit />} />
           <Route path="/admin/languages" element={<LanguagesList />} />
+          <Route path="/admin/frameworks" element={<FrameworksList />} />
+          <Route path="/admin/frameworks/add" element={<FrameworkAdd />} />
+          <Route path="/admin/frameworks/edit/:id" element={<FrameworksEdit />} />
         </Route>
         <Route element={<ProtectedRoute requiredRole={["user"]} />}>
+          <Route path="/learning-task/edit/:taskId" element={<EditLearningTask />} />
           <Route path='/user' element={<UserDashboard />} />
           <Route path='/user/my-learning-task' element={<MyLearningTask />} />
           <Route path='/user/learning-task/create' element={<CreateLearningTask />} />

@@ -215,7 +215,6 @@ export default function LanguagesAdd() {
 
         if (parsedLanguages.length > 0) {
             setBulkLanguages(parsedLanguages);
-            neonToast.success(`Parsed ${parsedLanguages.length} language(s)`, "success");
         }
     };
 

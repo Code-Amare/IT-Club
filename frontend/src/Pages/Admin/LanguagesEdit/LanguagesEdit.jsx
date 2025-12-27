@@ -36,6 +36,8 @@ export default function LanguagesEdit() {
     const [fetching, setFetching] = useState(true);
     const [errors, setErrors] = useState({});
     const [originalData, setOriginalData] = useState(null);
+    const [deleteConfirmationText, setDeleteConfirmationText] = useState("");
+    const [deleteError, setDeleteError] = useState("");
 
     useEffect(() => {
         fetchLanguageData();
@@ -117,6 +119,15 @@ export default function LanguagesEdit() {
     };
 
     const handleDeleteLanguage = async () => {
+        // Clear previous errors
+        setDeleteError("");
+
+        // Validate the confirmation text
+        if (deleteConfirmationText !== language.name) {
+            setDeleteError(`Please type "${language.name}" exactly to confirm deletion.`);
+            return false;
+        }
+
         try {
             await api.delete(`/api/management/languages/delete/${id}/`);
             neonToast.success("Language deleted successfully", "success");
@@ -152,6 +163,12 @@ export default function LanguagesEdit() {
             language.code !== originalData.code ||
             language.color !== originalData.color
         );
+    };
+
+    // Reset delete confirmation when modal opens/closes
+    const handleDeleteModalOpen = () => {
+        setDeleteConfirmationText("");
+        setDeleteError("");
     };
 
     if (fetching) {
@@ -323,11 +340,41 @@ export default function LanguagesEdit() {
 
                             <ConfirmAction
                                 onConfirm={handleDeleteLanguage}
+                                onOpen={handleDeleteModalOpen}
                                 title="Delete Language"
-                                message={`Are you sure you want to delete "${language.name}"? This action cannot be undone.`}
+                                message={
+                                    <div className={styles.deleteConfirmation}>
+                                        <p>Are you sure you want to delete <strong>"{language.name}"</strong>? This action cannot be undone.</p>
+                                        <p className={styles.warningText}>
+                                            <strong>Warning:</strong> This will permanently delete the language and all associated data.
+                                        </p>
+                                        <div className={styles.confirmationInputGroup}>
+                                            <label htmlFor="deleteConfirmation">
+                                                Type <strong>"{language.name}"</strong> to confirm:
+                                            </label>
+                                            <input
+                                                type="text"
+                                                id="deleteConfirmation"
+                                                value={deleteConfirmationText}
+                                                onChange={(e) => {
+                                                    setDeleteConfirmationText(e.target.value);
+                                                    setDeleteError("");
+                                                }}
+                                                placeholder={`Type "${language.name}" here`}
+                                                className={`${styles.confirmationInput} ${deleteError ? styles.errorInput : ""}`}
+                                                autoComplete="off"
+                                            />
+                                            {deleteError && (
+                                                <span className={styles.errorText}>{deleteError}</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                }
                                 confirmText="Delete Language"
                                 cancelText="Cancel"
-                                requireReason={true}
+                                confirmButtonProps={{
+                                    disabled: deleteConfirmationText !== language.name
+                                }}
                             >
                                 <button
                                     type="button"

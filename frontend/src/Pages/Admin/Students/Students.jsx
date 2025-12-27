@@ -4,7 +4,6 @@ import { useUser } from "../../../Context/UserContext";
 import api from "../../../Utils/api";
 import { neonToast } from "../../../Components/NeonToast/NeonToast";
 import AsyncButton from "../../../Components/AsyncButton/AsyncButton";
-import ConfirmAction from "../../../Components/ConfirmAction/ConfirmAction";
 import SideBar from "../../../Components/SideBar/SideBar";
 import ReactPaginate from "react-paginate";
 import {
@@ -12,7 +11,6 @@ import {
     FaFilter,
     FaPlus,
     FaEdit,
-    FaTrash,
     FaEye,
     FaUpload,
     FaDownload,
@@ -22,7 +20,6 @@ import {
     FaUserPlus,
     FaUsers,
     FaChartBar,
-    FaIdCard,
     FaEnvelope,
     FaGraduationCap,
     FaUser,
@@ -76,10 +73,11 @@ export default function Students() {
         setLoading(true);
         try {
             const response = await api.get("/api/management/students/");
-            setStudents(response.data.students || []);
+            const studentsData = response.data.students || [];
+            setStudents(studentsData);
             setPagination(prev => ({
                 ...prev,
-                totalItems: response.data.students?.length || 0
+                totalItems: studentsData.length || 0
             }));
         } catch (error) {
             console.error("Error fetching students:", error);
@@ -90,24 +88,21 @@ export default function Students() {
     };
 
     const getStats = async () => {
-        setLoading(true);
         try {
             const res = await api.get("/api/management/students/stats/");
-            const stats = res.data.overall || null;
-            if (!stats) {
+            const statsData = res.data.overall || null;
+            if (!statsData) {
                 return neonToast.error("Failed to load stats.", "error");
             }
-            const statsData = {
-                total: stats.total,
-                active: stats.active,
-                inactive: stats.inactive,
+            const newStats = {
+                total: statsData.total || 0,
+                active: statsData.active || 0,
+                inactive: statsData.inactive || 0,
             };
-            setStats(statsData);
+            setStats(newStats);
         } catch (error) {
             console.error("Error fetching stats:", error);
             neonToast.error("Failed to load stats.", "error");
-        } finally {
-            setLoading(false);
         }
     };
 
@@ -123,7 +118,7 @@ export default function Students() {
                 return (
                     (student.full_name?.toLowerCase().includes(query)) ||
                     (student.email?.toLowerCase().includes(query)) ||
-                    (student.grade?.toString().toLowerCase().includes(query)) ||
+                    (student.grade?.toString().includes(query)) ||
                     (student.section?.toLowerCase().includes(query)) ||
                     (student.id?.toString().includes(query))
                 );
@@ -132,13 +127,25 @@ export default function Students() {
 
         // Apply filters
         if (filters.grade) {
-            result = result.filter(student => student.grade === filters.grade);
+            result = result.filter(student => {
+                // Handle grade as string or number
+                const studentGrade = student.grade?.toString();
+                const filterGrade = filters.grade.toString();
+                return studentGrade === filterGrade;
+            });
         }
         if (filters.section) {
-            result = result.filter(student => student.section === filters.section);
+            result = result.filter(student => {
+                // Handle case-insensitive section comparison
+                const studentSection = student.section?.toLowerCase() || "";
+                const filterSection = filters.section.toLowerCase();
+                return studentSection === filterSection;
+            });
         }
         if (filters.accountStatus) {
-            result = result.filter(student => student.account_status === filters.accountStatus);
+            result = result.filter(student =>
+                student.account_status?.toLowerCase() === filters.accountStatus.toLowerCase()
+            );
         }
 
         // Apply sorting
@@ -148,8 +155,13 @@ export default function Students() {
                 let bValue = b[sortConfig.key];
 
                 // Handle null/undefined values
-                if (aValue === null || aValue === undefined) aValue = "";
-                if (bValue === null || bValue === undefined) bValue = "";
+                if (aValue == null) aValue = "";
+                if (bValue == null) bValue = "";
+
+                // Handle different data types
+                if (typeof aValue === 'number' && typeof bValue === 'number') {
+                    return sortConfig.direction === "asc" ? aValue - bValue : bValue - aValue;
+                }
 
                 // Convert to string for comparison
                 aValue = String(aValue).toLowerCase();
@@ -199,18 +211,6 @@ export default function Students() {
         return filteredStudents.slice(start, end);
     }, [filteredStudents, pagination]);
 
-    // Delete Student
-    const handleDeleteStudent = async (studentId) => {
-        try {
-            await api.delete(`/api/management/student/${studentId}/`);
-            setStudents(prev => prev.filter(s => s.id !== studentId));
-            neonToast.success("Student deleted successfully", "success");
-        } catch (error) {
-            console.error("Error deleting student:", error);
-            neonToast.error("Failed to delete student", "error");
-        }
-    };
-
     // Export Students
     const handleExport = useCallback(() => {
         if (filteredStudents.length === 0) {
@@ -221,12 +221,12 @@ export default function Students() {
         const csvContent = [
             ["Full Name", "Email", "Grade", "Section", "Account Status", "Created At"],
             ...filteredStudents.map(s => [
-                s.full_name,
-                s.email,
-                s.grade,
-                s.section,
-                s.account_status,
-                new Date(s.created_at).toLocaleDateString()
+                s.full_name || "",
+                s.email || "",
+                s.grade || "",
+                s.section || "",
+                s.account_status || "",
+                s.created_at ? new Date(s.created_at).toLocaleDateString() : ""
             ])
         ].map(row => row.join(",")).join("\n");
 
@@ -258,15 +258,29 @@ export default function Students() {
     };
 
     // Get unique values for filter dropdowns
-    const uniqueGrades = useMemo(() =>
-        [...new Set(students.map(s => s.grade).filter(Boolean))].sort(),
-        [students]
-    );
+    const uniqueGrades = useMemo(() => {
+        const grades = students
+            .map(s => s.grade)
+            .filter(grade => grade != null && grade !== "")
+            .map(grade => grade.toString());
+        return [...new Set(grades)].sort((a, b) => {
+            // Sort grades numerically if they are numbers
+            const aNum = parseInt(a);
+            const bNum = parseInt(b);
+            if (!isNaN(aNum) && !isNaN(bNum)) {
+                return aNum - bNum;
+            }
+            return a.localeCompare(b);
+        });
+    }, [students]);
 
-    const uniqueSections = useMemo(() =>
-        [...new Set(students.map(s => s.section).filter(Boolean))].sort(),
-        [students]
-    );
+    const uniqueSections = useMemo(() => {
+        const sections = students
+            .map(s => s.section)
+            .filter(section => section != null && section !== "")
+            .map(section => section.toString());
+        return [...new Set(sections)].sort();
+    }, [students]);
 
     if (user.isAuthenticated === null) {
         return (
@@ -377,7 +391,12 @@ export default function Students() {
                         <div className={styles.filterControls}>
                             <button
                                 className={styles.filterToggle}
-                                onClick={() => document.getElementById("advancedFilters").classList.toggle(styles.show)}
+                                onClick={() => {
+                                    const filtersElement = document.getElementById("advancedFilters");
+                                    if (filtersElement) {
+                                        filtersElement.classList.toggle(styles.show);
+                                    }
+                                }}
                             >
                                 <FaFilter />
                                 <span>Filters</span>
@@ -405,7 +424,7 @@ export default function Students() {
                                 >
                                     <option value="">All Grades</option>
                                     {uniqueGrades.map(grade => (
-                                        <option key={grade} value={grade}>{grade}</option>
+                                        <option key={grade} value={grade}>Grade {grade}</option>
                                     ))}
                                 </select>
                             </div>
@@ -418,7 +437,7 @@ export default function Students() {
                                 >
                                     <option value="">All Sections</option>
                                     {uniqueSections.map(section => (
-                                        <option key={section} value={section}>{section}</option>
+                                        <option key={section} value={section}>Section {section}</option>
                                     ))}
                                 </select>
                             </div>
@@ -445,7 +464,7 @@ export default function Students() {
                         <h3>Students List</h3>
                         <div className={styles.tableControls}>
                             <div className={styles.resultsInfo}>
-                                Showing {filteredStudents.length} of {students.length} students
+                                Showing {paginatedStudents.length} of {filteredStudents.length} students
                             </div>
                             <select
                                 value={pagination.itemsPerPage}
@@ -588,18 +607,6 @@ export default function Students() {
                                                             <FaEdit />
                                                             <span>Edit</span>
                                                         </Link>
-                                                        <ConfirmAction
-                                                            onConfirm={() => handleDeleteStudent(student.id)}
-                                                            title="Delete Student"
-                                                            message={`Are you sure you want to delete ${student.full_name}? This action cannot be undone.`}
-                                                            confirmText="Delete"
-                                                            cancelText="Cancel"
-                                                        >
-                                                            <button className={styles.deleteBtn}>
-                                                                <FaTrash />
-                                                                <span>Delete</span>
-                                                            </button>
-                                                        </ConfirmAction>
                                                     </div>
                                                 </td>
                                             </tr>

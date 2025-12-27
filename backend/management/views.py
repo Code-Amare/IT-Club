@@ -878,7 +878,10 @@ class LanguageDetailAPIView(APIView):
         try:
             languages = Language.objects.get(pk=pk)
         except Language.DoesNotExist:
-            return Response({"error": f"Language with {pk} doesn't exist."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"error": f"Language with {pk} doesn't exist."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
         serializer = LanguageSerializer(languages)
         return Response(serializer.data)
 
@@ -894,16 +897,19 @@ class LanguageAPIView(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
 
-    
     def delete(self, request, pk):
         try:
             languages = Language.objects.get(pk=pk)
         except Language.DoesNotExist:
-            return Response({"error": f"Language with {pk} doesn't exist."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"error": f"Language with {pk} doesn't exist."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
         languages.delete()
-        return Response({"message": "Language deleted successfully"}, status=status.HTTP_200_OK)
+        return Response(
+            {"message": "Language deleted successfully"}, status=status.HTTP_200_OK
+        )
 
     def patch(self, request, pk=None):
         if not pk:
@@ -939,6 +945,22 @@ class LanguageBulkAPIView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+class FrameworkDetailAPIView(APIView):
+    authentication_classes = [JWTCookieAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        try:
+            frameworks = Framework.objects.get(pk=pk)
+        except Framework.DoesNotExist:
+            return Response(
+                {"error": f"Framework with {pk} doesn't exist."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        serializer = FrameworkSerializer(frameworks)
+        return Response(serializer.data)
+
+
 class FrameworkGetAPIView(APIView):
     authentication_classes = [JWTCookieAuthentication]
     permission_classes = [IsAuthenticated]
@@ -960,6 +982,20 @@ class FrameworkAPIView(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk):
+        try:
+            frameworks = Framework.objects.get(pk=pk)
+        except Framework.DoesNotExist:
+            return Response(
+                {"error": f"Framework with {pk} doesn't exist."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        frameworks.delete()
+        return Response(
+            {"message": "Framework deleted successfully."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
     def patch(self, request, pk=None):
         if not pk:

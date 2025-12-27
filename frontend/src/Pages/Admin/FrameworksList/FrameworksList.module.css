@@ -124,7 +124,6 @@
   outline: none;
   color: var(--text-primary); 
   background-color: var(--bg-body);
-  /* color: black; */
   font-size: 14px;
   padding: 0.2em;
   cursor: pointer;
@@ -196,7 +195,7 @@
 
 .tableRow {
   display: grid;
-  grid-template-columns: 2fr 1fr 1.5fr 120px;
+  grid-template-columns: 2fr 1.5fr 120px;
   align-items: center;
   min-height: 60px;
 }
@@ -234,198 +233,35 @@
   color: var(--primary);
 }
 
-/* Mobile Table Header */
-.mobileTableHeader {
-  display: none;
-  padding: 16px;
-  background: var(--bg-surface);
-  border-bottom: 1px solid var(--border-color);
-}
-
-@media (max-width: 768px) {
-  .mobileTableHeader {
-    display: block;
-  }
-}
-
-.mobileTableHeader h3 {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin: 0;
-}
-
-/* Mobile Card View */
-.mobileCard {
-  display: none;
-}
-
-@media (max-width: 768px) {
-  .mobileCard {
-    display: block;
-    padding: 16px;
-    border-bottom: 1px solid var(--border-color);
-    background: var(--bg-body);
-  }
-
-  .mobileCard:last-child {
-    border-bottom: none;
-  }
-}
-
-.mobileCardContent {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.mobileCardHeader {
+/* Framework Info (Desktop) */
+.frameworkName,
+.languageInfo {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 8px;
 }
 
-.mobileLangIcon {
-  font-size: 24px;
+.frameworkIcon {
   color: var(--primary);
-}
-
-.mobileCardHeader h4 {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin: 0 0 4px 0;
-}
-
-.mobileCode {
-  font-family: monospace;
-  background: var(--bg-surface);
-  padding: 2px 6px;
-  border-radius: 4px;
-  border: 1px solid var(--border-color);
-  font-size: 12px;
-  color: var(--text-secondary);
-}
-
-.mobileCardRow {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 0;
-}
-
-.mobileLabel {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--text-secondary);
-  min-width: 60px;
-}
-
-.mobileColorDisplay {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.mobileColorPreview {
-  width: 24px;
-  height: 24px;
-  border-radius: 6px;
-  border: 2px solid var(--border-color);
-  position: relative;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.mobileColorPreview:hover {
-  transform: scale(1.1);
-}
-
-.mobileCopyIcon {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  color: white;
-  font-size: 10px;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-}
-
-.mobileColorPreview:hover .mobileCopyIcon {
-  opacity: 1;
-}
-
-.mobileColorPreview::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.3);
-  opacity: 0;
-  transition: opacity 0.2s ease;
-  border-radius: 4px;
-}
-
-.mobileColorPreview:hover::before {
-  opacity: 1;
-}
-
-.mobileColorHex {
-  font-family: monospace;
-  font-size: 12px;
-  color: var(--text-primary);
-}
-
-.mobileCardActions {
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid var(--border-color);
-}
-
-.mobileEditBtn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  width: 100%;
-  padding: 10px 16px;
-  background: var(--primary);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.mobileEditBtn:hover {
-  background: var(--primary-hover);
-  transform: translateY(-1px);
-}
-
-/* Language Info (Desktop) */
-.languageName,
-.languageCode {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.langIcon,
-.codeIcon {
-  color: var(--text-secondary);
-  font-size: 16px;
+  font-size: 18px;
   flex-shrink: 0;
 }
 
-.languageName span {
+.languageIcon {
+  color: var(--text-secondary);
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.frameworkName span {
   font-weight: 500;
+  font-size: 15px;
+}
+
+.languageName {
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 2px;
 }
 
 .languageCode code {
@@ -434,83 +270,8 @@
   padding: 2px 6px;
   border-radius: 4px;
   border: 1px solid var(--border-color);
-  font-size: 13px;
-}
-
-/* Color Display (Desktop) */
-.colorDisplay {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  cursor: pointer;
-}
-
-.colorPreview {
-  width: 32px;
-  height: 32px;
-  min-width: 32px;
-  border-radius: 8px;
-  border: 2px solid var(--border-color);
-  flex-shrink: 0;
-  position: relative;
-  transition: all 0.2s ease;
-  overflow: hidden;
-}
-
-.colorPreview:hover {
-  transform: scale(1.1);
-  border-color: var(--primary);
-}
-
-.copyIcon {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  color: white;
-  font-size: 14px;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-}
-
-.colorPreview:hover .copyIcon {
-  opacity: 1;
-}
-
-.colorPreview::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.3);
-  opacity: 0;
-  transition: opacity 0.2s ease;
-}
-
-.colorPreview:hover::before {
-  opacity: 1;
-}
-
-.colorInfo {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.colorHex {
-  font-family: monospace;
-  font-size: 13px;
-  color: var(--text-primary);
-  font-weight: 500;
-}
-
-.colorSample {
   font-size: 11px;
   color: var(--text-secondary);
-  opacity: 0.8;
 }
 
 /* Action Buttons (Desktop) */
@@ -540,6 +301,93 @@
   background: var(--primary-hover);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
+}
+
+/* Mobile Card View */
+.mobileCard {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobileCard {
+    display: block;
+    padding: 16px;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-body);
+  }
+
+  .mobileCard:last-child {
+    border-bottom: none;
+  }
+}
+
+.mobileCardHeader {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.mobileFrameworkIcon {
+  font-size: 24px;
+  color: var(--primary);
+  margin-top: 4px;
+}
+
+.mobileCardHeader h4 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 8px 0;
+}
+
+.mobileLanguageBadge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  width: fit-content;
+}
+
+.mobileLanguageIcon {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.mobileLanguageBadge span {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.mobileCardActions {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-color);
+}
+
+.mobileEditBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 16px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.mobileEditBtn:hover {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
 }
 
 /* Table Footer */
@@ -679,18 +527,17 @@
     font-size: 18px;
   }
 
-  .mobileCode {
-    font-size: 14px;
-    padding: 4px 8px;
-  }
-
-  .mobileColorHex {
-    font-size: 14px;
-  }
-
   .mobileEditBtn {
     padding: 12px 16px;
     font-size: 15px;
+  }
+
+  .mobileLanguageBadge {
+    padding: 6px 10px;
+  }
+
+  .mobileLanguageBadge span {
+    font-size: 13px;
   }
 }
 

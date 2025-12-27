@@ -16,10 +16,10 @@ html.no-transition * {
   --bg-surface: #ffffff;
   --text-primary: #1f2937;
   --text-secondary: #4b5563;
-  --border-color: #e5e7eb;
+  --border-color: #e5e7eb; 
   --primary: #4f46e5;
   --primary-hover: #4338ca;
-  --primary-contrast: #ffffff;
+  --primary-contrast: #ffffff; 
   --badge-bg: #eef2ff;
   --badge-text: #4f46e5;
   --card-shadow: rgba(0, 0, 0, 0.1);
@@ -36,6 +36,8 @@ html.no-transition * {
   --table-min-bp: 577px;
   --table-max-bp: 768px;
   --desktop-bp: 993px;
+  --danger: #dc2626;
+  --danger-hover: #dc2626cb;
 }
 
 /* Dark Mode */

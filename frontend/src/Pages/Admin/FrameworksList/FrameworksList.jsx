@@ -6,64 +6,54 @@ import { neonToast } from "../../../Components/NeonToast/NeonToast";
 import SideBar from "../../../Components/SideBar/SideBar";
 import {
     FaArrowLeft,
-    FaLanguage,
     FaPlus,
     FaSearch,
     FaEdit,
-    FaCopy,
+    FaCode,
+    FaLanguage,
     FaEye
 } from "react-icons/fa";
 import {
     MdSort,
     MdRefresh,
-    MdCode
+    MdDeveloperMode
 } from "react-icons/md";
-import styles from "./LanguagesList.module.css";
+import styles from "./FrameworksList.module.css";
 
-export default function LanguagesList() {
+export default function FrameworksList() {
     const navigate = useNavigate();
     const { user } = useUser();
 
-    const [languages, setLanguages] = useState([]);
+    const [frameworks, setFrameworks] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
     const [sortBy, setSortBy] = useState("name");
     const [sortOrder, setSortOrder] = useState("asc");
 
     useEffect(() => {
-        fetchLanguages();
+        fetchFrameworks();
     }, []);
 
-    const fetchLanguages = async () => {
+    const fetchFrameworks = async () => {
         setLoading(true);
         try {
-            const response = await api.get("/api/management/languages/");
-            setLanguages(response.data || []);
+            const response = await api.get("/api/management/frameworks/");
+            setFrameworks(response.data || []);
         } catch (error) {
-            console.error("Error fetching languages:", error);
-            neonToast.error("Failed to load languages", "error");
+            console.error("Error fetching frameworks:", error);
+            neonToast.error("Failed to load frameworks", "error");
         } finally {
             setLoading(false);
         }
     };
 
-    const handleCopyColor = (color) => {
-        navigator.clipboard.writeText(color)
-            .then(() => {
-                neonToast.success(`Color ${color} copied to clipboard`, "success");
-            })
-            .catch(err => {
-                console.error("Failed to copy: ", err);
-                neonToast.error("Failed to copy color", "error");
-            });
-    };
-
-    const filteredLanguages = languages
-        .filter(language => {
+    const filteredFrameworks = frameworks
+        .filter(framework => {
             const matchesSearch = searchTerm === "" ||
-                language.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                language.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                language.color.toLowerCase().includes(searchTerm.toLowerCase());
+                framework.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                (framework.language && 
+                 (framework.language.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  framework.language.code.toLowerCase().includes(searchTerm.toLowerCase())));
 
             return matchesSearch;
         })
@@ -72,10 +62,10 @@ export default function LanguagesList() {
 
             if (sortBy === "name") {
                 comparison = a.name.localeCompare(b.name);
-            } else if (sortBy === "code") {
-                comparison = a.code.localeCompare(b.code);
-            } else if (sortBy === "created_at") {
-                comparison = new Date(a.created_at) - new Date(b.created_at);
+            } else if (sortBy === "language") {
+                const langA = a.language?.name || "";
+                const langB = b.language?.name || "";
+                comparison = langA.localeCompare(langB);
             }
 
             return sortOrder === "desc" ? -comparison : comparison;
@@ -103,10 +93,10 @@ export default function LanguagesList() {
                         <button className={styles.backBtn} onClick={() => navigate("/admin")}>
                             <FaArrowLeft /> Back to Dashboard
                         </button>
-                        <h1 className={styles.title}><FaLanguage /> Programming Languages</h1>
+                        <h1 className={styles.title}><FaCode /> Frameworks & Libraries</h1>
                     </div>
                     <p className={styles.subtitle}>
-                        Manage programming languages in the system. Add new languages or edit existing ones.
+                        Manage frameworks and libraries in the system. Frameworks are associated with programming languages.
                     </p>
                 </div>
 
@@ -117,7 +107,7 @@ export default function LanguagesList() {
                             <FaSearch className={styles.searchIcon} />
                             <input
                                 type="text"
-                                placeholder="Search languages by name, code, or color..."
+                                placeholder="Search frameworks by name or language..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 className={styles.searchInput}
@@ -139,14 +129,14 @@ export default function LanguagesList() {
                             >
                                 <option value="name-asc">Sort by Name (A-Z)</option>
                                 <option value="name-desc">Sort by Name (Z-A)</option>
-                                <option value="code-asc">Sort by Code (A-Z)</option>
-                                <option value="code-desc">Sort by Code (Z-A)</option>
+                                <option value="language-asc">Sort by Language (A-Z)</option>
+                                <option value="language-desc">Sort by Language (Z-A)</option>
                             </select>
                         </div>
 
                         <button
                             className={styles.refreshBtn}
-                            onClick={fetchLanguages}
+                            onClick={fetchFrameworks}
                             disabled={loading}
                         >
                             <MdRefresh /> Refresh
@@ -154,32 +144,32 @@ export default function LanguagesList() {
 
                         <button
                             className={styles.addBtn}
-                            onClick={() => navigate("/admin/languages/add")}
+                            onClick={() => navigate("/admin/frameworks/add")}
                         >
-                            <FaPlus /> Add Language
+                            <FaPlus /> Add Framework
                         </button>
                     </div>
                 </div>
 
-                {/* Languages Table */}
+                {/* Frameworks Table */}
                 {loading ? (
                     <div className={styles.loadingContainer}>
                         <div className={styles.loadingSpinner}></div>
-                        <p>Loading languages...</p>
+                        <p>Loading frameworks...</p>
                     </div>
-                ) : filteredLanguages.length === 0 ? (
+                ) : filteredFrameworks.length === 0 ? (
                     <div className={styles.emptyState}>
-                        <FaLanguage className={styles.emptyIcon} />
-                        <h3>No languages found</h3>
+                        <FaCode className={styles.emptyIcon} />
+                        <h3>No frameworks found</h3>
                         <p>{searchTerm
                             ? "Try adjusting your search criteria"
-                            : "Get started by adding your first programming language"}
+                            : "Get started by adding your first framework"}
                         </p>
                         <button
                             className={styles.emptyActionBtn}
-                            onClick={() => navigate("/admin/languages/add")}
+                            onClick={() => navigate("/admin/frameworks/add")}
                         >
-                            <FaPlus /> Add First Language
+                            <FaPlus /> Add First Framework
                         </button>
                     </div>
                 ) : (
@@ -190,19 +180,16 @@ export default function LanguagesList() {
                                 <div className={styles.tableHeader}>
                                     <div className={styles.tableRow}>
                                         <div
-                                            className={`${styles.tableCell} ${styles.colName} ${styles.sortable}`}
+                                            className={`${styles.tableCell} ${styles.colFramework} ${styles.sortable}`}
                                             onClick={() => handleSort("name")}
                                         >
-                                            Name {getSortIcon("name")}
+                                            Framework {getSortIcon("name")}
                                         </div>
                                         <div
-                                            className={`${styles.tableCell} ${styles.colCode} ${styles.sortable}`}
-                                            onClick={() => handleSort("code")}
+                                            className={`${styles.tableCell} ${styles.colLanguage} ${styles.sortable}`}
+                                            onClick={() => handleSort("language")}
                                         >
-                                            Code {getSortIcon("code")}
-                                        </div>
-                                        <div className={`${styles.tableCell} ${styles.colColor}`}>
-                                            Color
+                                            Language {getSortIcon("language")}
                                         </div>
                                         <div className={`${styles.tableCell} ${styles.colActions}`}>
                                             Actions
@@ -211,38 +198,24 @@ export default function LanguagesList() {
                                 </div>
 
                                 <div className={styles.tableBody}>
-                                    {filteredLanguages.map((language) => (
-                                        <div key={language.id} className={styles.tableRow}>
-                                            <div className={`${styles.tableCell} ${styles.colName}`}>
-                                                <div className={styles.languageName}>
-                                                    <FaLanguage className={styles.langIcon} />
-                                                    <span>{language.name}</span>
+                                    {filteredFrameworks.map((framework) => (
+                                        <div key={framework.id} className={styles.tableRow}>
+                                            <div className={`${styles.tableCell} ${styles.colFramework}`}>
+                                                <div className={styles.frameworkName}>
+                                                    <FaCode className={styles.frameworkIcon} />
+                                                    <span>{framework.name}</span>
                                                 </div>
                                             </div>
-                                            <div className={`${styles.tableCell} ${styles.colCode}`}>
-                                                <div className={styles.languageCode}>
-                                                    <MdCode className={styles.codeIcon} />
-                                                    <code>{language.code}</code>
-                                                </div>
-                                            </div>
-                                            <div className={`${styles.tableCell} ${styles.colColor}`}>
-                                                <div className={styles.colorDisplay}>
-                                                    <div
-                                                        className={styles.colorPreview}
-                                                        style={{
-                                                            backgroundColor: language.color,
-                                                            boxShadow: `0 2px 8px ${language.color}40`
-                                                        }}
-                                                        title={`Click to copy ${language.color}`}
-                                                        onClick={() => handleCopyColor(language.color)}
-                                                    >
-                                                        <FaCopy className={styles.copyIcon} />
-                                                    </div>
-                                                    <div className={styles.colorInfo}>
-                                                        <span className={styles.colorHex} title={language.color}>
-                                                            {language.color.toUpperCase()}
-                                                        </span>
-                                                        <small className={styles.colorSample}>Click to copy</small>
+                                            <div className={`${styles.tableCell} ${styles.colLanguage}`}>
+                                                <div className={styles.languageInfo}>
+                                                    <FaLanguage className={styles.languageIcon} />
+                                                    <div>
+                                                        <div className={styles.languageName}>
+                                                            {framework.language?.name}
+                                                        </div>
+                                                        <div className={styles.languageCode}>
+                                                            <code>{framework.language?.code}</code>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -250,8 +223,8 @@ export default function LanguagesList() {
                                                 <div className={styles.actionButtons}>
                                                     <button
                                                         className={styles.editBtn}
-                                                        onClick={() => navigate(`/admin/languages/edit/${language.id}`)}
-                                                        title="Edit language"
+                                                        onClick={() => navigate(`/admin/frameworks/edit/${framework.id}`)}
+                                                        title="Edit framework"
                                                     >
                                                         <FaEdit /> Edit
                                                     </button>
@@ -263,7 +236,7 @@ export default function LanguagesList() {
 
                                 <div className={styles.tableFooter}>
                                     <div className={styles.stats}>
-                                        Showing {filteredLanguages.length} of {languages.length} languages
+                                        Showing {filteredFrameworks.length} of {frameworks.length} frameworks
                                     </div>
                                 </div>
                             </div>
@@ -271,29 +244,15 @@ export default function LanguagesList() {
 
                         {/* Mobile Cards */}
                         <div className={styles.mobileCards}>
-                            {filteredLanguages.map((language) => (
-                                <div key={language.id} className={styles.mobileCard}>
+                            {filteredFrameworks.map((framework) => (
+                                <div key={framework.id} className={styles.mobileCard}>
                                     <div className={styles.mobileCardHeader}>
-                                        <FaLanguage className={styles.mobileLangIcon} />
+                                        <FaCode className={styles.mobileFrameworkIcon} />
                                         <div>
-                                            <h4>{language.name}</h4>
-                                            <code className={styles.mobileCode}>{language.code}</code>
-                                        </div>
-                                    </div>
-
-                                    <div className={styles.mobileCardBody}>
-                                        <div className={styles.mobileCardRow}>
-                                            <span className={styles.mobileLabel}>Color:</span>
-                                            <div className={styles.mobileColorDisplay}>
-                                                <div
-                                                    className={styles.mobileColorPreview}
-                                                    style={{ backgroundColor: language.color }}
-                                                    onClick={() => handleCopyColor(language.color)}
-                                                    title={`Click to copy ${language.color}`}
-                                                >
-                                                    <FaCopy className={styles.mobileCopyIcon} />
-                                                </div>
-                                                <span className={styles.mobileColorHex}>{language.color.toUpperCase()}</span>
+                                            <h4>{framework.name}</h4>
+                                            <div className={styles.mobileLanguageBadge}>
+                                                <FaLanguage className={styles.mobileLanguageIcon} />
+                                                <span>{framework.language?.name} ({framework.language?.code})</span>
                                             </div>
                                         </div>
                                     </div>
@@ -301,9 +260,9 @@ export default function LanguagesList() {
                                     <div className={styles.mobileCardActions}>
                                         <button
                                             className={styles.mobileEditBtn}
-                                            onClick={() => navigate(`/admin/languages/edit/${language.id}`)}
+                                            onClick={() => navigate(`/admin/frameworks/edit/${framework.id}`)}
                                         >
-                                            <FaEdit /> Edit Language
+                                            <FaEdit /> Edit Framework
                                         </button>
                                     </div>
                                 </div>

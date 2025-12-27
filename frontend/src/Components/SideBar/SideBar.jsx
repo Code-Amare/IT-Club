@@ -21,7 +21,9 @@ import {
     MdAssignment,
     MdSchool,
     MdTaskAlt,
-    MdWork
+    MdWork,
+    MdCode,
+    MdAccountTree
 } from "react-icons/md";
 import { useUser } from "../../Context/UserContext";
 import ThemeToggle from "../ThemeToggle/ThemeToggle";
@@ -41,7 +43,9 @@ export default function SideBar({ children }) {
     const adminMenuItems = [
         { icon: <MdDashboard />, text: "Dashboard", to: `/${role}` },
         { icon: <MdPeople />, text: "Students", to: "/admin/students" },
-        { icon: <MdSchool />, text: "Learning Tasks", to: "/admin/learning-tasks" },
+        { icon: <MdSchool />, text: "Learning Tasks", to: "/learning-task" },
+        { icon: <MdCode />, text: "Languages", to: "/admin/languages" },
+        { icon: <MdAccountTree />, text: "Frameworks", to: "/admin/frameworks" },
         { icon: <MdAssignment />, text: "Projects", to: "/admin/projects" },
         { icon: <MdAnalytics />, text: "Analytics", to: "/admin/analytics" },
     ];
@@ -49,7 +53,7 @@ export default function SideBar({ children }) {
     const userMenuItems = [
         { icon: <MdDashboard />, text: "Dashboard", to: `/${role}` },
         { icon: <MdAssignment />, text: "My Learning Task", to: "/user/my-learning-task" },
-        { icon: <MdSchool />, text: "Learning Tasks", to: "/admin/learning-tasks" },
+        { icon: <MdSchool />, text: "Learning Tasks", to: "/learning-tasks" },
         { icon: <MdWork />, text: "Projects", to: "/admin/projects" },
         { icon: <MdAnalytics />, text: "Analytics", to: "/admin/analytics" },
     ];
@@ -159,10 +163,7 @@ export default function SideBar({ children }) {
     // Logout handler
     const handleLogout = () => {
         logout();
-        closeProfileMenu();
-        if (isMobile) {
-            closeAllMobileDropdowns();
-        }
+        navigate("/login")
     };
 
     return (

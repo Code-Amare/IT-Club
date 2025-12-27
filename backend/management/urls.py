@@ -15,6 +15,7 @@ from .views import (
     FrameworkGetAPIView,
     FrameworkBulkAPIView,
     LanguageDetailAPIView,
+    FrameworkDetailAPIView,
 )
 
 urlpatterns = [
@@ -37,7 +38,17 @@ urlpatterns = [
     ),
     path("languages/bulk/", LanguageBulkAPIView.as_view(), name="languages-bulk"),
     path("frameworks/", FrameworkGetAPIView.as_view(), name="frameworks-list"),
-    path("frameworks/<int:pk>/", FrameworkAPIView.as_view(), name="framework-update"),
+    path(
+        "frameworks/<int:pk>/", FrameworkDetailAPIView.as_view(), name="frameworks-list"
+    ),
     path("frameworks/create/", FrameworkAPIView.as_view(), name="framework-create"),
+    path(
+        "frameworks/edit/<int:pk>/", FrameworkAPIView.as_view(), name="framework-update"
+    ),
+    path(
+        "frameworks/delete/<int:pk>/",
+        FrameworkAPIView.as_view(),
+        name="framework-delete",
+    ),
     path("frameworks/bulk/", FrameworkBulkAPIView.as_view(), name="frameworks-bulk"),
 ]
