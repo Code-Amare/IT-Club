@@ -23,7 +23,6 @@ class LearningTaskAPIView(APIView):
                 tasks = LearningTask.objects.all()
                 serializer = LearningTaskSerializer(tasks, many=True)
 
-
             return Response(serializer.data)
 
         except LearningTask.DoesNotExist:
@@ -83,6 +82,7 @@ class LearningTaskAPIView(APIView):
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
+
 @method_decorator(csrf_protect, name="dispatch")
 class TaskReviewAPIView(APIView):
     authentication_classes = [JWTCookieAuthentication]
@@ -91,6 +91,9 @@ class TaskReviewAPIView(APIView):
     def post(self, request, task_id):
         try:
             task = LearningTask.objects.get(id=task_id)
+            if request.user.is_staff:
+                task.is_rated = True
+                task.save()
             serializer = TaskReviewSerializer(data=request.data)
             if serializer.is_valid():
                 serializer.save(
@@ -127,6 +130,7 @@ class TaskReviewAPIView(APIView):
             )
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
 
 @method_decorator(csrf_protect, name="dispatch")
 class LikeLearningTaskAPIView(APIView):

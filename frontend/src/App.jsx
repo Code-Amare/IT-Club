@@ -1,4 +1,5 @@
 import { Routes, Route } from 'react-router-dom'
+import ScrollToTop from "./Utils/ScrollToTop"
 import Home from './Pages/Home/Home'
 import Profile from './Pages/Profile/Profile'
 import ProtectedRoute from './Components/ProtectedRoute/ProtectedRoute'
@@ -21,7 +22,7 @@ import MyLearningTask from './Pages/User/MyLearningTask/MyLearningTask'
 import CreateLearningTask from "./Pages/User/CreateLearningTask/CreateLearningTask"
 import EmailLogin from "./Pages/EmailLogin/EmailLogin"
 import PublicRoute from './Components/PublicRoute/PublicRoute'
-// import AdminLearningTaskDetail from './Pages/LearningTaskDetail/LearningTaskDetail'
+// import AdminLearningTaskDetail from './Pages/Admin/LearningTaskDetail/LearningTaskDetail'
 import UserLearningTaskDetail from './Pages/User/LearningTaskDetail/LearningTaskDetail'
 import EditLearningTask from "./Pages/EditLearningTask/EditLearningTask"
 import LanguagesAdd from './Pages/Admin/LanguagesAdd/LanguagesAdd'
@@ -34,12 +35,14 @@ import AdminLearningTasksList from './Pages/Admin/LearningTasksList/LearningTask
 import UserLearningTasksList from './Pages/User/LearningTasksList/LearningTasksList';
 import LearningTaskCreate from './Pages/User/LearningTaskCreate/LearningTaskCreate'
 import LearningTaskEdit from './Pages/User/LearningTaskEdit/LearningTaskEdit'
+import AdminLearningTaskDetail from "./Pages/Admin/LearningTaskDetail/LearningTaskDetail"
 
 function App() {
   return (
     <>
       <Notification />
       <NeonToast />
+      <ScrollToTop />
       <Routes>
         <Route element={<PublicRoute />}>
 
@@ -55,7 +58,6 @@ function App() {
           <Route path="/profile/edit" element={<ProfileEdit />} />
           <Route path="/security" element={<Security />} />
           <Route path="/settings" element={<Settings />} />
-          {/* <Route path="/learning-task/:taskId" element={<LearningTaskDetail />} /> */}
         </Route>
         <Route element={<ProtectedRoute requiredRole={["admin", "staff"]} />}>
           <Route path="/admin" element={<AdminDashboard />} />
@@ -70,9 +72,9 @@ function App() {
           <Route path="/admin/frameworks/add" element={<FrameworkAdd />} />
           <Route path="/admin/frameworks/edit/:id" element={<FrameworksEdit />} />
           <Route path="/admin/learning-tasks" element={<AdminLearningTasksList />} />
+          <Route path="/admin/learning-task/:id" element={<AdminLearningTaskDetail />} />
         </Route>
         <Route element={<ProtectedRoute requiredRole={["user"]} />}>
-          <Route path="/learning-task/edit/:taskId" element={<EditLearningTask />} />
           <Route path='/user' element={<UserDashboard />} />
           <Route path='/user/my-learning-task' element={<MyLearningTask />} />
           <Route path='/user/learning-tasks' element={<UserLearningTasksList />} />

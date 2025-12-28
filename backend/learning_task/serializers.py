@@ -8,7 +8,7 @@ User = get_user_model()
 
 
 class TaskReviewSerializer(serializers.ModelSerializer):
-    user = serializers.StringRelatedField(read_only=True)
+    user = UserSerializer(read_only=True)
 
     class Meta:
         model = TaskReview
@@ -20,6 +20,7 @@ class TaskReviewSerializer(serializers.ModelSerializer):
             "is_admin",
             "created_at",
         ]
+
 
 class LearningTaskSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
@@ -41,6 +42,7 @@ class LearningTaskSerializer(serializers.ModelSerializer):
             "description",
             "git_link",
             "is_public",
+            "is_rated",
             "languages",
             "frameworks",
             "created_at",

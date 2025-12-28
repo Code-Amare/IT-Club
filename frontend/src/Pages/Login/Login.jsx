@@ -41,7 +41,6 @@ const Login = () => {
 
         } catch (err) {
             console.error(err);
-            alert(err)
             const errMsg = err.response?.data?.error || "Something went wrong";
             neonToast.error(errMsg);
         }

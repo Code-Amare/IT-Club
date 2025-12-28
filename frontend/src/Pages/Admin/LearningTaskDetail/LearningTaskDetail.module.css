@@ -1,0 +1,1382 @@
+/* LearningTaskDetail.module.css */
+
+/* Base Container */
+.container {
+  width: 100%;
+  min-height: 100vh;
+  background: var(--bg-body);
+  font-size: 14px;
+}
+
+/* Header */
+.header {
+  margin-bottom: 24px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.headerContent {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.backBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  width: fit-content;
+  min-height: 44px; /* Better touch target */
+}
+
+.backBtn:hover {
+  background: var(--bg-body);
+  transform: translateY(-1px);
+}
+
+.headerMain {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.titleSection {
+  flex: 1;
+  min-width: 280px; /* Prevent collapsing too much */
+}
+
+.titleSection h1 {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 12px 0;
+  line-height: 1.3;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.subtitle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  row-gap: 8px;
+}
+
+.userInfo,
+.dateInfo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--text-secondary);
+  flex-wrap: wrap;
+}
+
+.userInfo svg,
+.dateInfo svg {
+  font-size: 12px;
+}
+
+.visibilityBadge,
+.ratingBadge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  min-height: 32px;
+  white-space: nowrap;
+}
+
+.visibilityBadge.public {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.visibilityBadge.private {
+  background: rgba(107, 114, 128, 0.1);
+  color: #6b7280;
+  border: 1px solid rgba(107, 114, 128, 0.2);
+}
+
+.ratingBadge.rated {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.ratingBadge.notRated {
+  background: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+/* Header Actions */
+.headerActions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+}
+
+.adminRateBtn,
+.editReviewBtn,
+.cancelEditBtn,
+.deleteTaskBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 44px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.adminRateBtn:hover,
+.editReviewBtn:hover {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+.editReviewBtn {
+  background: var(--success);
+}
+
+.editReviewBtn:hover {
+  background: var(--success-hover);
+}
+
+.cancelEditBtn {
+  background: var(--warning);
+}
+
+.cancelEditBtn:hover {
+  background: var(--warning-hover);
+}
+
+.deleteTaskBtn {
+  background: var(--danger);
+}
+
+.deleteTaskBtn:hover {
+  background: var(--danger-hover);
+  transform: translateY(-1px);
+}
+
+/* Content Grid */
+.contentGrid {
+  display: grid;
+  grid-template-columns: 1fr 400px;
+  gap: 24px;
+}
+
+/* Sections */
+.section {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.section:last-child {
+  margin-bottom: 0;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.sectionHeader svg {
+  font-size: 18px;
+  color: var(--primary);
+}
+
+.sectionHeader h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+/* Description */
+.description {
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* GitHub Link */
+.githubLink {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: var(--bg-body);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-primary);
+  text-decoration: none;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  overflow: hidden;
+  min-height: 44px;
+}
+
+.githubLink:hover {
+  background: var(--bg-surface);
+  border-color: var(--primary);
+}
+
+.githubLink svg {
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+.githubLink span {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+
+/* Technologies */
+.techGroup {
+  margin-bottom: 20px;
+}
+
+.techGroup:last-child {
+  margin-bottom: 0;
+}
+
+.techGroup h4 {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin: 0 0 12px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.techList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.techItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--bg-body);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  flex-wrap: wrap;
+}
+
+.techColor {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.techName {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  min-width: 120px;
+}
+
+.techCode,
+.techLanguage {
+  font-size: 12px;
+  color: var(--text-secondary);
+  background: var(--bg-surface);
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  white-space: nowrap;
+}
+
+.frameworkIcon {
+  color: var(--text-secondary);
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.emptyTech {
+  padding: 16px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 14px;
+  background: var(--bg-body);
+  border: 1px dashed var(--border-color);
+  border-radius: 8px;
+}
+
+/* Stats Grid */
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.statItem {
+  text-align: center;
+  padding: 16px;
+  background: var(--bg-body);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+}
+
+.statValue {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.statLabel {
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Admin Section */
+.adminSection {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  border-top: 4px solid var(--primary);
+}
+
+.adminSectionHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.adminSectionHeader h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.adminSectionHeader svg {
+  font-size: 18px;
+  color: var(--primary);
+}
+
+.adminBadge {
+  padding: 4px 10px;
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-left: auto;
+}
+
+.adminStats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.adminStat {
+  padding: 12px;
+  background: var(--bg-body);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+}
+
+.adminStatLabel {
+  display: block;
+  font-size: 11px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+
+.adminStatValue {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  display: block;
+}
+
+.adminStatValue.rated {
+  color: #10b981;
+}
+
+.adminStatValue.notRated {
+  color: #f59e0b;
+}
+
+/* Review Form */
+.reviewForm {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.formLabel {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.formLabel svg {
+  font-size: 14px;
+  color: var(--primary);
+}
+
+.ratingInput {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.starBtn {
+  background: none;
+  border: none;
+  padding: 8px;
+  cursor: pointer;
+  font-size: 24px;
+  color: var(--border-color);
+  transition: all 0.2s ease;
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.starBtn:hover:not(:disabled) {
+  transform: scale(1.1);
+}
+
+.starBtn.active {
+  color: #fbbf24;
+}
+
+.starBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ratingHelp {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ratingValue {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.feedbackInput {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-body);
+  color: var(--text-primary);
+  font-size: 14px;
+  resize: vertical;
+  min-height: 120px;
+  font-family: inherit;
+  line-height: 1.5;
+}
+
+.feedbackInput:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.feedbackHelp {
+  text-align: right;
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+.formActions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-color);
+  margin-top: 8px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.formButtons {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.submitReviewBtn,
+.deleteReviewBtn,
+.cancelFormBtn {
+  padding: 12px 20px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  white-space: nowrap;
+}
+
+.submitReviewBtn:hover:not(:disabled) {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
+}
+
+.submitReviewBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.deleteReviewBtn {
+  background: var(--danger);
+}
+
+.deleteReviewBtn:hover:not(:disabled) {
+  background: var(--danger-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+}
+
+.cancelFormBtn {
+  background: var(--warning);
+}
+
+.cancelFormBtn:hover:not(:disabled) {
+  background: var(--warning-hover);
+}
+
+.reviewStatus {
+  font-size: 12px;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.reviewStatus svg {
+  font-size: 12px;
+}
+
+.updatedNote {
+  font-size: 11px;
+  color: #10b981;
+  margin-left: 8px;
+}
+
+/* Reviews List */
+.reviewsList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.reviewItem {
+  padding: 16px;
+  background: var(--bg-body);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+}
+
+.reviewItem.currentUserReview {
+  border-color: var(--primary);
+  background: rgba(79, 70, 229, 0.05);
+}
+
+.reviewHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.reviewerInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 200px;
+}
+
+.reviewerName {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  flex-wrap: wrap;
+}
+
+.reviewerRole {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.roleBadgeAdmin,
+.roleBadgeYou {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.roleBadgeAdmin {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.roleBadgeYou {
+  background: rgba(79, 70, 229, 0.1);
+  color: var(--primary);
+  border: 1px solid rgba(79, 70, 229, 0.2);
+}
+
+.reviewActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.reviewRating {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.reviewStar {
+  font-size: 14px;
+  color: var(--border-color);
+}
+
+.reviewStar.filled {
+  color: #fbbf24;
+}
+
+.ratingValue {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-left: 4px;
+}
+
+.reviewOptions {
+  position: relative;
+}
+
+.reviewOptionsToggle {
+  background: none;
+  border: none;
+  padding: 8px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: 6px;
+}
+
+.reviewOptionsToggle:hover {
+  background: var(--bg-body);
+}
+
+.reviewOptionsMenu {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  z-index: 100;
+  min-width: 160px;
+  overflow: hidden;
+}
+
+.reviewOption {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  width: 100%;
+  background: none;
+  border: none;
+  text-align: left;
+  font-size: 14px;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 44px;
+}
+
+.reviewOption:hover {
+  background: var(--bg-body);
+}
+
+.reviewOption.deleteOption {
+  color: var(--danger);
+}
+
+.reviewOption.deleteOption:hover {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.reviewDate {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.reviewDate svg {
+  font-size: 10px;
+}
+
+.updatedDate {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-left: 8px;
+  font-style: italic;
+}
+
+.reviewFeedback {
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.noReviews {
+  padding: 40px 20px;
+  text-align: center;
+  background: var(--bg-body);
+  border: 1px dashed var(--border-color);
+  border-radius: 8px;
+}
+
+.noReviews svg {
+  font-size: 36px;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+}
+
+.noReviews p {
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin: 0;
+}
+
+/* Metadata */
+.metadata {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.metaItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-color);
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.metaItem:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.metaLabel {
+  font-size: 14px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.metaValue {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  text-align: right;
+  word-break: break-word;
+}
+
+.metaValue.rated {
+  color: #10b981;
+}
+
+.metaValue.notRated {
+  color: #f59e0b;
+}
+
+.metaValue.public {
+  color: #10b981;
+}
+
+.metaValue.private {
+  color: #6b7280;
+}
+
+.ownerInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* Profile Picture Styles */
+.profilePic,
+.profilePicPlaceholder {
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--border-color);
+}
+
+.profilePicSmall {
+  width: 32px;
+  height: 32px;
+}
+
+.profilePicMedium {
+  width: 40px;
+  height: 40px;
+}
+
+.profilePicPlaceholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-body);
+  color: var(--text-secondary);
+}
+
+.profilePicPlaceholder.profilePicSmall {
+  width: 32px;
+  height: 32px;
+  font-size: 14px;
+}
+
+.profilePicPlaceholder.profilePicMedium {
+  width: 40px;
+  height: 40px;
+  font-size: 16px;
+}
+
+/* Loading and Error States */
+.loadingContainer,
+.errorContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  text-align: center;
+  gap: 16px;
+  padding: 20px;
+}
+
+.errorContainer svg {
+  font-size: 36px;
+  color: var(--danger);
+}
+
+.errorContainer h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.errorContainer p {
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.primaryBtn {
+  padding: 12px 24px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 8px;
+  min-height: 44px;
+}
+
+.primaryBtn:hover {
+  background: var(--primary-hover);
+}
+
+.loadingContainer p {
+  color: var(--text-secondary);
+}
+
+.loadingSpinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border-color);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ========== SUPER MOBILE RESPONSIVE BREAKPOINTS ========== */
+
+/* Tablet and Below (768px) */
+@media (max-width: 1024px) {
+  .contentGrid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  .rightColumn {
+    order: -1; /* Move reviews above details on tablets */
+  }
+}
+
+/* Mobile (768px and below) */
+@media (max-width: 768px) {
+  .container {
+    font-size: 13px;
+  }
+  
+  .header {
+    margin-bottom: 20px;
+    padding: 12px 0;
+  }
+  
+  .headerMain {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .titleSection h1 {
+    font-size: 20px;
+  }
+  
+  .headerActions {
+    width: 100%;
+    justify-content: stretch;
+  }
+  
+  .adminRateBtn,
+  .editReviewBtn,
+  .cancelEditBtn,
+  .deleteTaskBtn {
+    flex: 1;
+    min-width: 140px;
+    justify-content: center;
+  }
+  
+  .subtitle {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .visibilityBadge,
+  .ratingBadge {
+    align-self: flex-start;
+  }
+  
+  .section {
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  
+  .sectionHeader {
+    margin-bottom: 12px;
+  }
+  
+  .sectionHeader h3 {
+    font-size: 15px;
+  }
+  
+  .techItem {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .techName,
+  .techCode,
+  .techLanguage {
+    width: 100%;
+    text-align: left;
+  }
+  
+  .statsGrid,
+  .adminStats {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  
+  .adminStatValue {
+    font-size: 16px;
+  }
+  
+  .statValue {
+    font-size: 18px;
+  }
+  
+  .formActions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+  
+  .formButtons {
+    width: 100%;
+  }
+  
+  .submitReviewBtn,
+  .deleteReviewBtn,
+  .cancelFormBtn {
+    flex: 1;
+    min-width: 120px;
+    padding: 12px 16px;
+  }
+  
+  .reviewHeader {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .reviewActions {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .reviewOptionsMenu {
+    right: auto;
+    left: 0;
+    min-width: 140px;
+  }
+  
+  .metaItem {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  
+  .metaLabel,
+  .metaValue {
+    width: 100%;
+    text-align: left;
+  }
+  
+  .ownerInfo {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  
+  .githubLink span {
+    font-size: 12px;
+  }
+.reviewOptionsMenu{
+    transform: translateX(-50%);
+    width: max-content;
+  }
+}
+
+/* Small Mobile (480px and below) */
+@media (max-width: 480px) {
+  .container {
+    font-size: 12px;
+  }
+  
+  .titleSection h1 {
+    font-size: 18px;
+  }
+  
+  .backBtn {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .headerActions {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .adminRateBtn,
+  .editReviewBtn,
+  .cancelEditBtn,
+  .deleteTaskBtn {
+    width: 100%;
+    min-width: unset;
+  }
+  
+  .sectionHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .sectionHeader h3 {
+    font-size: 14px;
+  }
+  
+  .adminSectionHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .adminBadge {
+    margin-left: 0;
+    align-self: flex-start;
+  }
+  
+  .ratingInput {
+    justify-content: center;
+  }
+  
+  .starBtn {
+    font-size: 20px;
+    padding: 6px;
+    min-width: 40px;
+    min-height: 40px;
+  }
+  
+  .formButtons {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .submitReviewBtn,
+  .deleteReviewBtn,
+  .cancelFormBtn {
+    width: 100%;
+  }
+  
+  .reviewerName {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  
+  .profilePicSmall {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .profilePicPlaceholder.profilePicSmall {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+  }
+  
+  .reviewFeedback {
+    font-size: 13px;
+  }
+  
+  .description {
+    font-size: 13px;
+  }
+  
+  .loadingContainer,
+  .errorContainer {
+    min-height: 250px;
+  }
+
+}
+
+
+/* Extra Small Mobile (360px and below) */
+@media (max-width: 360px) {
+  .section {
+    padding: 12px;
+  }
+  
+  
+  .titleSection h1 {
+    font-size: 16px;
+  }
+  
+  .userInfo,
+  .dateInfo {
+    font-size: 12px;
+  }
+  
+  .visibilityBadge,
+  .ratingBadge {
+    font-size: 11px;
+    padding: 4px 8px;
+  }
+  
+  .formLabel {
+    font-size: 13px;
+  }
+  
+  .feedbackInput {
+    font-size: 13px;
+    padding: 10px 12px;
+  }
+  
+  .reviewItem {
+    padding: 12px;
+  }
+  
+  .reviewOption {
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+}
+
+/* Touch-friendly improvements */
+@media (hover: none) and (pointer: coarse) {
+  .backBtn,
+  .adminRateBtn,
+  .editReviewBtn,
+  .cancelEditBtn,
+  .deleteTaskBtn,
+  .submitReviewBtn,
+  .deleteReviewBtn,
+  .cancelFormBtn,
+  .reviewOptionsToggle,
+  .reviewOption,
+  .starBtn {
+    min-height: 48px;
+    font-size: 15px;
+  }
+  
+  .starBtn {
+    min-width: 48px;
+    min-height: 48px;
+  }
+  
+  .githubLink {
+    min-height: 48px;
+  }
+  
+  .techItem {
+    padding: 12px;
+  }
+  
+  /* Increase touch targets for mobile */
+  .visibilityBadge,
+  .ratingBadge {
+    min-height: 36px;
+    padding: 8px 12px;
+  }
+}
+
+/* Dark mode optimizations */
+@media (prefers-color-scheme: dark) {
+  .githubLink:hover,
+  .techItem:hover,
+  .statItem:hover {
+    border-color: var(--primary);
+  }
+  
+  .reviewOptionsMenu {
+    background: var(--bg-body);
+    border-color: var(--border-color-dark);
+  }
+}

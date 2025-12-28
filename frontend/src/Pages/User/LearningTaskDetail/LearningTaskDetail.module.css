@@ -777,3 +777,76 @@
     gap: 4px;
   }
 }
+
+/* Profile Picture Styles */
+.profilePic {
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--border-color);
+}
+
+.profilePicSmall {
+  width: 32px;
+  height: 32px;
+}
+
+.profilePicMedium {
+  width: 48px;
+  height: 48px;
+}
+
+.profilePicPlaceholder {
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-body);
+  border: 2px solid var(--border-color);
+  color: var(--text-secondary);
+}
+
+.profilePicPlaceholder.profilePicSmall {
+  width: 32px;
+  height: 32px;
+  font-size: 14px;
+}
+
+.profilePicPlaceholder.profilePicMedium {
+  width: 48px;
+  height: 48px;
+  font-size: 18px;
+}
+
+/* Update user info styles */
+.userInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.reviewerName {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Owner Info */
+.ownerInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .profilePicSmall {
+    width: 28px;
+    height: 28px;
+  }
+
+  .profilePicPlaceholder.profilePicSmall {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+  }
+}

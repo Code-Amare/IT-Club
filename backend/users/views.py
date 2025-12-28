@@ -15,7 +15,7 @@ from django.conf import settings
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_protect
 from axes.handlers.proxy import AxesProxyHandler
-from utils.axes import get_lockout_remaining, get_client_ip
+from utils.axes import get_lockout_message, is_user_locked
 
 
 IS_TWOFA_MANDATORY = settings.IS_TWOFA_MANDATORY
@@ -234,103 +234,218 @@ class RegisterView(APIView):
         )
 
 
+# class LoginView(APIView):
+#     def post(self, request):
+#         email = request.data.get("email").strip()
+#         password = request.data.get("password").strip()
+
+#         if not email or not password:
+#             return Response(
+#                 {"error": "Email and password are required."},
+#                 status=status.HTTP_400_BAD_REQUEST,
+#             )
+
+#         handler = AxesProxyHandler()
+
+#         if handler.is_locked(request._request, credentials={"email": email}):
+#             ip_address = get_client_ip(request)
+
+#             # 2. Check lockout for this user + IP
+#             minutes, seconds = get_lockout_remaining(email, ip_address=ip_address)
+#             if minutes == 0:
+#                 return Response(
+#                     {
+#                         "error": f"User will be allowed to login again in {seconds} second{"" if seconds <= 1 else "s"}."
+#                     },
+#                     status=status.HTTP_401_UNAUTHORIZED,
+#                 )
+
+#             if minutes == 1:
+
+#                 return Response(
+#                     {"error": "User will be allowed to login again in 1 minute."},
+#                     status=status.HTTP_401_UNAUTHORIZED,
+#                 )
+#             return Response(
+#                 {"error": f"User will be allowed to login again in {minutes} minutes."},
+#                 status=status.HTTP_401_UNAUTHORIZED,
+#             )
+#         user = authenticate(request, email=email, password=password)
+#         if not user:
+#             return Response(
+#                 {"error": "Invalid email or password."},
+#                 status=status.HTTP_401_UNAUTHORIZED,
+#             )
+
+#         if IS_TWOFA_MANDATORY or user.twofa_endabled:
+#             old_email_ver = VerifyEmail.objects.filter(user=user).first()
+#             if old_email_ver:
+#                 old_email_ver.delete()
+
+#             email_verif = VerifyEmail.objects.create(user=user)
+
+#             try:
+#                 send_mail(
+#                     subject="Verify your email",
+#                     message=f"Your verification code is {email_verif.code}",
+#                     from_email=EMAIL,
+#                     recipient_list=[email],
+#                 )
+#             except Exception as e:
+
+#                 return Response(
+#                     {
+#                         "error": "Unable to send the code.",
+#                         "email_sent": False,
+#                     },
+#                     status=status.HTTP_400_BAD_REQUEST,
+#                 )
+#             return Response(
+#                 {
+#                     "detail": "verification code sent successfully.",
+#                     "verify_email": True,
+#                 },
+#                 status=status.HTTP_200_OK,
+#             )
+
+#         refresh = RefreshToken.for_user(user)
+
+#         response = Response(
+#             {"user": UserSerializer(user).data},
+#             status=200,
+#         )
+
+#         response.set_cookie(
+#             "access",
+#             str(refresh.access_token),
+#             httponly=True,
+#             secure=True,
+#             samesite="Lax",
+#         )
+#         response.set_cookie(
+#             "refresh",
+#             str(refresh),
+#             httponly=True,
+#             secure=True,
+#             samesite="Lax",
+#         )
+
+#         csrf_token = get_token(request)
+#         response.set_cookie(
+#             "csrftoken",
+#             csrf_token,
+#             httponly=False,
+#             secure=True,
+#             samesite="Lax",
+#         )
+
+#         return response
+
+
 class LoginView(APIView):
     def post(self, request):
-        email = request.data.get("email").strip()
-        password = request.data.get("password").strip()
+        # Get and clean credentials
+        email = request.data.get("email", "").strip()
+        password = request.data.get("password", "").strip()
 
+        # Validate required fields
         if not email or not password:
             return Response(
                 {"error": "Email and password are required."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        handler = AxesProxyHandler()
+        # Check if user is locked
+        is_locked, minutes, seconds = is_user_locked(request, email)
 
-        if handler.is_locked(request._request, credentials={"email": email}):
-            ip_address = get_client_ip(request)
-            print(ip_address)
-
-            # 2. Check lockout for this user + IP
-            minutes, seconds = get_lockout_remaining(email, ip_address=ip_address)
-            if minutes == 0:
-                return Response(
-                    {
-                        "error": f"User will be allowed to login again in {seconds} second{"" if seconds <= 1 else "s"}."
-                    },
-                    status=status.HTTP_401_UNAUTHORIZED,
-                )
-
-            if minutes == 1:
-
-                return Response(
-                    {"error": "User will be allowed to login again in 1 minute."},
-                    status=status.HTTP_401_UNAUTHORIZED,
-                )
+        if is_locked:
+            lockout_message = get_lockout_message(minutes, seconds)
             return Response(
-                {"error": f"User will be allowed to login again in {minutes} minutes."},
+                {"error": lockout_message},
                 status=status.HTTP_401_UNAUTHORIZED,
             )
+
+        # Authenticate user
         user = authenticate(request, email=email, password=password)
+
         if not user:
             return Response(
                 {"error": "Invalid email or password."},
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 
-        if IS_TWOFA_MANDATORY or user.twofa_endabled:
-            old_email_ver = VerifyEmail.objects.filter(user=user).first()
-            if old_email_ver:
-                old_email_ver.delete()
+        # Handle 2FA if enabled
+        if getattr(settings, "IS_TWOFA_MANDATORY", False) or getattr(
+            user, "twofa_enabled", False
+        ):
+            return self._handle_twofa(user, email)
 
-            email_verif = VerifyEmail.objects.create(user=user)
+        # Generate tokens and set cookies
+        return self._generate_auth_response(user, request)
 
-            try:
-                send_mail(
-                    subject="Verify your email",
-                    message=f"Your verification code is {email_verif.code}",
-                    from_email=EMAIL,
-                    recipient_list=[email],
-                )
-            except Exception as e:
+    def _handle_twofa(self, user, email):
+        """Handle Two-Factor Authentication flow"""
+        # Delete old verification codes
+        VerifyEmail.objects.filter(user=user).delete()
 
-                return Response(
-                    {
-                        "error": "Unable to send the code.",
-                        "email_sent": False,
-                    },
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
+        # Create new verification code
+        email_verif = VerifyEmail.objects.create(user=user)
+
+        try:
+            # Send verification email
+            send_mail(
+                subject="Verify your email",
+                message=f"Your verification code is {email_verif.code}",
+                from_email=settings.EMAIL_HOST_USER,
+                recipient_list=[email],
+            )
+        except Exception as e:
             return Response(
                 {
-                    "detail": "verification code sent successfully.",
-                    "verify_email": True,
+                    "error": "Unable to send the verification code.",
+                    "email_sent": False,
                 },
-                status=status.HTTP_200_OK,
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
+        return Response(
+            {
+                "detail": "Verification code sent successfully.",
+                "verify_email": True,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    def _generate_auth_response(self, user, request):
+        """Generate JWT tokens and set cookies"""
         refresh = RefreshToken.for_user(user)
 
         response = Response(
             {"user": UserSerializer(user).data},
-            status=200,
+            status=status.HTTP_200_OK,
         )
 
+        # Set access token cookie
         response.set_cookie(
             "access",
             str(refresh.access_token),
             httponly=True,
             secure=True,
             samesite="Lax",
+            max_age=60 * 15,  # 15 minutes
         )
+
+        # Set refresh token cookie
         response.set_cookie(
             "refresh",
             str(refresh),
             httponly=True,
             secure=True,
             samesite="Lax",
+            max_age=60 * 60 * 24 * 7,  # 7 days
         )
 
+        # Set CSRF token
         csrf_token = get_token(request)
         response.set_cookie(
             "csrftoken",

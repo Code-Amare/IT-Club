@@ -86,7 +86,7 @@ export default function LearningTaskDetail() {
             // Check if current user has already reviewed this task
             if (user.isAuthenticated && taskData.reviews) {
                 const existingReview = taskData.reviews.find(
-                    review => review.user === user.username || review.user_id === user.id
+                    review => review.user_id === user.id
                 );
                 if (existingReview) {
                     setUserReview(existingReview);
@@ -108,9 +108,9 @@ export default function LearningTaskDetail() {
         } catch (error) {
             console.error("Error fetching task data:", error);
             if (error.response?.status === 404) {
-                neonToast.error("Task not found", "error");
+                neonToast.error("Learning Task not found", "error");
             } else {
-                neonToast.error("Failed to load task", "error");
+                neonToast.error("Failed to load learning task", "error");
             }
             navigate("/user/learning-tasks");
         } finally {
@@ -120,8 +120,9 @@ export default function LearningTaskDetail() {
 
     // Handle like/unlike
     const handleLike = async () => {
+        console.log(task)
         if (!user.isAuthenticated) {
-            neonToast.error("Please login to like tasks", "error");
+            neonToast.error("Please login to like learning tasks", "error");
             return;
         }
 
@@ -132,13 +133,13 @@ export default function LearningTaskDetail() {
 
             neonToast.success(
                 response.data.action === "liked"
-                    ? "Task liked!"
-                    : "Task unliked!",
+                    ? "Learning task liked!"
+                    : "Learning task unliked!",
                 "success"
             );
         } catch (error) {
-            console.error("Error liking task:", error);
-            neonToast.error("Failed to like/unlike task", "error");
+            console.error("Error liking learning task:", error);
+            neonToast.error("Failed to like/unlike learning task", "error");
         }
     };
 
@@ -176,7 +177,7 @@ export default function LearningTaskDetail() {
 
         // Check if user is task owner
         if (task && user.id === task.user.id) {
-            neonToast.error("You cannot review your own task", "error");
+            neonToast.error("You cannot review your own learning task", "error");
             return;
         }
 
@@ -222,7 +223,6 @@ export default function LearningTaskDetail() {
         }
     };
 
-
     // Get language/framework name by ID
     const getLanguageName = (id) => {
         const lang = languages.find(l => l.id === id);
@@ -246,12 +246,48 @@ export default function LearningTaskDetail() {
         });
     };
 
+    // Get user display name safely
+    const getUserDisplayName = (userObj) => {
+        if (!userObj) return "Unknown User";
+        if (typeof userObj === 'string') return userObj;
+        if (typeof userObj === 'object') {
+            return userObj.full_name || userObj.username || "Unknown User";
+        }
+        return String(userObj);
+    };
+
+    // Profile picture component
+    const ProfilePicture = ({ user, size = "small" }) => {
+        const sizeClass = size === "small" ? styles.profilePicSmall : styles.profilePicMedium;
+
+        if (user?.profile_pic_url) {
+            return (
+                <img
+                    src={user.profile_pic_url}
+                    alt={getUserDisplayName(user)}
+                    className={`${styles.profilePic} ${sizeClass}`}
+                    onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.style.display = 'none';
+                        e.target.nextSibling.style.display = 'flex';
+                    }}
+                />
+            );
+        }
+
+        return (
+            <div className={`${styles.profilePicPlaceholder} ${sizeClass}`}>
+                <FaUser />
+            </div>
+        );
+    };
+
     // Get user role badge
     const getUserRoleBadge = (reviewUser, isAdmin) => {
         if (isAdmin) {
             return <span className={styles.roleBadgeAdmin}>Admin</span>;
-        } else if (reviewUser === task?.user) {
-            return <span className={styles.roleBadgeOwner}>Task Owner</span>;
+        } else if (reviewUser && task?.user && reviewUser.id === task.user.id) {
+            return <span className={styles.roleBadgeOwner}>Learning Task Owner</span>;
         } else {
             return <span className={styles.roleBadgeUser}>User</span>;
         }
@@ -263,7 +299,7 @@ export default function LearningTaskDetail() {
                 <SideBar>
                     <div className={styles.loadingContainer}>
                         <div className={styles.loadingSpinner}></div>
-                        <p>Loading task details...</p>
+                        <p>Loading learning task details...</p>
                     </div>
                 </SideBar>
             </div>
@@ -276,13 +312,13 @@ export default function LearningTaskDetail() {
                 <SideBar>
                     <div className={styles.errorContainer}>
                         <FaExclamationTriangle />
-                        <h2>Task Not Found</h2>
+                        <h2>Learning Task Not Found</h2>
                         <p>The requested learning task could not be found.</p>
                         <button
                             className={styles.primaryBtn}
                             onClick={() => navigate("/user/learning-tasks")}
                         >
-                            Back to Tasks
+                            Back to Learning Tasks
                         </button>
                     </div>
                 </SideBar>
@@ -292,7 +328,6 @@ export default function LearningTaskDetail() {
 
     const isOwner = user.id === task.user.id;
     const canReview = user.is_staff && !isOwner && task.is_public;
-
 
     return (
         <div className={styles.container}>
@@ -304,14 +339,15 @@ export default function LearningTaskDetail() {
                             className={styles.backBtn}
                             onClick={() => navigate("/user/learning-tasks")}
                         >
-                            <FaArrowLeft /> Back to Tasks
+                            <FaArrowLeft /> Back to Learning Tasks
                         </button>
                         <div className={styles.headerMain}>
                             <div className={styles.titleSection}>
                                 <h1>{task.title}</h1>
                                 <div className={styles.subtitle}>
                                     <span className={styles.userInfo}>
-                                        <FaUser /> {task.user.full_name}
+                                        <ProfilePicture user={task.user} size="small" />
+                                        <span>{getUserDisplayName(task.user)}</span>
                                     </span>
                                     <span className={styles.dateInfo}>
                                         <FaCalendar /> {formatDate(task.created_at)}
@@ -336,7 +372,7 @@ export default function LearningTaskDetail() {
                                 <button
                                     className={`${styles.likeBtn} ${liked ? styles.liked : ""}`}
                                     onClick={handleLike}
-                                    title={liked ? "Unlike this task" : "Like this task"}
+                                    title={liked ? "Unlike this learning task" : "Like this learning task"}
                                 >
                                     <FaThumbsUp />
                                     <span>{likeCount}</span>
@@ -348,7 +384,7 @@ export default function LearningTaskDetail() {
                                         <button
                                             className={styles.editBtn}
                                             onClick={() => navigate(`/user/learning-task/edit/${id}`)}
-                                            title="Edit task"
+                                            title="Edit learning task"
                                         >
                                             <FaEdit />
                                         </button>
@@ -363,7 +399,7 @@ export default function LearningTaskDetail() {
 
                 {/* Main Content */}
                 <div className={styles.contentGrid}>
-                    {/* Left Column - Task Details */}
+                    {/* Left Column - Learning Task Details */}
                     <div className={styles.leftColumn}>
                         {/* Description */}
                         <div className={styles.section}>
@@ -458,11 +494,11 @@ export default function LearningTaskDetail() {
                             )}
                         </div>
 
-                        {/* Task Stats */}
+                        {/* Learning Task Stats */}
                         <div className={styles.section}>
                             <div className={styles.sectionHeader}>
                                 <FaUsers />
-                                <h3>Task Statistics</h3>
+                                <h3>Learning Task Statistics</h3>
                             </div>
                             <div className={styles.statsGrid}>
                                 <div className={styles.statItem}>
@@ -533,7 +569,7 @@ export default function LearningTaskDetail() {
                                             name="feedback"
                                             value={reviewForm.feedback}
                                             onChange={handleReviewChange}
-                                            placeholder="Provide detailed feedback about the task..."
+                                            placeholder="Provide detailed feedback about the learning task..."
                                             className={`${styles.feedbackInput} ${reviewErrors.feedback ? styles.errorInput : ""
                                                 }`}
                                             rows={4}
@@ -567,8 +603,7 @@ export default function LearningTaskDetail() {
                             {task.reviews && task.reviews.length > 0 ? (
                                 <div className={styles.reviewsList}>
                                     {task.reviews.map((review, index) => {
-                                        const isCurrentUserReview =
-                                            review.user === user.username || review.user_id === user.id;
+                                        const isCurrentUserReview = review.user_id === user.id;
 
                                         return (
                                             <div
@@ -579,7 +614,8 @@ export default function LearningTaskDetail() {
                                                 <div className={styles.reviewHeader}>
                                                     <div className={styles.reviewerInfo}>
                                                         <div className={styles.reviewerName}>
-                                                            <FaUser /> {review.user}
+                                                            <ProfilePicture user={review.user} size="small" />
+                                                            <span>{getUserDisplayName(review.user)}</span>
                                                         </div>
                                                         <div className={styles.reviewerRole}>
                                                             {getUserRoleBadge(review.user, review.is_admin)}
@@ -613,16 +649,16 @@ export default function LearningTaskDetail() {
                             ) : (
                                 <div className={styles.noReviews}>
                                     <FaComment />
-                                    <p>No reviews yet. {canReview ? "Be the first to review this task!" : "Check back later for reviews."}</p>
+                                    <p>No reviews yet. {canReview ? "Be the first to review this learning task!" : "Check back later for reviews."}</p>
                                 </div>
                             )}
                         </div>
 
-                        {/* Task Metadata */}
+                        {/* Learning Task Information */}
                         <div className={styles.section}>
                             <div className={styles.sectionHeader}>
                                 <FaEye />
-                                <h3>Task Information</h3>
+                                <h3>Learning Task Information</h3>
                             </div>
                             <div className={styles.metadata}>
                                 <div className={styles.metaItem}>
@@ -652,6 +688,15 @@ export default function LearningTaskDetail() {
                                         }`}>
                                         {task.is_public ? "Public" : "Private"}
                                     </span>
+                                </div>
+                                <div className={styles.metaItem}>
+                                    <span className={styles.metaLabel}>Learning Task Owner:</span>
+                                    <div className={styles.ownerInfo}>
+                                        <ProfilePicture user={task.user} size="small" />
+                                        <span className={styles.metaValue}>
+                                            {getUserDisplayName(task.user)}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         </div>

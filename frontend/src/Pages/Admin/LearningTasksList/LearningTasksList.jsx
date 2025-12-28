@@ -169,12 +169,10 @@ export default function LearningTasksList() {
 
     // Handle task actions
     const handleViewTask = (task) => {
-        navigate(`/learning-task/${task.id}`);
+        navigate(`/admin/learning-task/${task.id}`);
     };
 
-    const handleEditTask = (task) => {
-        navigate(`/learning-task/edit/${task.id}`);
-    };
+    ;
 
     const handleDeleteTask = async (taskId) => {
         try {
@@ -462,7 +460,6 @@ export default function LearningTasksList() {
                                         task={cardTask}
                                         isOwner={isOwner(task)}
                                         onView={() => handleViewTask(task)}
-                                        onEdit={() => handleEditTask(task)}
                                         onDelete={() => handleDeleteTask(task.id)}
                                     />
                                 );

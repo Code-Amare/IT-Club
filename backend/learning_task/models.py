@@ -41,5 +41,13 @@ class TaskReview(models.Model):
     is_admin = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["task", "user"],
+                name="unique_review_per_user_per_task"
+            )
+        ]
+
     def __str__(self):
         return f"{self.user} - {self.task.title} ({self.rating}/5)"
