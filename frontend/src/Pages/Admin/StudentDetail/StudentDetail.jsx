@@ -144,7 +144,7 @@ export default function StudentDetail() {
                         <div className={styles.headerActions}>
                             <button
                                 className={styles.editBtn}
-                                onClick={() => navigate(`/admin/students/${id}/edit`)}
+                                onClick={() => navigate(`/admin/student/edit/${id}/`)}
                             >
                                 <FaEdit /> Edit Student
                             </button>
@@ -202,6 +202,7 @@ export default function StudentDetail() {
                             <Info label="Date of Birth" value={student.date_of_birth ? formatDate(student.date_of_birth) : "Not specified"} icon={<FaCalendarAlt />} />
                             <Info label="Joined Date" value={formatDate(student.created_at || student.date_joined)} icon={<MdDateRange />} />
                             {student.parent_name && <Info label="Parent/Guardian" value={student.parent_name} icon={<FaUsers />} />}
+                            <Info label="Gender" value={student.gender.charAt(0).toUpperCase() + student.gender.slice(1)} icon={<MdDateRange />} />
                         </InfoCard>
 
                         <div className={styles.card}>
@@ -287,7 +288,7 @@ export default function StudentDetail() {
                             ) : (
                                 <div className={styles.emptyNotes}>
                                     <p>No notes added yet.</p>
-                                    <button className={styles.addNoteBtn} onClick={() => navigate(`/admin/students/${id}/edit`)}>
+                                    <button className={styles.addNoteBtn} onClick={() => navigate(`/admin/student/edit/${id}/`)}>
                                         Add Note
                                     </button>
                                 </div>

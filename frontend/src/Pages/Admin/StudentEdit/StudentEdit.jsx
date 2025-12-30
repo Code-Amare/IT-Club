@@ -1,13 +1,16 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { useUser } from "../../../Context/UserContext";
 import api from "../../../Utils/api";
 import { neonToast } from "../../../Components/NeonToast/NeonToast";
 import AsyncButton from "../../../Components/AsyncButton/AsyncButton";
 import SideBar from "../../../Components/SideBar/SideBar";
+import ConfirmAction from "../../../Components/ConfirmAction/ConfirmAction";
 import {
     FaArrowLeft,
     FaUser,
+    FaSave,
+    FaTrash,
     FaDownload,
     FaUpload
 } from "react-icons/fa";
@@ -18,39 +21,113 @@ import {
     MdSchool,
     MdClass
 } from "react-icons/md";
-import styles from "./StudentAdd.module.css";
+import styles from "./StudentEdit.module.css";
 
-export default function StudentAdd() {
+export default function StudentEdit() {
     const navigate = useNavigate();
     const { user } = useUser();
+    const { id } = useParams();
 
     const [formData, setFormData] = useState({
         full_name: "",
         email: "",
+        gender: "",
         grade: "",
         section: "",
         field: "",
         phone_number: "",
-        account: "", // This is optional, will default to "N/A"
+        account: "",
+        account_status: "active",
     });
 
     const [loading, setLoading] = useState(false);
+    const [fetching, setFetching] = useState(true);
     const [errors, setErrors] = useState({});
-    const [submitAction, setSubmitAction] = useState("add");
+    const [originalData, setOriginalData] = useState(null);
+    const [hasChanges, setHasChanges] = useState(false);
+
+    useEffect(() => {
+        fetchStudentData();
+    }, [id]);
+
+    const fetchStudentData = async () => {
+        try {
+            setFetching(true);
+            const response = await api.get(`/api/management/student/${id}/`);
+
+            let student;
+            if (response.data && response.data.student) {
+                student = response.data.student;
+                console.log("Using nested student data structure");
+            } else if (response.data && response.data.id) {
+                student = response.data;
+                console.log("Using flat student data structure");
+            } else {
+                console.error("Unexpected response structure:", response.data);
+                throw new Error("Invalid response structure from server");
+            }
+            setOriginalData(student);
+
+            setFormData({
+                full_name: student.full_name || "",
+                email: student.email || "",
+                gender: student.gender || "",
+                grade: student.grade?.toString() || "",
+                section: student.section || "",
+                field: student.field || "",
+                phone_number: student.phone_number || "",
+                account: student.account || "",
+                account_status: student.account_status || "active",
+            });
+
+        } catch (error) {
+            console.error("Error fetching student data:", error);
+
+            if (error.response?.status === 404) {
+                neonToast.error("Student not found", "error");
+                navigate("/admin/students");
+            } else if (error.response?.data?.detail) {
+                neonToast.error(error.response.data.detail, "error");
+            } else {
+                neonToast.error("Failed to load student data", "error");
+            }
+
+            navigate("/admin/students");
+        } finally {
+            setFetching(false);
+        }
+    };
 
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
+
+        if (originalData) {
+            const isChanged =
+                (name === "full_name" && value !== originalData.full_name) ||
+                (name === "email" && value !== originalData.email) ||
+                (name === "gender" && value !== originalData.gender) ||
+                (name === "grade" && value !== originalData.grade?.toString()) ||
+                (name === "section" && value !== originalData.section) ||
+                (name === "field" && value !== originalData.field) ||
+                (name === "phone_number" && value !== originalData.phone_number) ||
+                (name === "account" && value !== originalData.account) ||
+                (name === "account_status" && value !== originalData.account_status);
+
+            setHasChanges(isChanged || hasChanges);
+        }
+
         if (errors[name]) setErrors(prev => ({ ...prev, [name]: "" }));
     };
 
     const validateForm = () => {
         const newErrors = {};
 
-        // All these fields are REQUIRED based on your Profile model
         if (!formData.full_name.trim()) newErrors.full_name = "Full name is required";
         if (!formData.email.trim()) newErrors.email = "Email is required";
         else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = "Email is invalid";
+
+        if (!formData.gender) newErrors.gender = "Gender is required";
 
         if (!formData.grade) newErrors.grade = "Grade is required";
         else if (isNaN(formData.grade) || formData.grade < 1 || formData.grade > 12)
@@ -79,76 +156,102 @@ export default function StudentAdd() {
 
         setLoading(true);
         try {
-            // Prepare data exactly as your backend expects
             const studentData = {
                 full_name: formData.full_name.trim(),
                 email: formData.email.trim().toLowerCase(),
+                gender: formData.gender,
                 grade: parseInt(formData.grade),
-                section: formData.section.toUpperCase(), // Store as uppercase
+                section: formData.section.toUpperCase(),
                 field: formData.field,
                 phone_number: formData.phone_number.trim(),
-                account: formData.account.trim() || "N/A", // Optional, default to "N/A"
+                account: formData.account.trim() || "N/A",
+                account_status: formData.account_status,
             };
+            const response = await api.put(`/api/management/student/edit/${id}/`, studentData);
 
-            // Use the correct endpoint from your routes
-            const response = await api.post("/api/management/students/create/", studentData);
 
-            neonToast.success("Student added successfully!", "success");
+            neonToast.success("Student updated successfully!", "success");
+            setOriginalData(response.data);
+            setHasChanges(false);
+            navigate(`/admin/student/${id}`);
 
-            if (submitAction === "saveAndNew") {
-                // Reset form for new entry
-                setFormData({
-                    full_name: "",
-                    email: "",
-                    grade: "",
-                    section: "",
-                    field: "",
-                    phone_number: "",
-                    account: "",
-                });
-                setErrors({});
-                window.scrollTo(0, 0);
-                neonToast.info("Form cleared. Add another student.", "info");
-            } else {
-                // Navigate to student detail or list
-                const studentId = response?.data?.id || response?.data?.student?.id;
-                if (studentId) {
-                    navigate(`/admin/student/${studentId}`);
-                } else {
-                    navigate("/admin/students");
-                }
-            }
         } catch (error) {
-            console.error("Error adding student:", error?.response?.data || error);
+            console.error("Error updating student:", error?.response?.data || error);
 
             if (error.response?.status === 400) {
-                // Handle validation errors from backend
-                if (error.response.data?.email) {
-                    setErrors({ email: error.response.data.email[0] });
-                    neonToast.error(error.response.data.email[0], "error");
+                const backendErrors = error.response.data?.errors || {};
+                const newErrors = {};
+
+                Object.keys(backendErrors).forEach(key => {
+                    if (backendErrors[key] && backendErrors[key][0]) {
+                        newErrors[key] = backendErrors[key][0];
+                    }
+                });
+
+                if (Object.keys(newErrors).length > 0) {
+                    setErrors(newErrors);
+                    const firstErrorKey = Object.keys(newErrors)[0];
+                    neonToast.error(newErrors[firstErrorKey], "error");
                 } else if (error.response.data?.detail) {
                     neonToast.error(error.response.data.detail, "error");
                 } else {
                     neonToast.error("Please check the form data", "error");
                 }
+            } else if (error.response?.status === 404) {
+                console.log(error)
+                neonToast.error("Student not found", "error");
+                // navigate("/admin/students");
+            } else if (error.response?.data?.detail) {
+                neonToast.error(error.response.data.detail, "error");
             } else if (error.response?.data?.error) {
                 neonToast.error(error.response.data.error, "error");
             } else {
-                neonToast.error("Failed to add student. Please try again.", "error");
+                neonToast.error("Failed to update student. Please try again.", "error");
             }
         } finally {
             setLoading(false);
         }
     };
 
-    // Download template function
+    const handleDelete = async (event, typedName) => {
+        if (!originalData) return false;
+
+        if (typedName !== originalData.full_name) {
+            neonToast.error(
+                `The name you typed does not match the student's full name. Please type "${originalData.full_name}" exactly to delete.`,
+                "error"
+            );
+            return false;
+        }
+
+        setLoading(true);
+        try {
+            await api.delete(`/api/management/student/delete/${id}/`);
+            neonToast.success("Student deleted successfully!", "success");
+            navigate("/admin/students");
+            return true;
+        } catch (error) {
+            console.error("Error deleting student:", error);
+
+            if (error.response?.status === 404) {
+                neonToast.error("Student not found", "error");
+            } else if (error.response?.data?.detail) {
+                neonToast.error(error.response.data.detail, "error");
+            } else {
+                neonToast.error("Failed to delete student", "error");
+            }
+            return false;
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const downloadTemplate = async () => {
         try {
             const response = await api.get("/api/management/students/template/", {
                 responseType: 'blob'
             });
 
-            // Create a download link
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
             link.href = url;
@@ -164,10 +267,22 @@ export default function StudentAdd() {
         }
     };
 
-    // Navigate to bulk upload
     const goToBulkUpload = () => {
         navigate("/admin/students/bulk");
     };
+
+    if (fetching) {
+        return (
+            <div className={styles.container}>
+                <SideBar>
+                    <div className={styles.loadingContainer}>
+                        <div className={styles.loadingSpinner}></div>
+                        <p>Loading student data...</p>
+                    </div>
+                </SideBar>
+            </div>
+        );
+    }
 
     return (
         <div className={styles.container}>
@@ -177,7 +292,7 @@ export default function StudentAdd() {
                         <button className={styles.backBtn} onClick={() => navigate("/admin/students")}>
                             <FaArrowLeft /> Back to Students
                         </button>
-                        <h1 className={styles.title}><FaUser /> Add New Student</h1>
+                        <h1 className={styles.title}><FaUser /> Edit Student</h1>
                     </div>
 
                     <div className={styles.headerActions}>
@@ -190,7 +305,7 @@ export default function StudentAdd() {
                     </div>
 
                     <p className={styles.subtitle}>
-                        Add a new student to the system. All fields are required except account.
+                        Edit student information. All fields are required except account.
                     </p>
                 </div>
 
@@ -236,6 +351,27 @@ export default function StudentAdd() {
                             </div>
 
                             <div className={styles.formGroup}>
+                                <label htmlFor="gender">Gender *</label>
+                                <div className={styles.inputWithIcon}>
+                                    <FaUser className={styles.inputIcon} />
+                                    <select
+                                        id="gender"
+                                        name="gender"
+                                        value={formData.gender}
+                                        onChange={handleChange}
+                                        className={errors.gender ? styles.errorInput : ""}
+                                        required
+                                    >
+                                        <option value="">Select Gender</option>
+                                        <option value="male">Male</option>
+                                        <option value="female">Female</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                </div>
+                                {errors.gender && <span className={styles.errorText}>{errors.gender}</span>}
+                            </div>
+
+                            <div className={styles.formGroup}>
                                 <label htmlFor="phone_number">Phone Number *</label>
                                 <div className={styles.inputWithIcon}>
                                     <MdPhone className={styles.inputIcon} />
@@ -268,6 +404,27 @@ export default function StudentAdd() {
                                 </div>
                                 <small className={styles.helperText}>
                                     Leave empty to use default value "N/A"
+                                </small>
+                            </div>
+
+                            <div className={styles.formGroup}>
+                                <label htmlFor="account_status">Account Status</label>
+                                <div className={styles.inputWithIcon}>
+                                    <select
+                                        id="account_status"
+                                        name="account_status"
+                                        value={formData.account_status}
+                                        onChange={handleChange}
+                                        className={styles.statusSelect}
+                                    >
+                                        <option value="active">Active</option>
+                                        <option value="inactive">Inactive</option>
+                                    </select>
+                                </div>
+                                <small className={styles.helperText}>
+                                    {formData.account_status === "active"
+                                        ? "Student can log in and access the system"
+                                        : "Student cannot log in"}
                                 </small>
                             </div>
                         </div>
@@ -353,40 +510,48 @@ export default function StudentAdd() {
                         <button
                             type="button"
                             className={styles.secondaryBtn}
-                            onClick={() => navigate("/admin/students")}
+                            onClick={() => navigate(`/admin/student/${id}`)}
                             disabled={loading}
                         >
                             Cancel
                         </button>
 
                         <div className={styles.primaryActions}>
-                            <AsyncButton
-                                type="button"
-                                className={styles.secondaryBtn}
-                                loading={loading}
-                                disabled={loading}
-                                onClick={() => {
-                                    setSubmitAction("saveAndNew");
-                                    setTimeout(() => {
-                                        const form = document.querySelector(`.${styles.form}`);
-                                        if (form) form.requestSubmit();
-                                    }, 0);
-                                }}
+                            <ConfirmAction
+                                title="Delete Student"
+                                message={`Are you sure you want to delete this student? This action cannot be undone. To confirm, please type the student's full name exactly as shown below:`}
+                                confirmText="Delete Student"
+                                cancelText="Cancel"
+                                requireReason={true}
+                                placeholder={`Type: "${originalData?.full_name}"`}
+                                onConfirm={handleDelete}
                             >
-                                Save & Add Another
-                            </AsyncButton>
+                                <AsyncButton
+                                    type="button"
+                                    className={styles.dangerBtn}
+                                    loading={loading}
+                                    disabled={loading}
+                                >
+                                    <FaTrash /> Delete Student
+                                </AsyncButton>
+                            </ConfirmAction>
 
                             <AsyncButton
                                 type="submit"
                                 className={styles.primaryBtn}
                                 loading={loading}
-                                disabled={loading}
-                                onClick={() => setSubmitAction("add")}
+                                disabled={loading || !hasChanges}
                             >
-                                <FaUser /> Add Student
+                                <FaSave /> {hasChanges ? "Save Changes" : "No Changes"}
                             </AsyncButton>
                         </div>
-                     </div>
+                    </div>
+
+                    {hasChanges && (
+                        <div className={styles.unsavedChanges}>
+                            <small>You have unsaved changes. Click "Save Changes" to update.</small>
+                        </div>
+                    )}
                 </form>
             </SideBar>
         </div>

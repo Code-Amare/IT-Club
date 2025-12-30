@@ -532,6 +532,18 @@ export default function Students() {
                                                     <SortIcon column="account_status" />
                                                 </div>
                                             </th>
+                                            <th onClick={() => handleSort("attendance_percentage")}>
+                                                <div className={styles.tableHeaderCell}>
+                                                    <span>Attendance %</span>
+                                                    <SortIcon column="attendance_percentage" />
+                                                </div>
+                                            </th>
+                                            <th onClick={() => handleSort("total_sessions")}>
+                                                <div className={styles.tableHeaderCell}>
+                                                    <span>Sessions</span>
+                                                    <SortIcon column="total_sessions" />
+                                                </div>
+                                            </th>
                                             <th>Actions</th>
                                         </tr>
                                     </thead>
@@ -589,6 +601,23 @@ export default function Students() {
                                                                 <FaExclamationTriangle /> Pending
                                                             </>
                                                         )}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <div className={styles.attendanceCell}>
+                                                        <div className={styles.attendancePercentage}>
+                                                            {student.attendance?.attendance_percentage || 0}%
+                                                        </div>
+                                                        <div className={styles.attendanceBreakdown}>
+                                                            P: {student.attendance?.present || 0} |
+                                                            L: {student.attendance?.late || 0} |
+                                                            A: {student.attendance?.absent || 0}
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <span className={styles.sessionsBadge}>
+                                                        {student.attendance?.total_sessions || 0}
                                                     </span>
                                                 </td>
                                                 <td>

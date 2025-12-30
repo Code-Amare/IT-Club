@@ -1,388 +1,402 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useUser } from "../../../Context/UserContext";
-import api from "../../../Utils/api";
-import { neonToast } from "../../../Components/NeonToast/NeonToast";
-import AsyncButton from "../../../Components/AsyncButton/AsyncButton";
-import SideBar from "../../../Components/SideBar/SideBar";
+import React, { useState, useRef, useEffect } from 'react';
+import styles from './StudentsBulk.module.css';
+import SideBar from '../../../Components/SideBar/SideBar';
+import api from '../../../Utils/api';
+import { neonToast } from '../../../Components/NeonToast/NeonToast';
 import {
-    FaArrowLeft,
     FaUpload,
     FaDownload,
-    FaCheck,
-    FaTimes,
-    FaExclamationTriangle,
     FaFileExcel,
     FaFileCsv,
-    FaUsers
-} from "react-icons/fa";
-import {
-    MdCloudUpload,
-    MdError,
-    MdCheckCircle,
-    MdWarning
-} from "react-icons/md";
-import styles from "./StudentsBulk.module.css";
+    FaCheckCircle,
+    FaExclamationTriangle,
+    FaSpinner,
+    FaEye,
+    FaEyeSlash,
+    FaTimes,
+    FaCopy
+} from 'react-icons/fa';
+import { FiAlertCircle, FiInfo } from 'react-icons/fi';
 
-export default function StudentsBulk() {
-    const navigate = useNavigate();
-    const { user } = useUser();
-
+const StudentsBulk = () => {
     const [file, setFile] = useState(null);
-    const [preview, setPreview] = useState([]);
-    const [validationResults, setValidationResults] = useState(null);
+    const [uploading, setUploading] = useState(false);
     const [uploadResults, setUploadResults] = useState(null);
-    const [loading, setLoading] = useState(false);
-    const [templateLoading, setTemplateLoading] = useState(false);
-    const [step, setStep] = useState(1); // 1: Upload, 2: Preview, 3: Results
-    const [templateType, setTemplateType] = useState("csv");
+    const [validationErrors, setValidationErrors] = useState([]);
+    const [createdStudents, setCreatedStudents] = useState([]);
+    const [showPasswords, setShowPasswords] = useState({});
+    const [activeTab, setActiveTab] = useState('upload');
+    const [showTemplateInfo, setShowTemplateInfo] = useState(false);
+    const fileInputRef = useRef(null);
+    const resultsRef = useRef(null);
 
-    const handleFileChange = (e) => {
+    const requiredColumns = [
+        "full_name",
+        "email",
+        "grade",
+        "section",
+        "field",
+        "phone_number"
+    ];
+
+    const optionalColumns = ["account"];
+    const fieldOptions = ["ai", "other", "backend", "frontend", "embbaded"];
+
+    const handleFileSelect = (e) => {
         const selectedFile = e.target.files[0];
         if (!selectedFile) return;
 
-        // Validate file type
-        const validTypes = ['.csv', '.xlsx', '.xls'];
-        const fileExtension = selectedFile.name.substring(selectedFile.name.lastIndexOf('.')).toLowerCase();
+        const fileExtension = selectedFile.name.split('.').pop().toLowerCase();
+        const allowedExtensions = ['csv', 'xlsx', 'xls'];
 
-        if (!validTypes.includes(fileExtension)) {
-            neonToast.error("Please upload a CSV or Excel file", "error");
+        if (!allowedExtensions.includes(fileExtension)) {
+            neonToast.error('Invalid file format. Please upload CSV or Excel files.', 'error');
+            e.target.value = '';
             return;
         }
 
-        // Validate file size (max 10MB)
-        if (selectedFile.size > 10 * 1024 * 1024) {
-            neonToast.error("File size should not exceed 10MB", "error");
+        if (selectedFile.size > 5 * 1024 * 1024) {
+            neonToast.error('File size too large. Maximum size is 5MB.', 'error');
+            e.target.value = '';
             return;
         }
 
         setFile(selectedFile);
-        parseFile(selectedFile);
-    };
-
-    const parseFile = (file) => {
-        const reader = new FileReader();
-
-        if (file.name.endsWith('.csv')) {
-            reader.onload = (e) => {
-                try {
-                    const text = e.target.result;
-                    const lines = text.split('\n').filter(line => line.trim() !== '');
-                    if (lines.length === 0) {
-                        neonToast.error("CSV file is empty", "error");
-                        return;
-                    }
-
-                    const headers = lines[0].split(',').map(h => h.trim());
-                    const data = lines.slice(1, 11).map((line, index) => {
-                        const values = line.split(',').map(v => v.trim());
-                        const row = {};
-                        headers.forEach((header, i) => {
-                            row[header] = values[i] || '';
-                        });
-                        return { id: index + 1, ...row };
-                    });
-
-                    setPreview(data);
-                    setStep(2);
-                    validateData(data, headers);
-                } catch (error) {
-                    console.error("Error parsing CSV:", error);
-                    neonToast.error("Error parsing CSV file. Please check the format.", "error");
-                }
-            };
-            reader.onerror = () => {
-                neonToast.error("Error reading file", "error");
-            };
-            reader.readAsText(file, 'UTF-8');
-        } else {
-            // For Excel files, we'll just upload them to the backend without parsing on frontend
-            // The backend will handle Excel parsing
-            neonToast.info("Excel file selected. Validation will be done after upload.", "info");
-
-            // Create a simple preview with just the filename
-            const previewData = [
-                { id: 1, note: "Excel files are processed server-side after upload." },
-                { id: 2, note: "Please proceed to upload for validation." }
-            ];
-
-            setPreview(previewData);
-            setStep(2);
-
-            // For Excel files, we'll do minimal validation
-            const validation = {
-                totalRows: 1, // Placeholder
-                validRows: 1,
-                invalidRows: 0,
-                errors: [],
-                missingFields: [],
-                duplicates: new Set(),
-                warnings: [{
-                    message: "Excel file validation will be done server-side after upload.",
-                    severity: 'info'
-                }]
-            };
-            setValidationResults(validation);
-        }
-    };
-
-    const validateData = (data, headers) => {
-        const requiredFields = ['full_name', 'email', 'grade', 'section'];
-        const validation = {
-            totalRows: data.length,
-            validRows: 0,
-            invalidRows: 0,
-            errors: [],
-            missingFields: [],
-            duplicates: new Set(),
-            warnings: []
-        };
-
-        // Check for missing required fields
-        const missingFields = requiredFields.filter(field => !headers.includes(field));
-        if (missingFields.length > 0) {
-            validation.missingFields = missingFields;
-            validation.errors.push({
-                type: 'missing_fields',
-                message: `Missing required columns: ${missingFields.join(', ')}`,
-                severity: 'error'
-            });
-        }
-
-        // Validate each row
-        const emailSet = new Set();
-
-        data.forEach((row, index) => {
-            const rowErrors = [];
-
-            // Check required fields
-            requiredFields.forEach(field => {
-                if (!row[field] || row[field].toString().trim() === '') {
-                    rowErrors.push(`Missing ${field}`);
-                }
-            });
-
-            // Validate email format
-            if (row.email && !/\S+@\S+\.\S+/.test(row.email)) {
-                rowErrors.push('Invalid email format');
-            }
-
-            // Check for duplicate emails
-            if (row.email) {
-                const emailLower = row.email.toLowerCase();
-                if (emailSet.has(emailLower)) {
-                    rowErrors.push('Duplicate email');
-                } else {
-                    emailSet.add(emailLower);
-                }
-            }
-
-            // Validate account_status if present
-            if (row.account_status && !['active', 'inactive', 'pending'].includes(row.account_status)) {
-                rowErrors.push('Invalid account_status (must be active, inactive, or pending)');
-            }
-
-            if (rowErrors.length === 0) {
-                validation.validRows++;
-            } else {
-                validation.invalidRows++;
-                validation.errors.push({
-                    type: 'row_error',
-                    row: index + 2,
-                    errors: rowErrors,
-                    data: row
-                });
-            }
-        });
-
-        // Add warnings
-        if (data.length > 100) {
-            validation.warnings.push({
-                message: `Large file detected (${data.length} rows). Upload may take several minutes.`,
-                severity: 'warning'
-            });
-        }
-
-        if (validation.validRows === 0 && validation.invalidRows > 0) {
-            validation.warnings.push({
-                message: 'No valid rows found. Please check your data format.',
-                severity: 'error'
-            });
-        }
-
-        setValidationResults(validation);
-    };
-
-    const downloadTemplate = async () => {
-        setTemplateLoading(true);
-        try {
-            // Call backend API to download template
-            const response = await api.get(`/api/management/students/template/?format=${templateType}`, {
-                responseType: 'blob',
-            });
-
-            // Create a download link
-            const url = window.URL.createObjectURL(new Blob([response.data]));
-            const link = document.createElement('a');
-            link.href = url;
-
-            // Get filename from Content-Disposition header or use default
-            const contentDisposition = response.headers['content-disposition'];
-            let filename = `student_template_${new Date().toISOString().split('T')[0]}.${templateType === 'csv' ? 'csv' : 'xlsx'}`;
-
-            if (contentDisposition) {
-                const filenameMatch = contentDisposition.match(/filename="(.+)"/);
-                if (filenameMatch && filenameMatch.length === 2) {
-                    filename = filenameMatch[1];
-                }
-            }
-
-            link.setAttribute('download', filename);
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-            window.URL.revokeObjectURL(url);
-
-            neonToast.success(`Template downloaded as ${templateType.toUpperCase()}`, "success");
-        } catch (error) {
-            console.error("Error downloading template:", error);
-            neonToast.error(
-                error.response?.data?.message || "Failed to download template",
-                "error"
-            );
-        } finally {
-            setTemplateLoading(false);
-        }
+        setUploadResults(null);
+        setValidationErrors([]);
+        setCreatedStudents([]);
     };
 
     const handleUpload = async () => {
         if (!file) {
-            neonToast.error("Please select a file first", "error");
+            neonToast.error('Please select a file to upload', 'error');
             return;
         }
 
-        setLoading(true);
         const formData = new FormData();
         formData.append('file', file);
 
+        setUploading(true);
         try {
             const response = await api.post('/api/management/students/bulk-upload/', formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
-                }
+                },
             });
 
-            setUploadResults(response.data);
-            setStep(3);
-            neonToast.success(`Successfully uploaded ${response.data.created || 0} students`, "success");
+            const { data } = response;
 
-            if (response.data.errors && response.data.errors.length > 0) {
-                neonToast.warning(`${response.data.errors.length} rows had errors`, "warning");
+            if (data.errors && data.errors.length > 0) {
+                setValidationErrors(data.errors);
+                if (data.created_students && data.created_students.length > 0) {
+                    setCreatedStudents(data.created_students);
+                }
+                neonToast.warning(`Upload completed with ${data.error_count} errors`, 'warning');
+            } else {
+                setCreatedStudents(data.created_students || []);
+                neonToast.success(`Successfully uploaded ${data.created_count} students`, 'success');
             }
+
+            setUploadResults(data);
+
+            setTimeout(() => {
+                if (resultsRef.current) {
+                    resultsRef.current.scrollIntoView({ behavior: 'smooth' });
+                }
+            }, 100);
+
         } catch (error) {
-            console.error("Bulk upload error:", error);
-            neonToast.error(
-                error.response?.data?.message || "Failed to upload students",
-                "error"
-            );
+            console.error('Upload error:', error);
+            let errorMessage = 'Failed to upload file';
+
+            if (error.response?.data) {
+                const { error: apiError, errors, detail } = error.response.data;
+                if (apiError) errorMessage = apiError;
+                if (errors) setValidationErrors(Array.isArray(errors) ? errors : [errors]);
+                if (detail) errorMessage += `: ${detail}`;
+            }
+
+            neonToast.error(errorMessage, 'error');
         } finally {
-            setLoading(false);
+            setUploading(false);
         }
     };
 
-    const resetForm = () => {
+    const downloadTemplate = (format = 'csv') => {
+        const headers = [...requiredColumns, ...optionalColumns];
+        let content = '';
+
+        if (format === 'csv') {
+            content = headers.join(',') + '\n';
+            const exampleRow = [
+                'John Doe',
+                'john.doe@example.com',
+                '10',
+                'A',
+                'ai',
+                '+1234567890',
+                'optional_account_id'
+            ];
+            content += exampleRow.join(',');
+        } else {
+            content = headers.join('\t') + '\n';
+            const exampleRow = [
+                'John Doe',
+                'john.doe@example.com',
+                '10',
+                'A',
+                'ai',
+                '+1234567890',
+                'optional_account_id'
+            ];
+            content += exampleRow.join('\t');
+        }
+
+        const blob = new Blob([content], { type: format === 'csv' ? 'text/csv' : 'application/vnd.ms-excel' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `students_template.${format}`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        neonToast.info(`Template downloaded as ${format.toUpperCase()}`, 'info');
+    };
+
+    const togglePasswordVisibility = (studentId) => {
+        setShowPasswords(prev => ({
+            ...prev,
+            [studentId]: !prev[studentId]
+        }));
+    };
+
+    const copyPassword = (password, studentName) => {
+        navigator.clipboard.writeText(password).then(() => {
+            neonToast.success(`Password for ${studentName} copied to clipboard`, 'success');
+        }).catch(() => {
+            neonToast.error('Failed to copy password', 'error');
+        });
+    };
+
+    const formatError = (errorObj) => {
+        if (typeof errorObj === 'string') return errorObj;
+        if (Array.isArray(errorObj)) return errorObj.join(', ');
+        if (typeof errorObj === 'object') {
+            return Object.entries(errorObj).map(([key, value]) =>
+                `${key}: ${Array.isArray(value) ? value.join(', ') : value}`
+            ).join('; ');
+        }
+        return String(errorObj);
+    };
+
+    const clearAll = () => {
         setFile(null);
-        setPreview([]);
-        setValidationResults(null);
         setUploadResults(null);
-        setStep(1);
-        // Reset file input
-        const fileInput = document.getElementById('fileUpload');
-        if (fileInput) {
-            fileInput.value = '';
+        setValidationErrors([]);
+        setCreatedStudents([]);
+        setShowPasswords({});
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
         }
     };
-
-    const renderStepIndicator = () => (
-        <div className={styles.stepIndicator}>
-            <div className={`${styles.step} ${step >= 1 ? styles.active : ''}`}>
-                <div className={styles.stepNumber}>1</div>
-                <div className={styles.stepLabel}>Upload File</div>
-            </div>
-            <div className={styles.stepLine}></div>
-            <div className={`${styles.step} ${step >= 2 ? styles.active : ''}`}>
-                <div className={styles.stepNumber}>2</div>
-                <div className={styles.stepLabel}>Preview & Validate</div>
-            </div>
-            <div className={styles.stepLine}></div>
-            <div className={`${styles.step} ${step >= 3 ? styles.active : ''}`}>
-                <div className={styles.stepNumber}>3</div>
-                <div className={styles.stepLabel}>Results</div>
-            </div>
-        </div>
-    );
 
     return (
-        <div className={styles.container}>
+        <div className={styles.StudentsBulkUploadContainer}>
             <SideBar>
-                {/* Header */}
-                <div className={styles.header}>
-                    <div className={styles.headerTop}>
-                        <button
-                            className={styles.backBtn}
-                            onClick={() => navigate("/admin/students")}
-                            type="button"
-                        >
-                            <FaArrowLeft /> Back to Students
-                        </button>
-                        <h1 className={styles.title}>
-                            <FaUpload /> Bulk Student Upload
-                        </h1>
-                    </div>
-                    <p className={styles.subtitle}>
-                        Upload multiple students at once using CSV or Excel files
-                    </p>
-                </div>
+                <div className={styles.StudentsBulkUpload}>
+                    {/* Header */}
+                    <header className={styles.header}>
+                        <div className={styles.headerContent}>
+                            <h1>
+                                <FaUpload className={styles.headerIcon} />
+                                Bulk Student Upload
+                            </h1>
+                            <p className={styles.subtitle}>
+                                Upload CSV or Excel files to create multiple student accounts at once
+                            </p>
+                        </div>
 
-                {renderStepIndicator()}
+                        <div className={styles.headerActions}>
+                            <button
+                                className={`${styles.actionButton} ${styles.infoButton}`}
+                                onClick={() => setShowTemplateInfo(!showTemplateInfo)}
+                            >
+                                <FiInfo />
+                                Template Info
+                            </button>
 
-                {/* Step 1: Upload */}
-                {step === 1 && (
-                    <div className={styles.uploadStep}>
+                            <div className={styles.templateButtons}>
+                                <button
+                                    className={`${styles.actionButton} ${styles.templateButton}`}
+                                    onClick={() => downloadTemplate('csv')}
+                                >
+                                    <FaFileCsv />
+                                    CSV Template
+                                </button>
+                                <button
+                                    className={`${styles.actionButton} ${styles.templateButton}`}
+                                    onClick={() => downloadTemplate('xlsx')}
+                                >
+                                    <FaFileExcel />
+                                    Excel Template
+                                </button>
+                            </div>
+                        </div>
+                    </header>
+
+                    {/* Template Info Modal */}
+                    {showTemplateInfo && (
+                        <div className={styles.templateInfoModal}>
+                            <div className={styles.modalContent}>
+                                <div className={styles.modalHeader}>
+                                    <h3>File Template Requirements</h3>
+                                    <button
+                                        className={styles.closeButton}
+                                        onClick={() => setShowTemplateInfo(false)}
+                                    >
+                                        <FaTimes />
+                                    </button>
+                                </div>
+
+                                <div className={styles.modalBody}>
+                                    <div className={styles.infoSection}>
+                                        <h4>Required Columns:</h4>
+                                        <div className={styles.columnsGrid}>
+                                            {requiredColumns.map((col, index) => (
+                                                <div key={index} className={styles.columnItem}>
+                                                    <span className={styles.columnName}>{col}</span>
+                                                    <span className={styles.columnDescription}>
+                                                        {col === 'grade' ? 'Number between 1-12' :
+                                                            col === 'section' ? 'Single letter (A-Z)' :
+                                                                col === 'field' ? `One of: ${fieldOptions.join(', ')}` :
+                                                                    col === 'email' ? 'Valid email address' :
+                                                                        'Required field'}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className={styles.infoSection}>
+                                        <h4>Optional Columns:</h4>
+                                        <div className={styles.columnsGrid}>
+                                            {optionalColumns.map((col, index) => (
+                                                <div key={index} className={styles.columnItem}>
+                                                    <span className={styles.columnName}>{col}</span>
+                                                    <span className={styles.columnDescription}>
+                                                        Optional student account identifier
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className={styles.infoSection}>
+                                        <h4>Example Data:</h4>
+                                        <div className={styles.exampleTable}>
+                                            <div className={styles.exampleHeader}>
+                                                {[...requiredColumns, ...optionalColumns].map((col, i) => (
+                                                    <div key={i} className={styles.exampleCell}>{col}</div>
+                                                ))}
+                                            </div>
+                                            <div className={styles.exampleRow}>
+                                                <div className={styles.exampleCell}>John Doe</div>
+                                                <div className={styles.exampleCell}>john@example.com</div>
+                                                <div className={styles.exampleCell}>10</div>
+                                                <div className={styles.exampleCell}>A</div>
+                                                <div className={styles.exampleCell}>ai</div>
+                                                <div className={styles.exampleCell}>+1234567890</div>
+                                                <div className={styles.exampleCell}>student_123</div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className={styles.infoSection}>
+                                        <div className={styles.note}>
+                                            <FiAlertCircle className={styles.noteIcon} />
+                                            <div className={styles.noteContent}>
+                                                <strong>Important Notes:</strong>
+                                                <ul>
+                                                    <li>Emails must be unique across the system</li>
+                                                    <li>Grade must be a number between 1 and 12</li>
+                                                    <li>Section must be a single uppercase letter</li>
+                                                    <li>Field must be one of the specified values</li>
+                                                    <li>Duplicate emails in the file will be rejected</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Upload Section */}
+                    <div className={styles.uploadSection}>
                         <div className={styles.uploadCard}>
-                            <div className={styles.uploadArea}>
-                                <div className={styles.uploadIcon}>
-                                    <MdCloudUpload />
-                                </div>
-                                <h3>Upload Student Data File</h3>
-                                <p>Supported formats: CSV, XLSX, XLS (Max 10MB)</p>
+                            <div className={styles.uploadHeader}>
+                                <h2>Upload Student Data</h2>
+                                <p className={styles.uploadSubtitle}>
+                                    Select a CSV or Excel file containing student information
+                                </p>
+                            </div>
 
-                                <div className={styles.fileInputWrapper}>
-                                    <input
-                                        type="file"
-                                        id="fileUpload"
-                                        accept=".csv,.xlsx,.xls"
-                                        onChange={handleFileChange}
-                                        className={styles.fileInput}
-                                    />
-                                    <label htmlFor="fileUpload" className={styles.uploadBtn}>
-                                        <FaUpload /> Choose File
-                                    </label>
-                                    <span className={styles.fileHint}>or drag and drop here</span>
-                                </div>
+                            <div className={styles.dropZone}
+                                onClick={() => fileInputRef.current?.click()}
+                                onDragOver={(e) => {
+                                    e.preventDefault();
+                                    e.currentTarget.classList.add(styles.dragOver);
+                                }}
+                                onDragLeave={(e) => {
+                                    e.preventDefault();
+                                    e.currentTarget.classList.remove(styles.dragOver);
+                                }}
+                                onDrop={(e) => {
+                                    e.preventDefault();
+                                    e.currentTarget.classList.remove(styles.dragOver);
+                                    if (e.dataTransfer.files.length > 0) {
+                                        handleFileSelect({ target: { files: e.dataTransfer.files } });
+                                    }
+                                }}
+                            >
+                                <input
+                                    type="file"
+                                    ref={fileInputRef}
+                                    onChange={handleFileSelect}
+                                    accept=".csv,.xlsx,.xls"
+                                    className={styles.fileInput}
+                                />
 
-                                {file && (
-                                    <div className={styles.fileInfo}>
-                                        <FaCheck />
-                                        <span>{file.name} ({(file.size / 1024).toFixed(2)} KB)</span>
+                                {!file ? (
+                                    <div className={styles.dropZoneContent}>
+                                        <FaUpload className={styles.dropZoneIcon} />
+                                        <p className={styles.dropZoneText}>
+                                            Drag & drop your file here or click to browse
+                                        </p>
+                                        <p className={styles.dropZoneHint}>
+                                            Supports CSV, XLSX, XLS (Max 5MB)
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <div className={styles.fileSelected}>
+                                        <div className={styles.fileInfo}>
+                                            <FaFileCsv className={styles.fileIcon} />
+                                            <div className={styles.fileDetails}>
+                                                <h4>{file.name}</h4>
+                                                <p>{(file.size / 1024).toFixed(2)} KB</p>
+                                            </div>
+                                        </div>
                                         <button
-                                            className={styles.removeFile}
-                                            onClick={() => {
+                                            className={styles.removeFileButton}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
                                                 setFile(null);
-                                                const fileInput = document.getElementById('fileUpload');
-                                                if (fileInput) fileInput.value = '';
+                                                if (fileInputRef.current) {
+                                                    fileInputRef.current.value = '';
+                                                }
                                             }}
-                                            type="button"
                                         >
                                             <FaTimes />
                                         </button>
@@ -390,316 +404,270 @@ export default function StudentsBulk() {
                                 )}
                             </div>
 
-                            <div className={styles.templateSection}>
-                                <h4>
-                                    <FaDownload /> Download Template
-                                </h4>
-                                <p>Use our template to ensure proper formatting</p>
-
-                                <div className={styles.templateOptions}>
-                                    <button
-                                        type="button"
-                                        className={`${styles.templateBtn} ${templateType === 'csv' ? styles.active : ''}`}
-                                        onClick={() => setTemplateType('csv')}
-                                        disabled={templateLoading}
-                                    >
-                                        <FaFileCsv /> CSV Template
-                                    </button>
-                                    <button
-                                        type="button"
-                                        className={`${styles.templateBtn} ${templateType === 'excel' ? styles.active : ''}`}
-                                        onClick={() => setTemplateType('excel')}
-                                        disabled={templateLoading}
-                                    >
-                                        <FaFileExcel /> Excel Template
-                                    </button>
-                                </div>
-
-                                <AsyncButton
-                                    className={styles.downloadBtn}
-                                    onClick={downloadTemplate}
-                                    loading={templateLoading}
-                                    disabled={templateLoading}
+                            <div className={styles.uploadActions}>
+                                <button
+                                    className={`${styles.uploadButton} ${!file || uploading ? styles.disabled : ''}`}
+                                    onClick={handleUpload}
+                                    disabled={!file || uploading}
                                 >
-                                    <FaDownload /> Download {templateType.toUpperCase()} Template
-                                </AsyncButton>
+                                    {uploading ? (
+                                        <>
+                                            <FaSpinner className={styles.spinner} />
+                                            Uploading...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <FaUpload />
+                                            Upload Students
+                                        </>
+                                    )}
+                                </button>
 
-                                <div className={styles.templateInfo}>
-                                    <h5>Required Fields:</h5>
-                                    <ul>
-                                        <li><strong>full_name</strong> (required) - Student's full name</li>
-                                        <li><strong>email</strong> (required) - Valid email address</li>
-                                        <li><strong>grade</strong> (required) - Grade level (9-12)</li>
-                                        <li><strong>section</strong> (required) - Section (A, B, C, etc.)</li>
-                                    </ul>
-                                    <h5>Optional Fields:</h5>
-                                    <ul>
-                                        <li><strong>phone</strong> - Phone number</li>
-                                        <li><strong>date_of_birth</strong> - YYYY-MM-DD format</li>
-                                        <li><strong>address</strong> - Full address</li>
-                                        <li><strong>parent_name</strong> - Parent/guardian name</li>
-                                        <li><strong>parent_phone</strong> - Parent phone</li>
-                                        <li><strong>parent_email</strong> - Parent email</li>
-                                        <li><strong>account_status</strong> - active/inactive/pending</li>
-                                        <li><strong>notes</strong> - Additional notes</li>
-                                    </ul>
-                                </div>
+                                {file && (
+                                    <button
+                                        className={styles.clearButton}
+                                        onClick={clearAll}
+                                    >
+                                        Clear All
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </div>
-                )}
 
-                {/* Step 2: Preview & Validate */}
-                {step === 2 && validationResults && (
-                    <div className={styles.previewStep}>
-                        <div className={styles.validationCard}>
-                            <h3>
-                                <MdCheckCircle /> Validation Results
-                            </h3>
-
-                            <div className={styles.validationStats}>
-                                <div className={styles.statItem}>
-                                    <div className={styles.statNumber} style={{ color: 'var(--success)' }}>
-                                        {file && file.name.endsWith('.csv') ? validationResults.validRows : "N/A"}
-                                    </div>
-                                    <div className={styles.statLabel}>Valid Rows</div>
-                                </div>
-                                <div className={styles.statItem}>
-                                    <div className={styles.statNumber} style={{ color: 'var(--danger)' }}>
-                                        {file && file.name.endsWith('.csv') ? validationResults.invalidRows : "N/A"}
-                                    </div>
-                                    <div className={styles.statLabel}>Invalid Rows</div>
-                                </div>
-                                <div className={styles.statItem}>
-                                    <div className={styles.statNumber} style={{ color: 'var(--text-primary)' }}>
-                                        {file && file.name.endsWith('.csv') ? validationResults.totalRows : "Excel File"}
-                                    </div>
-                                    <div className={styles.statLabel}>File Type</div>
-                                </div>
+                    {/* Results Section */}
+                    {(uploadResults || validationErrors.length > 0) && (
+                        <div ref={resultsRef} className={styles.resultsSection}>
+                            {/* Tabs */}
+                            <div className={styles.resultsTabs}>
+                                <button
+                                    className={`${styles.tabButton} ${activeTab === 'upload' ? styles.active : ''}`}
+                                    onClick={() => setActiveTab('upload')}
+                                >
+                                    Upload Results
+                                </button>
+                                {validationErrors.length > 0 && (
+                                    <button
+                                        className={`${styles.tabButton} ${activeTab === 'errors' ? styles.active : ''}`}
+                                        onClick={() => setActiveTab('errors')}
+                                    >
+                                        <FaExclamationTriangle />
+                                        Errors ({validationErrors.length})
+                                    </button>
+                                )}
+                                {createdStudents.length > 0 && (
+                                    <button
+                                        className={`${styles.tabButton} ${activeTab === 'students' ? styles.active : ''}`}
+                                        onClick={() => setActiveTab('students')}
+                                    >
+                                        <FaCheckCircle />
+                                        Created Students ({createdStudents.length})
+                                    </button>
+                                )}
                             </div>
 
-                            {validationResults.errors.length > 0 && (
-                                <div className={styles.errorList}>
-                                    <h4>
-                                        <MdError /> Validation Errors
-                                    </h4>
-                                    <div className={styles.errors}>
-                                        {validationResults.errors.slice(0, 10).map((error, index) => (
-                                            <div key={index} className={styles.errorItem}>
-                                                {error.type === 'missing_fields' ? (
-                                                    <>
-                                                        <FaExclamationTriangle />
-                                                        <span>{error.message}</span>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <FaTimes />
-                                                        <span>
-                                                            <strong>Row {error.row}:</strong> {error.errors.join(', ')}
-                                                        </span>
-                                                    </>
-                                                )}
+                            {/* Tab Content */}
+                            <div className={styles.tabContent}>
+                                {activeTab === 'upload' && uploadResults && (
+                                    <div className={styles.summaryCard}>
+                                        <div className={styles.summaryHeader}>
+                                            <h3>Upload Summary</h3>
+                                            <div className={styles.summaryStats}>
+                                                <div className={styles.statItem}>
+                                                    <span className={styles.statLabel}>Total Processed:</span>
+                                                    <span className={styles.statValue}>
+                                                        {uploadResults.created_count + (uploadResults.error_count || 0)}
+                                                    </span>
+                                                </div>
+                                                <div className={styles.statItem}>
+                                                    <span className={styles.statLabel}>Successfully Created:</span>
+                                                    <span className={styles.statValue}>
+                                                        {uploadResults.created_count}
+                                                    </span>
+                                                </div>
+                                                <div className={styles.statItem}>
+                                                    <span className={styles.statLabel}>Errors:</span>
+                                                    <span className={styles.statValue}>
+                                                        {uploadResults.error_count || 0}
+                                                    </span>
+                                                </div>
                                             </div>
-                                        ))}
-                                        {validationResults.errors.length > 10 && (
-                                            <div className={styles.errorItem}>
-                                                <FaExclamationTriangle />
-                                                <span>
-                                                    ...and {validationResults.errors.length - 10} more errors
-                                                </span>
+                                        </div>
+
+                                        {uploadResults.learning_task_limit_default && (
+                                            <div className={styles.noteCard}>
+                                                <FiInfo className={styles.noteIcon} />
+                                                <p>
+                                                    All created students have been assigned a default learning task limit of{' '}
+                                                    <strong>{uploadResults.learning_task_limit_default}</strong> tasks.
+                                                </p>
                                             </div>
                                         )}
                                     </div>
-                                </div>
-                            )}
+                                )}
 
-                            {validationResults.warnings.length > 0 && (
-                                <div className={styles.warningList}>
-                                    <h4>
-                                        <MdWarning /> Warnings
-                                    </h4>
-                                    <div className={styles.warnings}>
-                                        {validationResults.warnings.map((warning, index) => (
-                                            <div key={index} className={styles.warningItem}>
+                                {activeTab === 'errors' && validationErrors.length > 0 && (
+                                    <div className={styles.errorsCard}>
+                                        <div className={styles.errorsHeader}>
+                                            <h3>
                                                 <FaExclamationTriangle />
-                                                <span>{warning.message}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
+                                                Validation Errors
+                                            </h3>
+                                            <p className={styles.errorsSubtitle}>
+                                                Please fix these errors and try uploading again
+                                            </p>
+                                        </div>
 
-                        <div className={styles.previewCard}>
-                            <h3>
-                                <FaUsers /> File Preview
-                            </h3>
-                            <div className={styles.previewTable}>
-                                {file && file.name.endsWith('.csv') ? (
-                                    <table>
-                                        <thead>
-                                            <tr>
-                                                {preview.length > 0 && Object.keys(preview[0]).filter(key => key !== 'id').map(key => (
-                                                    <th key={key}>{key}</th>
-                                                ))}
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {preview.map((row, index) => (
-                                                <tr key={index}>
-                                                    {Object.entries(row).filter(([key]) => key !== 'id').map(([key, value]) => (
-                                                        <td key={key}>{value}</td>
-                                                    ))}
-                                                </tr>
+                                        <div className={styles.errorsList}>
+                                            {validationErrors.map((error, index) => (
+                                                <div key={index} className={styles.errorItem}>
+                                                    <div className={styles.errorHeader}>
+                                                        <span className={styles.errorRow}>Row {error.row}</span>
+                                                        <span className={styles.errorEmail}>{error.email}</span>
+                                                    </div>
+                                                    <div className={styles.errorDetails}>
+                                                        {error.errors ? (
+                                                            Object.entries(error.errors).map(([field, fieldErrors]) => (
+                                                                <div key={field} className={styles.fieldError}>
+                                                                    <strong>{field}:</strong>{' '}
+                                                                    {Array.isArray(fieldErrors) ? fieldErrors.join(', ') : fieldErrors}
+                                                                </div>
+                                                            ))
+                                                        ) : (
+                                                            <div className={styles.fieldError}>
+                                                                {formatError(error.error || error)}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
                                             ))}
-                                        </tbody>
-                                    </table>
-                                ) : (
-                                    <div className={styles.excelPreview}>
-                                        <FaFileExcel size={48} />
-                                        <p><strong>{file?.name}</strong></p>
-                                        <p>Excel files are processed server-side after upload.</p>
-                                        <p className={styles.note}>Note: Full validation and preview will be available after upload.</p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {activeTab === 'students' && createdStudents.length > 0 && (
+                                    <div className={styles.studentsCard}>
+                                        <div className={styles.studentsHeader}>
+                                            <h3>
+                                                <FaCheckCircle />
+                                                Successfully Created Students
+                                            </h3>
+                                            <div className={styles.studentsActions}>
+                                                <button
+                                                    className={styles.togglePasswordsButton}
+                                                    onClick={() => {
+                                                        const allShown = Object.values(showPasswords).every(v => v);
+                                                        const newState = {};
+                                                        createdStudents.forEach(student => {
+                                                            newState[student.id] = !allShown;
+                                                        });
+                                                        setShowPasswords(newState);
+                                                    }}
+                                                >
+                                                    {Object.values(showPasswords).every(v => v) ? (
+                                                        <>Hide All Passwords</>
+                                                    ) : (
+                                                        <>Show All Passwords</>
+                                                    )}
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div className={styles.studentsTableContainer}>
+                                            <table className={styles.studentsTable}>
+                                                <thead>
+                                                    <tr>
+                                                        <th>Name</th>
+                                                        <th>Email</th>
+                                                        <th>Grade & Section</th>
+                                                        <th>Field</th>
+                                                        <th>Phone</th>
+                                                        <th>Temporary Password</th>
+                                                        <th>Actions</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {createdStudents.map((student) => (
+                                                        <tr key={student.id}>
+                                                            <td>
+                                                                <div className={styles.studentName}>
+                                                                    {student.full_name}
+                                                                </div>
+                                                            </td>
+                                                            <td>
+                                                                <div className={styles.studentEmail}>
+                                                                    {student.email}
+                                                                </div>
+                                                            </td>
+                                                            <td>
+                                                                <span className={styles.gradeSectionBadge}>
+                                                                    Grade {student.grade} - {student.section}
+                                                                </span>
+                                                            </td>
+                                                            <td>
+                                                                <span className={styles.fieldBadge}>
+                                                                    {student.field}
+                                                                </span>
+                                                            </td>
+                                                            <td>
+                                                                {student.phone_number}
+                                                            </td>
+                                                            <td>
+                                                                <div className={styles.passwordCell}>
+                                                                    <span className={styles.passwordValue}>
+                                                                        {showPasswords[student.id]
+                                                                            ? student.temporary_password || 'Generated on server'
+                                                                            : '••••••••••••'}
+                                                                    </span>
+                                                                    <div className={styles.passwordActions}>
+                                                                        <button
+                                                                            className={styles.passwordToggle}
+                                                                            onClick={() => togglePasswordVisibility(student.id)}
+                                                                        >
+                                                                            {showPasswords[student.id] ? <FaEyeSlash /> : <FaEye />}
+                                                                        </button>
+                                                                        <button
+                                                                            className={styles.passwordCopy}
+                                                                            onClick={() => copyPassword(
+                                                                                student.temporary_password || 'No password available',
+                                                                                student.full_name
+                                                                            )}
+                                                                        >
+                                                                            <FaCopy />
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            </td>
+                                                            <td>
+                                                                <span className={styles.messageBadge}>
+                                                                    {student.message || 'Change password on first login'}
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+
+                                        <div className={styles.importantNote}>
+                                            <div className={styles.noteHeader}>
+                                                <FiAlertCircle />
+                                                <strong>Important:</strong>
+                                            </div>
+                                            <p>
+                                                Students must change their temporary passwords on first login.
+                                                Make sure to provide them with their temporary passwords securely.
+                                            </p>
+                                        </div>
                                     </div>
                                 )}
                             </div>
                         </div>
-
-                        <div className={styles.stepActions}>
-                            <button
-                                type="button"
-                                className={styles.secondaryBtn}
-                                onClick={resetForm}
-                                disabled={loading}
-                            >
-                                <FaTimes /> Cancel
-                            </button>
-                            <div className={styles.actionGroup}>
-                                <button
-                                    type="button"
-                                    className={styles.secondaryBtn}
-                                    onClick={() => setStep(1)}
-                                    disabled={loading}
-                                >
-                                    Back
-                                </button>
-                                <AsyncButton
-                                    className={styles.primaryBtn}
-                                    onClick={handleUpload}
-                                    loading={loading}
-                                    disabled={loading}
-                                >
-                                    <FaUpload /> Upload File
-                                </AsyncButton>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* Step 3: Results */}
-                {step === 3 && uploadResults && (
-                    <div className={styles.resultsStep}>
-                        <div className={styles.resultsCard}>
-                            <h3>
-                                <MdCheckCircle /> Upload Complete
-                            </h3>
-
-                            <div className={styles.resultsGrid}>
-                                <div className={`${styles.resultItem} ${styles.success}`}>
-                                    <div className={styles.resultIcon}>
-                                        <FaCheck />
-                                    </div>
-                                    <div className={styles.resultNumber}>
-                                        {uploadResults.created || 0}
-                                    </div>
-                                    <div className={styles.resultLabel}>
-                                        Students Added
-                                    </div>
-                                </div>
-
-                                <div className={`${styles.resultItem} ${styles.warning}`}>
-                                    <div className={styles.resultIcon}>
-                                        <FaExclamationTriangle />
-                                    </div>
-                                    <div className={styles.resultNumber}>
-                                        {uploadResults.skipped || 0}
-                                    </div>
-                                    <div className={styles.resultLabel}>
-                                        Students Skipped
-                                    </div>
-                                </div>
-
-                                <div className={`${styles.resultItem} ${styles.danger}`}>
-                                    <div className={styles.resultIcon}>
-                                        <FaTimes />
-                                    </div>
-                                    <div className={styles.resultNumber}>
-                                        {uploadResults.errors?.length || 0}
-                                    </div>
-                                    <div className={styles.resultLabel}>
-                                        Errors Found
-                                    </div>
-                                </div>
-                            </div>
-
-                            {uploadResults.errors && uploadResults.errors.length > 0 && (
-                                <div className={styles.errorList}>
-                                    <h4>
-                                        <MdError /> Upload Errors
-                                    </h4>
-                                    <div className={styles.errors}>
-                                        {uploadResults.errors.slice(0, 10).map((error, index) => (
-                                            <div key={index} className={styles.errorItem}>
-                                                <FaTimes />
-                                                <span>
-                                                    <strong>Row {error.row}:</strong> {error.error}
-                                                </span>
-                                            </div>
-                                        ))}
-                                        {uploadResults.errors.length > 10 && (
-                                            <div className={styles.errorItem}>
-                                                <FaExclamationTriangle />
-                                                <span>
-                                                    ...and {uploadResults.errors.length - 10} more errors
-                                                </span>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        <div className={styles.stepActions}>
-                            <button
-                                type="button"
-                                className={styles.secondaryBtn}
-                                onClick={resetForm}
-                            >
-                                Upload Another File
-                            </button>
-                            <div className={styles.actionGroup}>
-                                <button
-                                    type="button"
-                                    className={styles.secondaryBtn}
-                                    onClick={() => navigate("/admin/students")}
-                                >
-                                    Back to Students List
-                                </button>
-                                <button
-                                    type="button"
-                                    className={styles.primaryBtn}
-                                    onClick={() => {
-                                        resetForm();
-                                        navigate("/admin/students");
-                                    }}
-                                >
-                                    View All Students
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
+                    )}
+                </div>
             </SideBar>
         </div>
     );
-}
+};
+
+export default StudentsBulk;

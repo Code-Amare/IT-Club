@@ -23,139 +23,196 @@ import {
     FaMale,
     FaFemale,
     FaGraduationCap,
+    FaSpinner,
+    FaExclamationTriangle,
 } from "react-icons/fa";
 import { FiTrendingUp, FiUser } from "react-icons/fi";
+import { useUser } from "../../../Context/UserContext";
+import api from "../../../Utils/api";
+import { neonToast } from "../../../Components/NeonToast/NeonToast";
 
 const AdminDashboard = () => {
-    // Sample data for stats
-    const [stats] = useState({
-        totalStudents: 1245,
-        attendanceSession: 89.2,
-        totalLearningTasks: 567,
-        totalProjects: 234,
+    const { user } = useUser();
+    const [loading, setLoading] = useState(true);
+    const [stats, setStats] = useState({
+        total: 0,
+        active: 0,
+        inactive: 0,
+        by_grade: {},
+        by_section: {},
+        attendance: {
+            total_sessions: 0,
+            average_attendance_percentage: 0,
+            present_percentage: 0,
+            late_percentage: 0,
+            absent_percentage: 0
+        }
     });
 
-    // Corrected data for learning tasks vs grade ratio
-    const gradeTaskData = [
-        { grade: "Grade 9", learningTasks: 98, projects: 45, students: 310 },
-        { grade: "Grade 10", learningTasks: 124, projects: 52, students: 298 },
-        { grade: "Grade 11", learningTasks: 187, projects: 78, students: 321 },
-        { grade: "Grade 12", learningTasks: 158, projects: 59, students: 316 },
-    ];
+    const [gradeData, setGradeData] = useState([]);
+    const [genderData, setGenderData] = useState([
+        { name: "Male", value: 0, color: "#4f46e5" },
+        { name: "Female", value: 100, color: "#ec4899" },
+    ]);
+    const [topLearningTasks, setTopLearningTasks] = useState([]);
+    const [cssVars, setCssVars] = useState({
+        borderColor: "#e5e7eb",
+        textSecondary: "#4b5563"
+    });
 
-    // Corrected data for gender ratio
-    const genderData = [
-        { name: "Male", value: 60, color: "#4f46e5" },
-        { name: "Female", value: 40, color: "#ec4899" },
-    ];
+    // Fetch all dashboard data
+    useEffect(() => {
+        if (user.isAuthenticated === null) return;
+        if (!user.isAuthenticated) {
+            return;
+        }
 
-    // Sample data for top learning tasks
-    const topLearningTasks = [
-        {
-            id: 1,
-            title: "Django Backend API",
-            student: {
-                fullName: "John Smith",
-                grade: "11",
-                profile_pic_url: "https://api.dicebear.com/7.x/avataaars/svg?seed=John",
-            },
-            rating: 4.9,
-        },
-        {
-            id: 2,
-            title: "React E-commerce Site",
-            student: {
-                fullName: "Emma Wilson",
-                grade: "12",
-                profile_pic_url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Emma",
-            },
-            rating: 1.8,
-        },
-        {
-            id: 3,
-            title: "Machine Learning Model",
-            student: {
-                fullName: "Alex Johnson",
-                grade: "10",
-                profile_pic_url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Alex",
-            },
-            rating: 4.7,
-        },
-        {
-            id: 4,
-            title: "Mobile App Development",
-            student: {
-                fullName: "Sarah Brown",
-                grade: "11",
-                profile_pic_url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah",
-            },
-            rating: 4.6,
-        },
-        {
-            id: 5,
-            title: "Blockchain Protocol",
-            student: {
-                fullName: "Michael Chen",
-                grade: "12",
-                profile_pic_url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Michael",
-            },
-            rating: 4.5,
-        },
-    ];
+        fetchDashboardData();
 
-    // Sample data for top projects
-    const topProjects = [
-        {
-            id: 1,
-            title: "AI Assistant",
-            student: {
-                fullName: "Emma Wilson",
-                grade: "12",
-                profile_pic_url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Emma2",
-            },
-            rating: 4.9,
-        },
-        {
-            id: 2,
-            title: "Cloud Infrastructure",
-            student: {
-                fullName: "John Smith",
-                grade: "11",
-                profile_pic_url: "https://api.dicebear.com/7.x/avataaars/svg?seed=John2",
-            },
-            rating: 4.8,
-        },
-        {
-            id: 3,
-            title: "IoT System",
-            student: {
-                fullName: "Michael Chen",
-                grade: "12",
-                profile_pic_url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Michael2",
-            },
-            rating: 4.7,
-        },
-        {
-            id: 4,
-            title: "AR Application",
-            student: {
-                fullName: "Sarah Brown",
-                grade: "11",
-                profile_pic_url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah2",
-            },
-            rating: 4.6,
-        },
-        {
-            id: 5,
-            title: "Data Analytics",
-            student: {
-                fullName: "Alex Johnson",
-                grade: "10",
-                profile_pic_url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Alex2",
-            },
-            rating: 4.5,
-        },
-    ];
+        // Get CSS variables for chart styling
+        const getCssVariable = (name) => {
+            return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+        };
+
+        setCssVars({
+            borderColor: getCssVariable('--border-color') || "#e5e7eb",
+            textSecondary: getCssVariable('--text-secondary') || "#4b5563"
+        });
+    }, [user]);
+
+    const fetchDashboardData = async () => {
+        setLoading(true);
+        try {
+            // Fetch student stats
+            const [statsRes, studentsRes] = await Promise.all([
+                api.get("/api/management/students/stats/"),
+                api.get("/api/management/students/")
+            ]);
+
+            // Process stats data
+            const statsData = statsRes.data.overall || {};
+            setStats({
+                total: statsData.total || 0,
+                active: statsData.active || 0,
+                inactive: statsData.inactive || 0,
+                by_grade: statsData.by_grade || {},
+                by_section: statsData.by_section || {},
+                attendance: statsData.attendance || {
+                    total_sessions: 0,
+                    average_attendance_percentage: 0,
+                    present_percentage: 0,
+                    late_percentage: 0,
+                    absent_percentage: 0
+                }
+            });
+
+            // Process grade data for chart
+            const gradeChartData = Object.entries(statsData.by_grade || {}).map(([grade, count]) => ({
+                grade: `Grade ${grade}`,
+                students: count
+            })).sort((a, b) => {
+                const gradeA = parseInt(a.grade.replace('Grade ', ''));
+                const gradeB = parseInt(b.grade.replace('Grade ', ''));
+                return gradeA - gradeB;
+            });
+            setGradeData(gradeChartData);
+
+            // Try to fetch gender data from students endpoint
+            const studentsData = studentsRes.data.students || [];
+            if (studentsData.length > 0) {
+                // Count gender if available in student data
+                // This is a fallback since your StudentStatsView doesn't have gender data
+                const maleCount = studentsData.filter(s =>
+                    s.gender === 'M' || s.gender === 'male' || s.gender === 'Male'
+                ).length;
+                const femaleCount = studentsData.filter(s =>
+                    s.gender === 'F' || s.gender === 'female' || s.gender === 'Female'
+                ).length;
+                const otherCount = studentsData.length - maleCount - femaleCount;
+
+                const totalGender = maleCount + femaleCount + otherCount;
+                const malePercentage = totalGender > 0 ? (maleCount / totalGender) * 100 : 0;
+                const femalePercentage = totalGender > 0 ? (femaleCount / totalGender) * 100 : 0;
+
+                if (maleCount > 0 || femaleCount > 0) {
+                    setGenderData([
+                        { name: "Male", value: Math.round(malePercentage), count: maleCount, color: "#4f46e5" },
+                        { name: "Female", value: Math.round(femalePercentage), count: femaleCount, color: "#ec4899" },
+                        ...(otherCount > 0 ? [{ name: "Other", value: 100 - malePercentage - femalePercentage, count: otherCount, color: "#10b981" }] : [])
+                    ]);
+                }
+            }
+
+            // Fetch top learning tasks from the correct endpoint
+            try {
+                const learningTasksRes = await api.get("/api/management/top-learning-tasks/10/");
+                const tasksData = learningTasksRes.data.top_learning_tasks || [];
+
+                // Transform learning tasks data for display
+                const transformedTasks = tasksData.map(task => {
+                    // Calculate average rating from reviews
+                    let averageRating = 0;
+                    if (task.reviews && task.reviews.length > 0) {
+                        const totalRating = task.reviews.reduce((sum, review) => sum + review.rating, 0);
+                        averageRating = totalRating / task.reviews.length;
+                    }
+
+                    return {
+                        id: task.id,
+                        title: task.title || "Untitled Task",
+                        student: {
+                            fullName: task.user?.full_name || "Unknown Student",
+                            grade: task.profile?.grade || "N/A", // Adjust if grade is in user object
+                            profile_pic_url: task.user?.profile_pic_url || null,
+                        },
+                        rating: averageRating,
+                        likes_count: task.likes_count || 0,
+                        reviews: task.reviews || [],
+                    };
+                });
+
+                // Sort by rating and take top 5
+                const topTasks = transformedTasks
+                    .sort((a, b) => b.rating - a.rating)
+                    .slice(0, 5);
+
+                setTopLearningTasks(topTasks);
+            } catch (taskError) {
+                console.error("Error fetching top learning tasks:", taskError);
+                // Try fallback endpoint if the management endpoint fails
+                try {
+                    const fallbackRes = await api.get("/api/learning-task/");
+                    const tasksData = fallbackRes.data || [];
+
+                    const transformedTasks = tasksData.map(task => ({
+                        id: task.id || task._id || Math.random(),
+                        title: task.title || task.name || "Untitled Task",
+                        student: {
+                            fullName: task.student?.full_name || task.student?.name || "Unknown Student",
+                            grade: task.student?.grade || task.grade || "N/A",
+                            profile_pic_url: task.student?.profile_pic_url || task.profile_picture || null,
+                        },
+                        rating: task.rating || task.average_rating || 0,
+                    }));
+
+                    const topTasks = transformedTasks
+                        .sort((a, b) => b.rating - a.rating)
+                        .slice(0, 5);
+
+                    setTopLearningTasks(topTasks);
+                } catch (fallbackError) {
+                    console.warn("Both learning tasks endpoints failed:", fallbackError);
+                    setTopLearningTasks([]);
+                }
+            }
+
+        } catch (error) {
+            console.error("Error fetching dashboard data:", error);
+            neonToast.error("Failed to load dashboard data", "error");
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const COLORS = ["#4f46e5", "#ec4899", "#10b981", "#f59e0b"];
 
@@ -185,23 +242,20 @@ const AdminDashboard = () => {
         }
     };
 
-    // Get CSS variables for chart styling
-    const [cssVars, setCssVars] = useState({
-        borderColor: "#e5e7eb",
-        textSecondary: "#4b5563"
-    });
-
-    useEffect(() => {
-        // Get CSS variables on mount and when theme changes
-        const getCssVariable = (name) => {
-            return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-        };
-
-        setCssVars({
-            borderColor: getCssVariable('--border-color'),
-            textSecondary: getCssVariable('--text-secondary')
-        });
-    }, []);
+    if (loading) {
+        return (
+            <div className={styles.AdminDashboardContainer}>
+                <SideBar>
+                    <div className={styles.AdminDashboard}>
+                        <div className={styles.loadingContainer}>
+                            <FaSpinner className={styles.loadingSpinner} />
+                            <p>Loading dashboard data...</p>
+                        </div>
+                    </div>
+                </SideBar>
+            </div>
+        );
+    }
 
     return (
         <div className={styles.AdminDashboardContainer}>
@@ -220,9 +274,9 @@ const AdminDashboard = () => {
                             </div>
                             <div className={styles.statContent}>
                                 <h3>Total Students</h3>
-                                <p className={styles.statValue}>{stats.totalStudents.toLocaleString()}</p>
+                                <p className={styles.statValue}>{stats.total.toLocaleString()}</p>
                                 <span className={styles.statTrend}>
-                                    <FiTrendingUp /> +12% from last month
+                                    <FiTrendingUp /> {stats.active} active
                                 </span>
                             </div>
                         </div>
@@ -232,10 +286,10 @@ const AdminDashboard = () => {
                                 <FaChartBar className={styles.statIconSvg} />
                             </div>
                             <div className={styles.statContent}>
-                                <h3>Attendance Session</h3>
-                                <p className={styles.statValue}>{stats.attendanceSession}%</p>
+                                <h3>Attendance</h3>
+                                <p className={styles.statValue}>{stats.attendance.average_attendance_percentage || 0}%</p>
                                 <span className={styles.statTrend}>
-                                    <FiTrendingUp /> +2.3% from last week
+                                    <FiTrendingUp /> {stats.attendance.total_sessions || 0} sessions
                                 </span>
                             </div>
                         </div>
@@ -245,10 +299,10 @@ const AdminDashboard = () => {
                                 <FaTasks className={styles.statIconSvg} />
                             </div>
                             <div className={styles.statContent}>
-                                <h3>Total Learning Tasks</h3>
-                                <p className={styles.statValue}>{stats.totalLearningTasks}</p>
+                                <h3>Active Students</h3>
+                                <p className={styles.statValue}>{stats.active}</p>
                                 <span className={styles.statTrend}>
-                                    <FiTrendingUp /> +45 new this week
+                                    <FiTrendingUp /> {stats.total - stats.active} inactive
                                 </span>
                             </div>
                         </div>
@@ -258,10 +312,10 @@ const AdminDashboard = () => {
                                 <FaProjectDiagram className={styles.statIconSvg} />
                             </div>
                             <div className={styles.statContent}>
-                                <h3>Total Projects</h3>
-                                <p className={styles.statValue}>{stats.totalProjects}</p>
+                                <h3>Learning Tasks</h3>
+                                <p className={styles.statValue}>{topLearningTasks.length}</p>
                                 <span className={styles.statTrend}>
-                                    <FiTrendingUp /> +18 in progress
+                                    <FiTrendingUp /> Top {Math.min(topLearningTasks.length, 5)} rated
                                 </span>
                             </div>
                         </div>
@@ -272,51 +326,46 @@ const AdminDashboard = () => {
                         <div className={styles.chartCard}>
                             <div className={styles.chartHeader}>
                                 <h2>
-                                    <FaGraduationCap className={styles.chartIcon} /> Grade Distribution Analysis
+                                    <FaGraduationCap className={styles.chartIcon} /> Grade Distribution
                                 </h2>
-                                <p className={styles.chartSubtitle}>Learning Tasks, Projects & Students per Grade</p>
+                                <p className={styles.chartSubtitle}>Students per Grade Level</p>
                             </div>
                             <div className={styles.chartContainer}>
-                                <ResponsiveContainer width="100%" height={300}>
-                                    <BarChart
-                                        data={gradeTaskData}
-                                        margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
-                                    >
-                                        <CartesianGrid
-                                            strokeDasharray="3 3"
-                                            stroke={cssVars.borderColor}
-                                        />
-                                        <XAxis
-                                            dataKey="grade"
-                                            stroke={cssVars.textSecondary}
-                                            tick={{ fill: cssVars.textSecondary }}
-                                        />
-                                        <YAxis
-                                            stroke={cssVars.textSecondary}
-                                            tick={{ fill: cssVars.textSecondary }}
-                                        />
-                                        <Tooltip content={<CustomTooltip />} />
-                                        <Legend />
-                                        <Bar
-                                            dataKey="learningTasks"
-                                            name="Learning Tasks"
-                                            fill="#4f46e5"
-                                            radius={[4, 4, 0, 0]}
-                                        />
-                                        <Bar
-                                            dataKey="projects"
-                                            name="Projects"
-                                            fill="#10b981"
-                                            radius={[4, 4, 0, 0]}
-                                        />
-                                        <Bar
-                                            dataKey="students"
-                                            name="Students"
-                                            fill="#f59e0b"
-                                            radius={[4, 4, 0, 0]}
-                                        />
-                                    </BarChart>
-                                </ResponsiveContainer>
+                                {gradeData.length === 0 ? (
+                                    <div className={styles.noDataMessage}>
+                                        <FaExclamationTriangle size={24} />
+                                        <p>No grade data available</p>
+                                    </div>
+                                ) : (
+                                    <ResponsiveContainer width="100%" height={300}>
+                                        <BarChart
+                                            data={gradeData}
+                                            margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                                        >
+                                            <CartesianGrid
+                                                strokeDasharray="3 3"
+                                                stroke={cssVars.borderColor}
+                                            />
+                                            <XAxis
+                                                dataKey="grade"
+                                                stroke={cssVars.textSecondary}
+                                                tick={{ fill: cssVars.textSecondary }}
+                                            />
+                                            <YAxis
+                                                stroke={cssVars.textSecondary}
+                                                tick={{ fill: cssVars.textSecondary }}
+                                            />
+                                            <Tooltip content={<CustomTooltip />} />
+                                            <Legend />
+                                            <Bar
+                                                dataKey="students"
+                                                name="Students"
+                                                fill="#4f46e5"
+                                                radius={[4, 4, 0, 0]}
+                                            />
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                )}
                             </div>
                         </div>
 
@@ -335,7 +384,7 @@ const AdminDashboard = () => {
                                             cx="50%"
                                             cy="50%"
                                             labelLine={false}
-                                            label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                                            label={({ name, value }) => `${name}: ${value}%`}
                                             outerRadius={100}
                                             innerRadius={60}
                                             fill="#8884d8"
@@ -347,8 +396,25 @@ const AdminDashboard = () => {
                                             ))}
                                         </Pie>
                                         <Tooltip
-                                            content={<CustomTooltip />}
-                                            formatter={(value) => [`${value}%`, 'Percentage']}
+                                            content={({ active, payload }) => {
+                                                if (active && payload && payload.length) {
+                                                    const data = payload[0].payload;
+                                                    return (
+                                                        <div className={styles.tooltip}>
+                                                            <p className={styles.tooltipLabel}>{data.name}</p>
+                                                            <p style={{ color: data.color }}>
+                                                                Percentage: {data.value}%
+                                                            </p>
+                                                            {data.count !== undefined && (
+                                                                <p style={{ color: data.color }}>
+                                                                    Count: {data.count}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                }
+                                                return null;
+                                            }}
                                         />
                                     </PieChart>
                                 </ResponsiveContainer>
@@ -361,6 +427,9 @@ const AdminDashboard = () => {
                                             ></div>
                                             <span className={styles.genderLabel}>{item.name}</span>
                                             <span className={styles.genderPercentage}>{item.value}%</span>
+                                            {item.count !== undefined && (
+                                                <span className={styles.genderCount}>({item.count})</span>
+                                            )}
                                         </div>
                                     ))}
                                 </div>
@@ -375,71 +444,92 @@ const AdminDashboard = () => {
                                 <h2>
                                     <FaTasks className={styles.tableIcon} /> Top Rated Learning Tasks
                                 </h2>
-                                <span className={styles.badge}>Top 5</span>
+                                <span className={styles.badge}>Top {Math.min(topLearningTasks.length, 5)}</span>
                             </div>
                             <div className={styles.tableWrapper}>
                                 <div className={styles.tableContainer}>
-                                    <table className={styles.dataTable}>
-                                        <thead>
-                                            <tr>
-                                                <th>Task Name</th>
-                                                <th className={styles.hideOnMobile}>Student</th>
-                                                <th>Grade</th>
-                                                <th>Rating</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {topLearningTasks.map((task) => {
-                                                const avatarClassName = task.student.profile_pic_url
-                                                    ? `${styles.avatarPlaceholder} ${styles.fallbackAvatar}`
-                                                    : styles.avatarPlaceholder;
+                                    {topLearningTasks.length === 0 ? (
+                                        <div className={styles.emptyState}>
+                                            <FaExclamationTriangle size={24} />
+                                            <p>No learning tasks available or endpoint not accessible</p>
+                                            <button
+                                                onClick={fetchDashboardData}
+                                                className={styles.retryButton}
+                                            >
+                                                Retry Loading Tasks
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <table className={styles.dataTable}>
+                                            <thead>
+                                                <tr>
+                                                    <th>Task Name</th>
+                                                    <th className={styles.hideOnMobile}>Student</th>
+                                                    <th>Grade</th>
+                                                    <th>Rating</th>
+                                                    <th className={styles.hideOnMobile}>Likes</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {topLearningTasks.map((task) => {
+                                                    const avatarClassName = task.student.profile_pic_url
+                                                        ? `${styles.avatarPlaceholder} ${styles.fallbackAvatar}`
+                                                        : styles.avatarPlaceholder;
 
-                                                return (
-                                                    <tr key={task.id}>
-                                                        <td>
-                                                            <div className={styles.taskCell}>
-                                                                <span className={styles.taskName}>{task.title}</span>
-                                                            </div>
-                                                        </td>
-                                                        <td className={styles.hideOnMobile}>
-                                                            <div className={styles.studentCell}>
-                                                                {task.student.profile_pic_url ? (
-                                                                    <img
-                                                                        src={task.student.profile_pic_url}
-                                                                        alt={task.student.fullName}
-                                                                        className={styles.profileImage}
-                                                                        onError={handleImageError}
-                                                                    />
-                                                                ) : null}
-                                                                <div className={avatarClassName}>
-                                                                    {task.student.fullName.charAt(0)}
+                                                    return (
+                                                        <tr key={task.id}>
+                                                            <td>
+                                                                <div className={styles.taskCell}>
+                                                                    <span className={styles.taskName}>{task.title}</span>
                                                                 </div>
-                                                                <span>{task.student.fullName}</span>
-                                                            </div>
-                                                        </td>
-                                                        <td>
-                                                            <span className={styles.gradeBadge}>
-                                                                <FaGraduationCap className={styles.gradeIcon} /> {task.student.grade}
-                                                            </span>
-                                                        </td>
-                                                        <td>
-                                                            <div className={styles.rating}>
-                                                                <span className={styles.ratingValue}>{task.rating}</span>
-                                                                <div className={styles.stars}>
-                                                                    {[...Array(5)].map((_, i) => (
-                                                                        <FaStar
-                                                                            key={i}
-                                                                            className={`${styles.star} ${i < Math.floor(task.rating) ? styles.starFilled : ""}`}
+                                                            </td>
+                                                            <td className={styles.hideOnMobile}>
+                                                                <div className={styles.studentCell}>
+                                                                    {task.student.profile_pic_url ? (
+                                                                        <img
+                                                                            src={task.student.profile_pic_url}
+                                                                            alt={task.student.fullName}
+                                                                            className={styles.profileImage}
+                                                                            onError={handleImageError}
                                                                         />
-                                                                    ))}
+                                                                    ) : null}
+                                                                    <div className={avatarClassName}>
+                                                                        {task.student.fullName.charAt(0)}
+                                                                    </div>
+                                                                    <span>{task.student.fullName}</span>
                                                                 </div>
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                );
-                                            })}
-                                        </tbody>
-                                    </table>
+                                                            </td>
+                                                            <td>
+                                                                <span className={styles.gradeBadge}>
+                                                                    <FaGraduationCap className={styles.gradeIcon} /> {task.student.grade}
+                                                                </span>
+                                                            </td>
+                                                            <td>
+                                                                <div className={styles.rating}>
+                                                                    <span className={styles.ratingValue}>{task.rating.toFixed(1)}</span>
+                                                                    <div className={styles.stars}>
+                                                                        {[...Array(5)].map((_, i) => (
+                                                                            <FaStar
+                                                                                key={i}
+                                                                                className={`${styles.star} ${i < Math.floor(task.rating) ? styles.starFilled : ""}`}
+                                                                            />
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            </td>
+                                                            <td className={styles.hideOnMobile}>
+                                                                <div className={styles.likesCount}>
+                                                                    <span className={styles.likesBadge}>
+                                                                        {task.likes_count || 0} ❤️
+                                                                    </span>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })}
+                                            </tbody>
+                                        </table>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -447,74 +537,62 @@ const AdminDashboard = () => {
                         <div className={styles.tableCard}>
                             <div className={styles.tableHeader}>
                                 <h2>
-                                    <FaProjectDiagram className={styles.tableIcon} /> Top Rated Projects
+                                    <FaProjectDiagram className={styles.tableIcon} /> Attendance Status
                                 </h2>
-                                <span className={styles.badge}>Top 5</span>
+                                <span className={styles.badge}>Overall</span>
                             </div>
                             <div className={styles.tableWrapper}>
                                 <div className={styles.tableContainer}>
                                     <table className={styles.dataTable}>
                                         <thead>
                                             <tr>
-                                                <th>Student</th>
-                                                <th className={styles.hideOnMobile}>Grade</th>
-                                                <th>Project</th>
-                                                <th>Rating</th>
+                                                <th>Status</th>
+                                                <th>Percentage</th>
+                                                <th>Count</th>
+                                                <th>Description</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {topProjects.map((project) => {
-                                                const avatarClassName = project.student.profile_pic_url
-                                                    ? `${styles.avatarPlaceholder} ${styles.fallbackAvatar}`
-                                                    : styles.avatarPlaceholder;
-
-                                                return (
-                                                    <tr key={project.id}>
-                                                        <td>
-                                                            <div className={styles.studentCell}>
-                                                                {project.student.profile_pic_url ? (
-                                                                    <img
-                                                                        src={project.student.profile_pic_url}
-                                                                        alt={project.student.fullName}
-                                                                        className={styles.profileImage}
-                                                                        onError={handleImageError}
-                                                                    />
-                                                                ) : null}
-                                                                <div className={avatarClassName}>
-                                                                    <FiUser />
-                                                                </div>
-                                                                <div className={styles.studentInfo}>
-                                                                    <span className={styles.studentName}>{project.student.fullName}</span>
-                                                                    <span className={styles.showOnMobile}>
-                                                                        <span className={styles.mobileGradeBadge}>Grade {project.student.grade}</span>
-                                                                    </span>
-                                                                </div>
-                                                            </div>
-                                                        </td>
-                                                        <td className={styles.hideOnMobile}>
-                                                            <span className={styles.gradeBadge}>
-                                                                <FaGraduationCap className={styles.gradeIcon} /> {project.student.grade}
-                                                            </span>
-                                                        </td>
-                                                        <td>
-                                                            <span className={styles.projectName}>{project.title}</span>
-                                                        </td>
-                                                        <td>
-                                                            <div className={styles.rating}>
-                                                                <span className={styles.ratingValue}>{project.rating}</span>
-                                                                <div className={styles.stars}>
-                                                                    {[...Array(5)].map((_, i) => (
-                                                                        <FaStar
-                                                                            key={i}
-                                                                            className={`${styles.star} ${i < Math.floor(project.rating) ? styles.starFilled : ""}`}
-                                                                        />
-                                                                    ))}
-                                                                </div>
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                );
-                                            })}
+                                            <tr>
+                                                <td>
+                                                    <span className={styles.statusBadge} style={{ backgroundColor: "#10b98120", color: "#10b981" }}>
+                                                        Present
+                                                    </span>
+                                                </td>
+                                                <td>{stats.attendance.present_percentage || 0}%</td>
+                                                <td>{stats.attendance.total_present || 0}</td>
+                                                <td>Students who attended on time</td>
+                                            </tr>
+                                            <tr>
+                                                <td>
+                                                    <span className={styles.statusBadge} style={{ backgroundColor: "#f59e0b20", color: "#f59e0b" }}>
+                                                        Late
+                                                    </span>
+                                                </td>
+                                                <td>{stats.attendance.late_percentage || 0}%</td>
+                                                <td>{stats.attendance.total_late || 0}</td>
+                                                <td>Students who arrived late</td>
+                                            </tr>
+                                            <tr>
+                                                <td>
+                                                    <span className={styles.statusBadge} style={{ backgroundColor: "#ef444420", color: "#ef4444" }}>
+                                                        Absent
+                                                    </span>
+                                                </td>
+                                                <td>{stats.attendance.absent_percentage || 0}%</td>
+                                                <td>{stats.attendance.total_absent || 0}</td>
+                                                <td>Students who didn't attend</td>
+                                            </tr>
+                                            <tr>
+                                                <td>
+                                                    <span className={styles.statusBadge} style={{ backgroundColor: "#4f46e520", color: "#4f46e5" }}>
+                                                        Average
+                                                    </span>
+                                                </td>
+                                                <td>{stats.attendance.average_attendance_percentage || 0}%</td>
+                                                <td>{stats.attendance.total_attendance_records || 0}</td>
+                                                <td>Overall attendance average</td>
+                                            </tr>
                                         </tbody>
                                     </table>
                                 </div>
