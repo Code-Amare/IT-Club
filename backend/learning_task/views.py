@@ -3,10 +3,11 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from utils.auth import JWTCookieAuthentication
-from .models import LearningTask, TaskReview
+from .models import LearningTask, TaskReview, LearningTaskLimit
 from .serializers import LearningTaskSerializer, TaskReviewSerializer
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_protect
+from django.db import transaction
 
 
 @method_decorator(csrf_protect, name="dispatch")
@@ -27,7 +28,7 @@ class LearningTaskAPIView(APIView):
 
         except LearningTask.DoesNotExist:
             return Response(
-                {"message": "Task not found"}, status=status.HTTP_404_NOT_FOUND
+                {"message": "Task not found."}, status=status.HTTP_404_NOT_FOUND
             )
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
@@ -35,10 +36,23 @@ class LearningTaskAPIView(APIView):
     def post(self, request):
         try:
             serializer = LearningTaskSerializer(data=request.data)
-            if serializer.is_valid():
-                serializer.save(user=request.user)
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            task_limit = LearningTaskLimit.objects.get(user=request.user)
+            if not task_limit.is_valid():
+                return Response(
+                    {"error": "You have reached your task creation limit."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            with transaction.atomic():
+                task_limit.created()
+                if serializer.is_valid():
+                    serializer.save(user=request.user)
+                    return Response(serializer.data, status=status.HTTP_201_CREATED)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except LearningTaskLimit.DoesNotExist:
+            return Response(
+                {"error": "Your task limit is not set. Contact the admin."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -47,7 +61,7 @@ class LearningTaskAPIView(APIView):
             task = LearningTask.objects.get(id=task_id, user=request.user)
             if task.is_rated:
                 return Response(
-                    {"error": "Task can't be edited after being rated."},
+                    {"error": "Tasks cannot be edited after being rated."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             serializer = LearningTaskSerializer(task, data=request.data, partial=True)
@@ -57,7 +71,7 @@ class LearningTaskAPIView(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except LearningTask.DoesNotExist:
             return Response(
-                {"message": "Task not found or not owned by user"},
+                {"message": "Task not found or not owned by you."},
                 status=status.HTTP_404_NOT_FOUND,
             )
         except Exception as e:
@@ -66,18 +80,33 @@ class LearningTaskAPIView(APIView):
     def delete(self, request, task_id):
         try:
             task = LearningTask.objects.get(id=task_id, user=request.user)
-            if task.is_rated:
+            task_limit = LearningTaskLimit.objects.get(user=request.user)
+            if not task_limit.is_valid():
                 return Response(
-                    {"error": "Task can't be deleted after being rated."},
+                    {"error": "You have reached your task limit."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            task.delete()
+
+            if task.is_rated:
+                return Response(
+                    {"error": "Tasks cannot be deleted after being rated."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            with transaction.atomic():
+                task.delete()
+                task_limit.deleted()
             return Response(
-                {"message": "Deleted successfully"}, status=status.HTTP_204_NO_CONTENT
+                {"message": "Task deleted successfully."},
+                status=status.HTTP_204_NO_CONTENT,
+            )
+        except LearningTaskLimit.DoesNotExist:
+            return Response(
+                {"error": "Your task limit is not set. Contact the admin."},
+                status=status.HTTP_404_NOT_FOUND,
             )
         except LearningTask.DoesNotExist:
             return Response(
-                {"message": "Task not found"}, status=status.HTTP_404_NOT_FOUND
+                {"error": "Task not found."}, status=status.HTTP_404_NOT_FOUND
             )
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
@@ -103,7 +132,7 @@ class TaskReviewAPIView(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except LearningTask.DoesNotExist:
             return Response(
-                {"message": "Task not found"}, status=status.HTTP_404_NOT_FOUND
+                {"error": "Task not found"}, status=status.HTTP_404_NOT_FOUND
             )
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)

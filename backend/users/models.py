@@ -53,6 +53,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     full_name = models.CharField(max_length=150)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default="user")
     email_verified = models.BooleanField(default=False)
+    gender = models.CharField(max_length=10, choices=GENDER_CHOICES, default="male")
     twofa_endabled = models.BooleanField(default=False)
     profile_pic_id = models.CharField(max_length=255, null=True, blank=True)
     has_password = models.BooleanField(default=True)

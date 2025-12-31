@@ -2,7 +2,8 @@ from rest_framework import serializers
 from .models import LearningTask, TaskReview
 from management.models import Language, Framework
 from django.contrib.auth import get_user_model
-from users.serializers import UserSerializer
+from users.serializers import UserSerializer, ProfileSerializer
+from users.models import Profile
 
 User = get_user_model()
 
@@ -24,12 +25,7 @@ class TaskReviewSerializer(serializers.ModelSerializer):
 
 class LearningTaskSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
-    languages = serializers.PrimaryKeyRelatedField(
-        queryset=Language.objects.all(), many=True
-    )
-    frameworks = serializers.PrimaryKeyRelatedField(
-        queryset=Framework.objects.all(), many=True, required=False
-    )
+    profile = serializers.SerializerMethodField()
     likes_count = serializers.SerializerMethodField()
     reviews = TaskReviewSerializer(many=True, read_only=True)
 
@@ -38,11 +34,11 @@ class LearningTaskSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "user",
+            "profile",
             "title",
             "description",
             "git_link",
             "is_public",
-            "is_rated",
             "languages",
             "frameworks",
             "created_at",
@@ -50,6 +46,12 @@ class LearningTaskSerializer(serializers.ModelSerializer):
             "likes_count",
             "reviews",
         ]
+
+    def get_profile(self, obj):
+        try:
+            return ProfileSerializer(obj.user.profile).data
+        except Profile.DoesNotExist:
+            return None
 
     def get_likes_count(self, obj):
         return obj.likes.count()

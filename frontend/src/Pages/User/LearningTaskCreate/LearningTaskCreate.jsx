@@ -143,7 +143,7 @@ export default function LearningTaskCreate() {
                 neonToast.error(error.response.data.non_field_errors[0], "error");
             } else {
                 neonToast.error(
-                    error.response?.data?.detail || "Failed to create learning task",
+                    error.response?.data?.error || "Failed to create learning task",
                     "error"
                 );
             }

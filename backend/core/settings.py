@@ -67,6 +67,7 @@ INSTALLED_APPS = [
     "website",
     "management",
     "learning_task",
+    "attendance",
 ]
 
 ASGI_APPLICATION = "core.asgi.application"

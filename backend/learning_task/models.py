@@ -44,10 +44,26 @@ class TaskReview(models.Model):
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=["task", "user"],
-                name="unique_review_per_user_per_task"
+                fields=["task", "user"], name="unique_review_per_user_per_task"
             )
         ]
 
     def __str__(self):
         return f"{self.user} - {self.task.title} ({self.rating}/5)"
+
+
+class LearningTaskLimit(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    limit = models.PositiveIntegerField(default=0)
+
+    def created(self):
+        if self.limit > 0:
+            self.limit -= 1
+            self.save(update_fields=["limit"])
+
+    def deleted(self):
+        self.limit += 1
+        self.save(update_fields=["limit"])
+
+    def is_valid(self):
+        return self.limit > 0

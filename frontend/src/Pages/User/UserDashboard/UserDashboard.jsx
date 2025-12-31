@@ -32,19 +32,13 @@ import {
     FaPercentage,
 } from "react-icons/fa";
 import { FiTrendingUp, FiUser, FiCalendar } from "react-icons/fi";
+import { useUser } from "../../../Context/UserContext";
 
 const UserDashboard = () => {
     const navigate = useNavigate();
+    const { user } = useUser()
+    console.log(user)
 
-    // Mock user data
-    const [userData] = useState({
-        fullName: "John Smith",
-        grade: "11",
-        email: "john.smith@example.com",
-        profilePic: "https://api.dicebear.com/7.x/avataaars/svg?seed=John",
-        joinDate: "2023-09-01",
-        memberId: "STU2023001"
-    });
 
     // User stats
     const [userStats] = useState({
@@ -228,7 +222,7 @@ const UserDashboard = () => {
 
     // Handle navigation to create task
     const handleCreateTask = () => {
-        navigate("/create-learning-task");
+        navigate("/user/learning-task/create");
     };
 
     const COLORS = ["#10b981", "#3b82f6", "#f59e0b"];
@@ -241,24 +235,25 @@ const UserDashboard = () => {
                     <header className={styles.header}>
                         <div className={styles.userInfo}>
                             <div className={styles.userAvatar}>
-                                {userData.profilePic ? (
+                                {user.profilePicURL ? (
                                     <img
-                                        src={userData.profilePic}
-                                        alt={userData.fullName}
+                                        src={user.profilePicURL}
+                                        alt={user.fullName}
                                         className={styles.profileImage}
                                         onError={handleImageError}
                                     />
-                                ) : null}
-                                <div className={styles.avatarPlaceholder}>
+                                ) : <div className={styles.avatarPlaceholder}>
                                     <FiUser />
-                                </div>
+                                </div>}
+
                             </div>
                             <div className={styles.userDetails}>
-                                <h1>Welcome back, {userData.fullName}!</h1>
+                                <h1>Welcome back, {user.fullName}!</h1>
                                 <p className={styles.subtitle}>
-                                    <FaUserGraduate /> Grade {userData.grade} •
-                                    <FiCalendar /> Member since {userData.joinDate} •
-                                    <span className={styles.memberId}>ID: {userData.memberId}</span>
+                                    <FaUserGraduate /> Grade {user.grade} •
+                                    <FiCalendar /> Member since {`${new Date(user.dateJoined).getFullYear()}-${String(new Date(user.dateJoined).getMonth() + 1).padStart(2, "0")}-${String(new Date(user.dateJoined).getDate()).padStart(2, "0")}`}
+                                    •
+                                    <span className={styles.memberId}>ID: {user.id}</span>
                                 </p>
                             </div>
                         </div>

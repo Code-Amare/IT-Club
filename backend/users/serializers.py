@@ -36,6 +36,7 @@ class UserSerializer(serializers.ModelSerializer):
             "email",
             "full_name",
             "role",
+            "gender",
             "email_verified",
             "twofa_endabled",
             "profile_pic_id",

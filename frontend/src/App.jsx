@@ -19,7 +19,6 @@ import StudentDetail from './Pages/Admin/StudentDetail/StudentDetail'
 import UserDashboard from './Pages/User/UserDashboard/UserDashboard'
 import AdminDashboard from './Pages/Admin/Dashboard/AdminDashboard'
 import MyLearningTask from './Pages/User/MyLearningTask/MyLearningTask'
-import CreateLearningTask from "./Pages/User/CreateLearningTask/CreateLearningTask"
 import EmailLogin from "./Pages/EmailLogin/EmailLogin"
 import PublicRoute from './Components/PublicRoute/PublicRoute'
 // import AdminLearningTaskDetail from './Pages/Admin/LearningTaskDetail/LearningTaskDetail'
@@ -36,6 +35,7 @@ import UserLearningTasksList from './Pages/User/LearningTasksList/LearningTasksL
 import LearningTaskCreate from './Pages/User/LearningTaskCreate/LearningTaskCreate'
 import LearningTaskEdit from './Pages/User/LearningTaskEdit/LearningTaskEdit'
 import AdminLearningTaskDetail from "./Pages/Admin/LearningTaskDetail/LearningTaskDetail"
+import StudentEdit from './Pages/Admin/StudentEdit/StudentEdit'
 
 function App() {
   return (
@@ -65,6 +65,7 @@ function App() {
           <Route path="/admin/student/add" element={<StudentAdd />} />
           <Route path="/admin/students/bulk" element={<StudentsBulk />} />
           <Route path="/admin/student/:id" element={<StudentDetail />} />
+          <Route path="/admin/student/edit/:id" element={<StudentEdit />} />
           <Route path="/admin/languages/add" element={<LanguagesAdd />} />
           <Route path="/admin/languages/edit/:id" element={<LanguagesEdit />} />
           <Route path="/admin/languages" element={<LanguagesList />} />
