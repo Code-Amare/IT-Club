@@ -9,7 +9,7 @@ import {
     FaArrowLeft, FaUser, FaPhone, FaCalendarAlt, FaEdit, FaTrash,
     FaGraduationCap, FaUsers, FaBook, FaChalkboardTeacher,
     FaChartLine, FaHistory, FaFileAlt, FaStar, FaCheckCircle,
-    FaTimesCircle, FaExclamationTriangle
+    FaTimesCircle, FaExclamationTriangle, FaTasks
 } from "react-icons/fa";
 import {
     MdEmail, MdLocationOn, MdDateRange,
@@ -46,7 +46,6 @@ export default function StudentDetail() {
     const [activities] = useState(MOCK_ACTIVITIES);
 
     useEffect(() => {
-        // wait until user context is available
         if (user == null) return;
         if (!user?.isAuthenticated) {
             navigate("/login");
@@ -59,7 +58,10 @@ export default function StudentDetail() {
             try {
                 const response = await api.get(`/api/management/student/${id}/`);
                 if (!mounted) return;
-                setStudent(response.data.student || null);
+
+                // Handle both response structures
+                const studentData = response.data.student || response.data;
+                setStudent(studentData || null);
             } catch (error) {
                 console.error("Error fetching student details:", error);
                 neonToast.error("Failed to load student details", "error");
@@ -76,7 +78,6 @@ export default function StudentDetail() {
     const handleDelete = async (_pendingEvent, reason) => {
         setLoadingDelete(true);
         try {
-            // include reason if backend supports it (axios delete with data)
             await api.delete(`/api/management/students/${id}/`, { data: { reason } });
             neonToast.success("Student deleted successfully", "success");
             navigate("/admin/students");
@@ -99,6 +100,18 @@ export default function StudentDetail() {
         } catch {
             return date;
         }
+    };
+
+    // Get task limit from student data
+    const getTaskLimit = () => {
+        if (!student) return 0;
+
+        // Check for task_limit object structure or direct value
+        if (student.task_limit && typeof student.task_limit === 'object') {
+            return student.task_limit.limit || 0;
+        }
+
+        return student.task_limit || 0;
     };
 
     if (loading) {
@@ -129,6 +142,8 @@ export default function StudentDetail() {
             </div>
         );
     }
+
+    const taskLimit = getTaskLimit();
 
     return (
         <div className={styles.container}>
@@ -202,7 +217,8 @@ export default function StudentDetail() {
                             <Info label="Date of Birth" value={student.date_of_birth ? formatDate(student.date_of_birth) : "Not specified"} icon={<FaCalendarAlt />} />
                             <Info label="Joined Date" value={formatDate(student.created_at || student.date_joined)} icon={<MdDateRange />} />
                             {student.parent_name && <Info label="Parent/Guardian" value={student.parent_name} icon={<FaUsers />} />}
-                            <Info label="Gender" value={student.gender.charAt(0).toUpperCase() + student.gender.slice(1)} icon={<MdDateRange />} />
+                            <Info label="Gender" value={student.gender ? student.gender.charAt(0).toUpperCase() + student.gender.slice(1) : "Not specified"} icon={<FaUser />} />
+                            <Info label="Account Identifier" value={student.account || "N/A"} icon={<FaUser />} />
                         </InfoCard>
 
                         <div className={styles.card}>
@@ -225,6 +241,13 @@ export default function StudentDetail() {
                                 <div className={styles.infoItem}>
                                     <div className={styles.infoIcon}><FaBook /></div>
                                     <div>
+                                        <label>Field of Study</label>
+                                        <p>{student.field ? student.field.charAt(0).toUpperCase() + student.field.slice(1) : "Not specified"}</p>
+                                    </div>
+                                </div>
+                                <div className={styles.infoItem}>
+                                    <div className={styles.infoIcon}><FaBook /></div>
+                                    <div>
                                         <label>Academic Year</label>
                                         <p>{student.academic_year || "2024-2025"}</p>
                                     </div>
@@ -236,6 +259,25 @@ export default function StudentDetail() {
                                         <p>{student.homeroom_teacher || "Not assigned"}</p>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+
+                        {/* Simple Task Limit Card */}
+                        <div className={styles.card}>
+                            <div className={styles.cardHeader}>
+                                <h2 className={styles.cardTitle}><FaTasks /> Task Limit</h2>
+                                <button
+                                    className={styles.viewAllBtn}
+                                    onClick={() => navigate(`/admin/student/edit/${id}/`)}
+                                >
+                                    <FaEdit /> Edit
+                                </button>
+                            </div>
+                            <div className={styles.taskLimitDisplay}>
+                                <div className={styles.taskLimitValue}>{taskLimit}</div>
+                                <p className={styles.taskLimitDescription}>
+                                    Maximum number of tasks this student can be assigned.
+                                </p>
                             </div>
                         </div>
                     </div>

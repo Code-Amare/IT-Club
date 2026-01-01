@@ -19,7 +19,10 @@ from users.serializers import UserSerializer, ProfileSerializer
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 from .serializers import LanguageSerializer, FrameworkSerializer
-from learning_task.serializers import LearningTaskSerializer
+from learning_task.serializers import (
+    LearningTaskSerializer,
+    LearningTaskLimitSerializer,
+)
 from learning_task.models import LearningTaskLimit
 from .models import Framework, Language
 from attendance.models import Attendance, AttendanceSession
@@ -40,6 +43,7 @@ from django.db.models import (
 from django.utils import timezone
 from datetime import timedelta
 import math
+from learning_task.models import LearningTaskLimit
 import openpyxl
 
 
@@ -632,8 +636,18 @@ class StudentUpdateView(APIView):
             account = (request.data.get("account") or "").strip()
             phone_number = (request.data.get("phone_number") or "").strip()
             account_status = request.data.get("account_status", "active")
-
+            task_limit = request.data.get("task_limit")
             errors = {}
+
+            if task_limit is None:
+                errors["task limit"] = ["Task limit is required"]
+
+            if int(task_limit) < 0:
+                errors["task limit"] = ["Can't be negative"]
+
+            learning_task_limit, created = LearningTaskLimit.objects.get_or_create(
+                user=user
+            )
 
             if not email:
                 errors["email"] = ["Email is required"]
@@ -687,6 +701,8 @@ class StudentUpdateView(APIView):
                 )
 
             with transaction.atomic():
+                learning_task_limit.limit = task_limit
+                learning_task_limit.save()
                 user.email = email
                 user.gender = gender
                 user.full_name = full_name
@@ -735,7 +751,7 @@ class StudentUpdateView(APIView):
             )
         except Exception as e:
             return Response(
-                {"detail": "Failed to update student"},
+                {"detail": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
@@ -753,6 +769,21 @@ class StudentDetailView(APIView):
     def get(self, request, student_id):
         try:
             profile = self._get_profile(student_id)
+
+            try:
+                user = User.objects.get(id=student_id)
+
+                task_limit = LearningTaskLimit.objects.get(user=user)
+
+            except User.DoesNotExist:
+                return Response(
+                    {"error": f"User with '{id}' doesn't exist."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+            except LearningTaskLimit.DoesNotExist:
+                task_limit = LearningTaskLimit.objects.create(user=user)
+
+            task_limit_serializer = LearningTaskLimitSerializer(task_limit)
 
             # best-effort profile pic URL (if ImageField used)
             profile_pic_url = None
@@ -788,6 +819,7 @@ class StudentDetailView(APIView):
                 "parent_name": getattr(profile, "parent_name", None),
                 "homeroom_teacher": getattr(profile, "homeroom_teacher", None),
                 "academic_year": getattr(profile, "academic_year", None),
+                "task_limit": task_limit_serializer.data,
             }
 
             return Response({"student": student_data}, status=status.HTTP_200_OK)
@@ -819,6 +851,18 @@ class StudentDetailView(APIView):
                 else {}
             )
 
+            task_limit = request.data.get("task_limit")
+
+            if task_limit is not None:
+                try:
+                    learning_task_limit.limit = int(task_limit)
+                    learning_task_limit.save()
+                except (TypeError, ValueError):
+                    return Response(
+                        {"error": "task_limit must be a valid integer"},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
             # If top-level fields were sent flat, merge them
             if not user_data:
                 for k in ("full_name", "email", "is_active"):
@@ -828,6 +872,10 @@ class StudentDetailView(APIView):
                 for k in ("grade", "section", "field", "account", "phone_number"):
                     if k in request.data:
                         profile_data[k] = request.data.get(k)
+
+            learning_task_limit, created = LearningTaskLimit.objects.get_or_create(
+                user=user
+            )
 
             with transaction.atomic():
                 if "full_name" in user_data:

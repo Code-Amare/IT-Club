@@ -211,6 +211,172 @@
   color: var(--text-primary);
 }
 
+/* Task Limit Card */
+.taskLimitCard {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 3px var(--card-shadow);
+}
+
+.taskLimitHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid var(--border-color);
+}
+
+.taskLimitIcon {
+  font-size: 24px;
+  color: var(--primary);
+}
+
+.taskLimitHeader h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+  flex: 1;
+}
+
+.editLimitBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--warning-light);
+  color: var(--warning);
+  border: 1px solid var(--warning-border);
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.editLimitBtn:hover {
+  background: var(--warning-lighter);
+}
+
+.taskLimitContent {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.limitInfoRow {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+@media (max-width: 768px) {
+  .limitInfoRow {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+
+.limitStat {
+  background: var(--bg-body);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 20px;
+  text-align: center;
+}
+
+.limitLabel {
+  font-size: 14px;
+  color: var(--text-secondary);
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.limitValue {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--primary);
+  line-height: 1;
+}
+
+.usageValue {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.usagePercentage {
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.lowUsage {
+  color: var(--success);
+}
+
+.mediumUsage {
+  color: var(--warning);
+}
+
+.highUsage {
+  color: var(--danger);
+}
+
+.usageBar {
+  height: 12px;
+  background: var(--bg-input);
+  border-radius: 6px;
+  overflow: hidden;
+  margin: 8px 0;
+}
+
+.usageFill {
+  height: 100%;
+  border-radius: 6px;
+  transition: width 0.3s ease;
+}
+
+.usageFill.lowUsage {
+  background: var(--success);
+}
+
+.usageFill.mediumUsage {
+  background: var(--warning);
+}
+
+.usageFill.highUsage {
+  background: var(--danger);
+}
+
+.taskLimitDescription {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  background: var(--info-light);
+  border-radius: 8px;
+  border-left: 4px solid var(--info);
+}
+
+.taskLimitDescription .infoIcon {
+  color: var(--info);
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.taskLimitDescription p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+
 /* Content Grid */
 .contentGrid {
   display: grid;
@@ -461,6 +627,26 @@
   margin-bottom: 24px;
 }
 
+/* Back button in not found */
+.backBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.backBtn:hover {
+  background: var(--bg-body);
+}
+
 /* Modal */
 .modalOverlay {
   position: fixed;
@@ -696,4 +882,39 @@
   .modalContent {
     padding: 16px;
   }
+
+  .taskLimitHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .editLimitBtn {
+    align-self: stretch;
+    justify-content: center;
+  }
+}
+/* Task Limit Display */
+.taskLimitDisplay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30px 20px;
+  text-align: center;
+}
+
+.taskLimitValue {
+  font-size: 48px;
+  font-weight: 700;
+  color: var(--primary);
+  line-height: 1;
+  margin-bottom: 16px;
+}
+
+.taskLimitDescription {
+  font-size: 14px;
+  color: var(--text-secondary);
+  max-width: 300px;
+  margin: 0;
 }

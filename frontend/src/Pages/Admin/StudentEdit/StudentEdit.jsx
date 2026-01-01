@@ -12,7 +12,8 @@ import {
     FaSave,
     FaTrash,
     FaDownload,
-    FaUpload
+    FaUpload,
+    FaTasks // Added for task limit icon
 } from "react-icons/fa";
 import {
     MdPerson,
@@ -38,6 +39,7 @@ export default function StudentEdit() {
         phone_number: "",
         account: "",
         account_status: "active",
+        task_limit: 0, // Added task limit field
     });
 
     const [loading, setLoading] = useState(false);
@@ -57,6 +59,7 @@ export default function StudentEdit() {
 
             let student;
             if (response.data && response.data.student) {
+                console.log(response)
                 student = response.data.student;
                 console.log("Using nested student data structure");
             } else if (response.data && response.data.id) {
@@ -68,6 +71,9 @@ export default function StudentEdit() {
             }
             setOriginalData(student);
 
+            // Get task limit from nested structure if available
+            const taskLimit = student.task_limit?.limit || student.task_limit || 0;
+
             setFormData({
                 full_name: student.full_name || "",
                 email: student.email || "",
@@ -78,6 +84,7 @@ export default function StudentEdit() {
                 phone_number: student.phone_number || "",
                 account: student.account || "",
                 account_status: student.account_status || "active",
+                task_limit: taskLimit, // Set task limit
             });
 
         } catch (error) {
@@ -103,6 +110,8 @@ export default function StudentEdit() {
         setFormData(prev => ({ ...prev, [name]: value }));
 
         if (originalData) {
+            const originalTaskLimit = originalData.task_limit?.limit || originalData.task_limit || 0;
+
             const isChanged =
                 (name === "full_name" && value !== originalData.full_name) ||
                 (name === "email" && value !== originalData.email) ||
@@ -112,7 +121,8 @@ export default function StudentEdit() {
                 (name === "field" && value !== originalData.field) ||
                 (name === "phone_number" && value !== originalData.phone_number) ||
                 (name === "account" && value !== originalData.account) ||
-                (name === "account_status" && value !== originalData.account_status);
+                (name === "account_status" && value !== originalData.account_status) ||
+                (name === "task_limit" && parseInt(value) !== originalTaskLimit); // Added task limit check
 
             setHasChanges(isChanged || hasChanges);
         }
@@ -143,6 +153,14 @@ export default function StudentEdit() {
         else if (!/^[\d\s\-\+\(\)]+$/.test(formData.phone_number))
             newErrors.phone_number = "Phone number is invalid";
 
+        // Validate task limit
+        if (formData.task_limit === "" || isNaN(formData.task_limit))
+            newErrors.task_limit = "Task limit must be a number";
+        else if (parseInt(formData.task_limit) < 0)
+            newErrors.task_limit = "Task limit cannot be negative";
+        else if (parseInt(formData.task_limit) > 100)
+            newErrors.task_limit = "Task limit cannot exceed 100";
+
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
@@ -166,9 +184,9 @@ export default function StudentEdit() {
                 phone_number: formData.phone_number.trim(),
                 account: formData.account.trim() || "N/A",
                 account_status: formData.account_status,
+                task_limit: parseInt(formData.task_limit) || 0, // Add task limit to payload
             };
             const response = await api.put(`/api/management/student/edit/${id}/`, studentData);
-
 
             neonToast.success("Student updated successfully!", "success");
             setOriginalData(response.data);
@@ -404,6 +422,28 @@ export default function StudentEdit() {
                                 </div>
                                 <small className={styles.helperText}>
                                     Leave empty to use default value "N/A"
+                                </small>
+                            </div>
+
+                            <div className={styles.formGroup}>
+                                <label htmlFor="task_limit">Task Limit</label>
+                                <div className={styles.inputWithIcon}>
+                                    <FaTasks className={styles.inputIcon} />
+                                    <input
+                                        type="number"
+                                        id="task_limit"
+                                        name="task_limit"
+                                        value={formData.task_limit}
+                                        onChange={handleChange}
+                                        placeholder="0"
+                                        min="0"
+                                        max="100"
+                                        className={errors.task_limit ? styles.errorInput : ""}
+                                    />
+                                </div>
+                                {errors.task_limit && <span className={styles.errorText}>{errors.task_limit}</span>}
+                                <small className={styles.helperText}>
+                                    Maximum number of tasks allowed (0-100)
                                 </small>
                             </div>
 
