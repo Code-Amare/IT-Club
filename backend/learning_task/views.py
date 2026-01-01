@@ -4,10 +4,18 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from utils.auth import JWTCookieAuthentication
 from .models import LearningTask, TaskReview, LearningTaskLimit
-from .serializers import LearningTaskSerializer, TaskReviewSerializer
+from .serializers import (
+    LearningTaskSerializer,
+    TaskReviewSerializer,
+    LearningTaskLimitSerializer,
+)
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_protect
 from django.db import transaction
+from utils.auth import RolePermissionFactory
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 
 @method_decorator(csrf_protect, name="dispatch")
@@ -197,3 +205,27 @@ class LikeLearningTaskAPIView(APIView):
                 {"error": "Unable to like or unlike."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+
+
+@method_decorator(csrf_protect, name="dispatch")
+class LearningTaskLimitView(APIView):
+    authentication_classes = [JWTCookieAuthentication]
+    permission_classes = [IsAuthenticated, RolePermissionFactory(["admin", "staff"])]
+
+    def get(self, request, id):
+        try:
+            user = User.objects.get(id=id)
+
+            task_limit = LearningTaskLimit.objects.get(user=user)
+
+        except User.DoesNotExist:
+            return Response(
+                {"error": f"User with '{id}' doesn't exist."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        except LearningTaskLimit.DoesNotExist:
+            task_limit = LearningTaskLimit.objects.create(user=user)
+
+        serializer = LearningTaskLimitSerializer(data=task_limit)
+
+        return Response({"task_limit": serializer.data}, status=status.HTTP_200_OK)

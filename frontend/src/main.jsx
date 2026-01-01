@@ -20,7 +20,7 @@ const AppWithAxios = () => {
 };
 
 createRoot(document.getElementById("root")).render(
-  <StrictMode>
+  // <StrictMode>
     <BrowserRouter>
       <UserProvider>
         <SiteProvider >
@@ -30,5 +30,5 @@ createRoot(document.getElementById("root")).render(
         </SiteProvider>
       </UserProvider>
     </BrowserRouter>
-  </StrictMode>
+  // </StrictMode>
 );

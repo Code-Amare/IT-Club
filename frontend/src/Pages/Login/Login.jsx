@@ -23,6 +23,8 @@ const Login = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        console.log(email)
+        console.log(password)
 
         try {
             await api.post("api/users/login/", { email, password }, { publicApi: true });

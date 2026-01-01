@@ -67,3 +67,4 @@ class LearningTaskLimit(models.Model):
 
     def is_valid(self):
         return self.limit > 0
+ 

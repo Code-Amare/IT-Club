@@ -1,9 +1,10 @@
 from rest_framework import serializers
-from .models import LearningTask, TaskReview
+from .models import LearningTask, TaskReview, LearningTaskLimit
 from management.models import Language, Framework
 from django.contrib.auth import get_user_model
 from users.serializers import UserSerializer, ProfileSerializer
 from users.models import Profile
+
 
 User = get_user_model()
 
@@ -55,3 +56,11 @@ class LearningTaskSerializer(serializers.ModelSerializer):
 
     def get_likes_count(self, obj):
         return obj.likes.count()
+
+
+class LearningTaskLimitSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+
+    class Meta:
+        model = LearningTaskLimit
+        fields = ["id", "user", "limit"]

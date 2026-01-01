@@ -14,6 +14,7 @@ import {
     ResponsiveContainer,
 } from "recharts";
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom"; // Added this import
 import {
     FaUsers,
     FaChartBar,
@@ -25,6 +26,14 @@ import {
     FaGraduationCap,
     FaSpinner,
     FaExclamationTriangle,
+    FaChevronLeft,
+    FaChevronRight,
+    FaSearch,
+    FaFilter,
+    FaSort,
+    FaEnvelope,
+    FaPhone,
+    FaCalendar,
 } from "react-icons/fa";
 import { FiTrendingUp, FiUser } from "react-icons/fi";
 import { useUser } from "../../../Context/UserContext";
@@ -33,7 +42,9 @@ import { neonToast } from "../../../Components/NeonToast/NeonToast";
 
 const AdminDashboard = () => {
     const { user } = useUser();
+    const navigate = useNavigate(); // Added this line
     const [loading, setLoading] = useState(true);
+    const [studentsLoading, setStudentsLoading] = useState(false);
     const [stats, setStats] = useState({
         total: 0,
         active: 0,
@@ -60,6 +71,28 @@ const AdminDashboard = () => {
         textSecondary: "#4b5563"
     });
 
+    // Students table states
+    const [students, setStudents] = useState([]);
+    const [pagination, setPagination] = useState({
+        current_page: 1,
+        page_size: 10,
+        total_count: 0,
+        total_pages: 1,
+    });
+    const [filters, setFilters] = useState({
+        search: "",
+        grade: "",
+        section: "",
+        accountStatus: "",
+    });
+    const [sortConfig, setSortConfig] = useState({
+        sort_by: "-user__date_joined",
+        sort_order: "desc"
+    });
+    const [showFilters, setShowFilters] = useState(false);
+    const [availableGrades, setAvailableGrades] = useState([]);
+    const [availableSections, setAvailableSections] = useState([]);
+
     // Fetch all dashboard data
     useEffect(() => {
         if (user.isAuthenticated === null) return;
@@ -83,10 +116,17 @@ const AdminDashboard = () => {
     const fetchDashboardData = async () => {
         setLoading(true);
         try {
-            // Fetch student stats
+            // Fetch student stats and students in parallel
             const [statsRes, studentsRes] = await Promise.all([
                 api.get("/api/management/students/stats/"),
-                api.get("/api/management/students/")
+                api.get("/api/management/students/", {
+                    params: {
+                        page: 1,
+                        page_size: 10,
+                        ...sortConfig,
+                        ...filters
+                    }
+                })
             ]);
 
             // Process stats data
@@ -117,18 +157,28 @@ const AdminDashboard = () => {
             });
             setGradeData(gradeChartData);
 
-            // Try to fetch gender data from students endpoint
-            const studentsData = studentsRes.data.students || [];
-            if (studentsData.length > 0) {
+            // Process students data
+            const studentsData = studentsRes.data;
+            setStudents(studentsData.students || []);
+            setPagination(studentsData.pagination || {
+                current_page: 1,
+                page_size: 10,
+                total_count: 0,
+                total_pages: 1,
+            });
+            setAvailableGrades(studentsData.filters?.available_grades || []);
+            setAvailableSections(studentsData.filters?.available_sections || []);
+
+            // Calculate gender distribution from students data
+            if (studentsData.students && studentsData.students.length > 0) {
                 // Count gender if available in student data
-                // This is a fallback since your StudentStatsView doesn't have gender data
-                const maleCount = studentsData.filter(s =>
+                const maleCount = studentsData.students.filter(s =>
                     s.gender === 'M' || s.gender === 'male' || s.gender === 'Male'
                 ).length;
-                const femaleCount = studentsData.filter(s =>
+                const femaleCount = studentsData.students.filter(s =>
                     s.gender === 'F' || s.gender === 'female' || s.gender === 'Female'
                 ).length;
-                const otherCount = studentsData.length - maleCount - femaleCount;
+                const otherCount = studentsData.students.length - maleCount - femaleCount;
 
                 const totalGender = maleCount + femaleCount + otherCount;
                 const malePercentage = totalGender > 0 ? (maleCount / totalGender) * 100 : 0;
@@ -143,14 +193,12 @@ const AdminDashboard = () => {
                 }
             }
 
-            // Fetch top learning tasks from the correct endpoint
+            // Fetch top learning tasks
             try {
                 const learningTasksRes = await api.get("/api/management/top-learning-tasks/10/");
                 const tasksData = learningTasksRes.data.top_learning_tasks || [];
 
-                // Transform learning tasks data for display
                 const transformedTasks = tasksData.map(task => {
-                    // Calculate average rating from reviews
                     let averageRating = 0;
                     if (task.reviews && task.reviews.length > 0) {
                         const totalRating = task.reviews.reduce((sum, review) => sum + review.rating, 0);
@@ -162,7 +210,7 @@ const AdminDashboard = () => {
                         title: task.title || "Untitled Task",
                         student: {
                             fullName: task.user?.full_name || "Unknown Student",
-                            grade: task.profile?.grade || "N/A", // Adjust if grade is in user object
+                            grade: task.profile?.grade || "N/A",
                             profile_pic_url: task.user?.profile_pic_url || null,
                         },
                         rating: averageRating,
@@ -171,7 +219,6 @@ const AdminDashboard = () => {
                     };
                 });
 
-                // Sort by rating and take top 5
                 const topTasks = transformedTasks
                     .sort((a, b) => b.rating - a.rating)
                     .slice(0, 5);
@@ -179,31 +226,7 @@ const AdminDashboard = () => {
                 setTopLearningTasks(topTasks);
             } catch (taskError) {
                 console.error("Error fetching top learning tasks:", taskError);
-                // Try fallback endpoint if the management endpoint fails
-                try {
-                    const fallbackRes = await api.get("/api/learning-task/");
-                    const tasksData = fallbackRes.data || [];
-
-                    const transformedTasks = tasksData.map(task => ({
-                        id: task.id || task._id || Math.random(),
-                        title: task.title || task.name || "Untitled Task",
-                        student: {
-                            fullName: task.student?.full_name || task.student?.name || "Unknown Student",
-                            grade: task.student?.grade || task.grade || "N/A",
-                            profile_pic_url: task.student?.profile_pic_url || task.profile_picture || null,
-                        },
-                        rating: task.rating || task.average_rating || 0,
-                    }));
-
-                    const topTasks = transformedTasks
-                        .sort((a, b) => b.rating - a.rating)
-                        .slice(0, 5);
-
-                    setTopLearningTasks(topTasks);
-                } catch (fallbackError) {
-                    console.warn("Both learning tasks endpoints failed:", fallbackError);
-                    setTopLearningTasks([]);
-                }
+                setTopLearningTasks([]);
             }
 
         } catch (error) {
@@ -211,6 +234,121 @@ const AdminDashboard = () => {
             neonToast.error("Failed to load dashboard data", "error");
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchStudents = async (page = 1) => {
+        setStudentsLoading(true);
+        try {
+            const params = {
+                page,
+                page_size: pagination.page_size,
+                ...sortConfig,
+                ...filters
+            };
+
+            // Remove empty filters
+            Object.keys(params).forEach(key => {
+                if (params[key] === "" || params[key] === null || params[key] === undefined) {
+                    delete params[key];
+                }
+            });
+
+            const response = await api.get("/api/management/students/", { params });
+            const data = response.data;
+
+            setStudents(data.students || []);
+            setPagination(data.pagination || {
+                current_page: 1,
+                page_size: 10,
+                total_count: 0,
+                total_pages: 1,
+            });
+
+            // Update available filters if returned
+            if (data.filters) {
+                setAvailableGrades(data.filters.available_grades || availableGrades);
+                setAvailableSections(data.filters.available_sections || availableSections);
+            }
+        } catch (error) {
+            console.error("Error fetching students:", error);
+            neonToast.error("Failed to load students", "error");
+        } finally {
+            setStudentsLoading(false);
+        }
+    };
+
+    const handlePageChange = (page) => {
+        if (page >= 1 && page <= pagination.total_pages) {
+            fetchStudents(page);
+        }
+    };
+
+    const handleFilterChange = (key, value) => {
+        setFilters(prev => ({
+            ...prev,
+            [key]: value
+        }));
+    };
+
+    const handleSort = (field) => {
+        const isCurrentlyDesc = sortConfig.sort_by === `-${field}`;
+        const isCurrentlyAsc = sortConfig.sort_by === field;
+
+        let newSortConfig = { ...sortConfig };
+
+        if (isCurrentlyDesc) {
+            // Switch to ascending
+            newSortConfig.sort_by = field;
+            newSortConfig.sort_order = "asc";
+        } else if (isCurrentlyAsc) {
+            // Switch to default (date joined desc)
+            newSortConfig.sort_by = "-user__date_joined";
+            newSortConfig.sort_order = "desc";
+        } else {
+            // Set to descending
+            newSortConfig.sort_by = `-${field}`;
+            newSortConfig.sort_order = "desc";
+        }
+
+        setSortConfig(newSortConfig);
+        fetchStudents(1); // Reset to page 1 when sorting
+    };
+
+    const handleSearch = () => {
+        fetchStudents(1); // Reset to page 1 when applying filters
+    };
+
+    const handleClearFilters = () => {
+        setFilters({
+            search: "",
+            grade: "",
+            section: "",
+            accountStatus: "",
+        });
+        setSortConfig({
+            sort_by: "-user__date_joined",
+            sort_order: "desc"
+        });
+        fetchStudents(1);
+    };
+
+    const getSortIcon = (field) => {
+        if (sortConfig.sort_by === `-${field}`) {
+            return <FaSort className={styles.sortIcon} />; // Descending
+        } else if (sortConfig.sort_by === field) {
+            return <FaSort className={`${styles.sortIcon} ${styles.sortAsc}`} />; // Ascending
+        }
+        return null;
+    };
+
+    const getAttendanceRatingColor = (rating) => {
+        switch (rating) {
+            case "excellent": return "#10b981";
+            case "good": return "#3b82f6";
+            case "average": return "#f59e0b";
+            case "poor": return "#ef4444";
+            default: return "#6b7280";
         }
     };
 
@@ -242,11 +380,16 @@ const AdminDashboard = () => {
         }
     };
 
+    // Handle row click
+    const handleRowClick = (studentId) => {
+        navigate(`/admin/student/${studentId}`);
+    };
+
     if (loading) {
         return (
             <div className={styles.AdminDashboardContainer}>
                 <SideBar>
-                    <div className={styles.AdminDashboard}>
+                    <div className={styles.dashboard}>
                         <div className={styles.loadingContainer}>
                             <FaSpinner className={styles.loadingSpinner} />
                             <p>Loading dashboard data...</p>
@@ -260,7 +403,7 @@ const AdminDashboard = () => {
     return (
         <div className={styles.AdminDashboardContainer}>
             <SideBar>
-                <div className={styles.AdminDashboard}>
+                <div className={styles.dashboard}>
                     <header className={styles.header}>
                         <h1>Admin Dashboard</h1>
                         <p className={styles.subtitle}>Welcome back! Here's what's happening today.</p>
@@ -437,7 +580,7 @@ const AdminDashboard = () => {
                         </div>
                     </div>
 
-                    {/* Tables Section */}
+                    {/* Existing Tables Section (Learning Tasks & Attendance) */}
                     <div className={styles.tablesSection}>
                         <div className={styles.tableCard}>
                             <div className={styles.tableHeader}>
@@ -477,7 +620,7 @@ const AdminDashboard = () => {
                                                         : styles.avatarPlaceholder;
 
                                                     return (
-                                                        <tr key={task.id}>
+                                                        <tr key={task.id} className={styles.clickableRow} onClick={() => navigate(`/admin/learning-task/${task.id}`)}>
                                                             <td>
                                                                 <div className={styles.taskCell}>
                                                                     <span className={styles.taskName}>{task.title}</span>
@@ -596,6 +739,290 @@ const AdminDashboard = () => {
                                         </tbody>
                                     </table>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Student Management Section - Placed below everything */}
+                    <div className={styles.studentManagementSection}>
+                        <div className={styles.tableCard}>
+                            <div className={styles.tableHeader}>
+                                <h2>
+                                    <FaUsers className={styles.tableIcon} /> Student Management
+                                </h2>
+                                <div className={styles.tableActions}>
+                                    <button
+                                        onClick={() => setShowFilters(!showFilters)}
+                                        className={styles.filterButton}
+                                    >
+                                        <FaFilter /> Filters
+                                    </button>
+                                    <button
+                                        onClick={handleClearFilters}
+                                        className={styles.clearButton}
+                                    >
+                                        Clear All
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Filters Section */}
+                            {showFilters && (
+                                <div className={styles.filtersSection}>
+                                    <div className={styles.filterRow}>
+                                        <div className={styles.filterGroup}>
+                                            <label>Search</label>
+                                            <div className={styles.searchInput}>
+                                                <FaSearch className={styles.searchIcon} />
+                                                <input
+                                                    type="text"
+                                                    placeholder="Search by name, email, grade, etc."
+                                                    value={filters.search}
+                                                    onChange={(e) => handleFilterChange("search", e.target.value)}
+                                                    onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className={styles.filterRow}>
+                                        <div className={styles.filterGroup}>
+                                            <label>Grade</label>
+                                            <select
+                                                value={filters.grade}
+                                                onChange={(e) => handleFilterChange("grade", e.target.value)}
+                                            >
+                                                <option value="">All Grades</option>
+                                                {availableGrades.map(grade => (
+                                                    <option key={grade} value={grade}>Grade {grade}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div className={styles.filterGroup}>
+                                            <label>Section</label>
+                                            <select
+                                                value={filters.section}
+                                                onChange={(e) => handleFilterChange("section", e.target.value)}
+                                            >
+                                                <option value="">All Sections</option>
+                                                {availableSections.map(section => (
+                                                    <option key={section} value={section}>{section}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div className={styles.filterGroup}>
+                                            <label>Account Status</label>
+                                            <select
+                                                value={filters.accountStatus}
+                                                onChange={(e) => handleFilterChange("accountStatus", e.target.value)}
+                                            >
+                                                <option value="">All Status</option>
+                                                <option value="active">Active</option>
+                                                <option value="inactive">Inactive</option>
+                                            </select>
+                                        </div>
+                                        <button
+                                            onClick={handleSearch}
+                                            className={styles.applyButton}
+                                            disabled={studentsLoading}
+                                        >
+                                            {studentsLoading ? <FaSpinner className={styles.spinner} /> : "Apply Filters"}
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Students Table */}
+                            <div className={styles.tableWrapper}>
+                                <div className={styles.tableContainer}>
+                                    {studentsLoading ? (
+                                        <div className={styles.loadingOverlay}>
+                                            <FaSpinner className={styles.loadingSpinner} />
+                                            <p>Loading students...</p>
+                                        </div>
+                                    ) : students.length === 0 ? (
+                                        <div className={styles.emptyState}>
+                                            <FaExclamationTriangle size={24} />
+                                            <p>No students found</p>
+                                            {Object.values(filters).some(val => val !== "") && (
+                                                <button
+                                                    onClick={handleClearFilters}
+                                                    className={styles.clearButton}
+                                                >
+                                                    Clear filters
+                                                </button>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <table className={styles.dataTable}>
+                                            <thead>
+                                                <tr>
+                                                    <th onClick={() => handleSort("full_name")} className={styles.sortable}>
+                                                        Name {getSortIcon("full_name")}
+                                                    </th>
+                                                    <th onClick={() => handleSort("email")} className={`${styles.sortable} ${styles.hideOnMobile}`}>
+                                                        Email {getSortIcon("email")}
+                                                    </th>
+                                                    <th onClick={() => handleSort("grade")} className={styles.sortable}>
+                                                        Grade {getSortIcon("grade")}
+                                                    </th>
+                                                    <th onClick={() => handleSort("section")} className={`${styles.sortable} ${styles.hideOnMobile}`}>
+                                                        Section {getSortIcon("section")}
+                                                    </th>
+                                                    <th>Attendance</th>
+                                                    <th onClick={() => handleSort("account_status")} className={styles.sortable}>
+                                                        Status {getSortIcon("account_status")}
+                                                    </th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {students.map((student) => (
+                                                    <tr
+                                                        key={student.id}
+                                                        className={styles.clickableRow}
+                                                        onClick={() => handleRowClick(student.id)}
+                                                    >
+                                                        <td>
+                                                            <div className={styles.studentCell}>
+                                                                {student.profile_pic_url ? (
+                                                                    <img
+                                                                        src={student.profile_pic_url}
+                                                                        alt={student.full_name}
+                                                                        className={styles.profileImage}
+                                                                        onError={handleImageError}
+                                                                    />
+                                                                ) : null}
+                                                                <div className={styles.avatarPlaceholder}>
+                                                                    {student.full_name?.charAt(0) || '?'}
+                                                                </div>
+                                                                <div className={styles.studentInfo}>
+                                                                    <span className={styles.studentName}>{student.full_name}</span>
+                                                                    <span className={styles.mobileEmail}>{student.email}</span>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        <td className={styles.hideOnMobile}>{student.email}</td>
+                                                        <td>
+                                                            <span className={styles.gradeBadge}>
+                                                                {student.grade || 'N/A'}
+                                                            </span>
+                                                        </td>
+                                                        <td className={styles.hideOnMobile}>{student.section || 'N/A'}</td>
+                                                        <td>
+                                                            <div className={styles.attendanceCell}>
+                                                                <div className={styles.attendanceProgress}>
+                                                                    <div
+                                                                        className={styles.progressBar}
+                                                                        title={`${student.attendance?.attendance_percentage || 0}%`}
+                                                                    >
+                                                                        <div
+                                                                            className={styles.progressFill}
+                                                                            style={{
+                                                                                width: `${Math.min(student.attendance?.attendance_percentage || 0, 100)}%`,
+                                                                                backgroundColor: getAttendanceRatingColor(student.attendance?.attendance_rating)
+                                                                            }}
+                                                                        ></div>
+                                                                    </div>
+                                                                    <span className={styles.attendancePercentage}>
+                                                                        {student.attendance?.attendance_percentage || 0}%
+                                                                    </span>
+                                                                </div>
+                                                                <div className={styles.attendanceRating}>
+                                                                    <span
+                                                                        className={styles.ratingBadge}
+                                                                        style={{
+                                                                            backgroundColor: `${getAttendanceRatingColor(student.attendance?.attendance_rating)}20`,
+                                                                            color: getAttendanceRatingColor(student.attendance?.attendance_rating)
+                                                                        }}
+                                                                    >
+                                                                        {student.attendance?.attendance_rating || 'No data'}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        <td>
+                                                            <span className={`${styles.statusBadge} ${student.account_status === 'active' ? styles.activeBadge : styles.inactiveBadge
+                                                                }`}>
+                                                                {student.account_status}
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    )}
+                                </div>
+
+                                {/* Pagination */}
+                                {students.length > 0 && (
+                                    <div className={styles.pagination}>
+                                        <div className={styles.paginationInfo}>
+                                            Showing {((pagination.current_page - 1) * pagination.page_size) + 1} to {Math.min(pagination.current_page * pagination.page_size, pagination.total_count)} of {pagination.total_count} students
+                                        </div>
+                                        <div className={styles.paginationControls}>
+                                            <button
+                                                onClick={() => handlePageChange(pagination.current_page - 1)}
+                                                disabled={pagination.current_page === 1 || studentsLoading}
+                                                className={styles.paginationButton}
+                                            >
+                                                <FaChevronLeft /> Previous
+                                            </button>
+                                            <div className={styles.pageNumbers}>
+                                                {Array.from({ length: Math.min(5, pagination.total_pages) }, (_, i) => {
+                                                    let pageNum;
+                                                    if (pagination.total_pages <= 5) {
+                                                        pageNum = i + 1;
+                                                    } else if (pagination.current_page <= 3) {
+                                                        pageNum = i + 1;
+                                                    } else if (pagination.current_page >= pagination.total_pages - 2) {
+                                                        pageNum = pagination.total_pages - 4 + i;
+                                                    } else {
+                                                        pageNum = pagination.current_page - 2 + i;
+                                                    }
+                                                    return (
+                                                        <button
+                                                            key={pageNum}
+                                                            onClick={() => handlePageChange(pageNum)}
+                                                            className={`${styles.pageButton} ${pagination.current_page === pageNum ? styles.activePage : ''
+                                                                }`}
+                                                            disabled={studentsLoading}
+                                                        >
+                                                            {pageNum}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                            <button
+                                                onClick={() => handlePageChange(pagination.current_page + 1)}
+                                                disabled={pagination.current_page === pagination.total_pages || studentsLoading}
+                                                className={styles.paginationButton}
+                                            >
+                                                Next <FaChevronRight />
+                                            </button>
+                                        </div>
+                                        <div className={styles.pageSizeSelector}>
+                                            <label>Show: </label>
+                                            <select
+                                                value={pagination.page_size}
+                                                onChange={(e) => {
+                                                    setPagination(prev => ({
+                                                        ...prev,
+                                                        page_size: parseInt(e.target.value)
+                                                    }));
+                                                    setTimeout(() => fetchStudents(1), 0);
+                                                }}
+                                                disabled={studentsLoading}
+                                                className={styles.pageSizeSelect}
+                                            >
+                                                <option value="5">5</option>
+                                                <option value="10">10</option>
+                                                <option value="25">25</option>
+                                                <option value="50">50</option>
+                                                <option value="100">100</option>
+                                            </select>
+                                            <span>per page</span>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
