@@ -8,7 +8,7 @@ from django.middleware.csrf import get_token
 from .models import VerifyEmail
 from django.contrib.auth import get_user_model
 from django.db import transaction
-from django.core.mail import send_mail
+from utils.mail import send_email
 from django.contrib.auth import authenticate
 from .serializers import UserSerializer
 from django.conf import settings
@@ -41,6 +41,56 @@ class GetUserView(APIView):
         )
 
 
+# class SendVerificationCodeView(APIView):
+#     authentication_classes = [JWTCookieAuthentication]
+
+#     def post(self, request):
+
+#         if request.user.is_authenticated:
+#             return Response(
+#                 {"detail": "Already authenticated."},
+#                 status=status.HTTP_200_OK,
+#             )
+
+#         email = request.data.get("email", "").strip()
+#         if not email:
+#             return Response(
+#                 {"detail": "Email is required."}, status=status.HTTP_400_BAD_REQUEST
+#             )
+
+#         user = User.objects.filter(email=email).first()
+
+#         if not user:
+#             return Response(
+#                 {"detail": "Invalid Email."}, status=status.HTTP_400_BAD_REQUEST
+#             )
+
+#         old_email_ver = VerifyEmail.objects.filter(user=user).first()
+#         if old_email_ver:
+#             old_email_ver.delete()
+
+#         email_verif = VerifyEmail.objects.create(user=user)
+
+#         try:
+#             send_mail(
+#                 subject="Verify your email",
+#                 message=f"Your verification code is {email_verif.code}",
+#                 from_email=EMAIL,
+#                 recipient_list=[email],
+#             )
+
+#         except Exception as e:
+
+#             return Response(
+#                 {"detail": f"Unable to send the code{str(e)}."},
+#                 status=status.HTTP_200_OK,
+#             )
+#         return Response(
+#             {"detail": "verification code sent successfully."},
+#             status=status.HTTP_200_OK,
+#         )
+
+
 class SendVerificationCodeView(APIView):
     authentication_classes = [JWTCookieAuthentication]
 
@@ -48,21 +98,22 @@ class SendVerificationCodeView(APIView):
 
         if request.user.is_authenticated:
             return Response(
-                {"detail": "Already authenticated."},
+                {"error": "Already authenticated."},
                 status=status.HTTP_200_OK,
             )
 
         email = request.data.get("email", "").strip()
         if not email:
             return Response(
-                {"detail": "Email is required."}, status=status.HTTP_400_BAD_REQUEST
+                {"error": "Email is required."},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         user = User.objects.filter(email=email).first()
-
         if not user:
             return Response(
-                {"detail": "Invalid Email."}, status=status.HTTP_400_BAD_REQUEST
+                {"error": "Invalid Email."},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         old_email_ver = VerifyEmail.objects.filter(user=user).first()
@@ -71,21 +122,164 @@ class SendVerificationCodeView(APIView):
 
         email_verif = VerifyEmail.objects.create(user=user)
 
-        try:
-            send_mail(
-                subject="Verify your email",
-                message=f"Your verification code is {email_verif.code}",
-                from_email=EMAIL,
-                recipient_list=[email],
-            )
-        except Exception as e:
+        # # 🔹 Inline HTML email (simple + modern)
+        # html_content = f"""
+        # <div style="
+        #     max-width:600px;
+        #     margin:40px auto;
+        #     background:#ffffff;
+        #     border-radius:8px;
+        #     font-family:Arial, Helvetica, sans-serif;
+        #     box-shadow:0 4px 10px rgba(0,0,0,0.08);
+        #     overflow:hidden;
+        # ">
+        #     <div style="
+        #         background:#0f4c81;
+        #         color:#ffffff;
+        #         padding:20px;
+        #         text-align:center;
+        #     ">
+        #         <h2 style="margin:0;font-weight:600;">CSSS IT Club</h2>
+        #     </div>
 
-            return Response(
-                {"detail": f"Unable to send the code{str(e)}."},
-                status=status.HTTP_200_OK,
+        #     <div style="padding:30px;color:#333333;">
+        #         <p style="margin-top:0;">Hello 👋,</p>
+
+        #         <p>
+        #             You requested to verify your email address.
+        #             Use the verification code below:
+        #         </p>
+
+        #         <div style="
+        #             margin:24px 0;
+        #             text-align:center;
+        #             font-size:28px;
+        #             font-weight:bold;
+        #             letter-spacing:4px;
+        #             color:#0f4c81;
+        #         ">
+        #             {email_verif.code}
+        #         </div>
+
+        #         <p style="font-size:14px;color:#555555;">
+        #             Please do <strong>not share</strong> this code with anyone.
+        #         </p>
+
+        #         <p style="margin-top:24px;">
+        #             Regards,<br>
+        #             <strong>CSSS IT Club</strong>
+        #         </p>
+        #     </div>
+
+        #     <div style="
+        #         background:#f7f7f7;
+        #         padding:12px;
+        #         text-align:center;
+        #         font-size:12px;
+        #         color:#888888;
+        #     ">
+        #         If you did not request this email, you can safely ignore it.
+        #     </div>
+        # </div>
+        # """
+
+        html_content = f"""
+<div style="
+    max-width:600px;
+    margin:40px auto;
+    background:#ffffff;
+    border-radius:8px;
+    font-family:Arial, Helvetica, sans-serif;
+    box-shadow:0 4px 10px rgba(0,0,0,0.1);
+    overflow:hidden;
+    border:1px solid #e5e7eb;
+">
+    <!-- Header -->
+    <div style="
+        background:#4f46e5;
+        color:#ffffff;
+        padding:20px;
+        text-align:center;
+    ">
+        <h2 style="margin:0;font-weight:600;">CSSS IT Club</h2>
+    </div>
+
+    <!-- Body -->
+    <div style="padding:30px;color:#1f2937;">
+        <p style="margin-top:0;">
+            Hello <strong>{user.full_name}</strong> 👋,
+        </p>
+
+        <p style="color:#4b5563;">
+            You requested to verify your email address.
+            Use the verification code below:
+        </p>
+
+        <!-- Verification Code -->
+        <div style="
+            margin:24px 0;
+            text-align:center;
+            font-size:28px;
+            font-weight:bold;
+            letter-spacing:4px;
+            color:#4f46e5;
+            background:#eef2ff;
+            padding:14px 0;
+            border-radius:6px;
+        ">
+            {email_verif.code}
+        </div>
+
+        <!-- Danger note -->
+        <div style="
+            margin-top:20px;
+            padding:12px 14px;
+            background:rgba(71, 45, 55, 0.3);
+            border-left:4px solid #dc2626;
+            border-radius:4px;
+            color:#1f2937;
+            font-size:14px;
+        ">
+            <strong style="color:#dc2626;">⚠️ Important:</strong>
+            Do <strong>not share</strong> this verification code with anyone.
+        </div>
+
+        <p style="margin-top:26px;">
+            Regards,<br>
+            <strong>CSSS IT Club</strong>
+        </p>
+    </div>
+
+    <!-- Footer -->
+    <div style="
+        background:#f9fafb;
+        padding:12px;
+        text-align:center;
+        font-size:12px;
+        color:#6b7280;
+        border-top:1px solid #e5e7eb;
+    ">
+        If you did not request this email, you can safely ignore it.
+    </div>
+</div>
+"""
+
+        try:
+            send_email(
+                to_email=email,
+                subject="Verify your email address",
+                html_content=html_content,
+                sender_name="CSSS IT Club",
             )
+
+        except Exception as e:
+            return Response(
+                {"detail": f"Unable to send the code. {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
         return Response(
-            {"detail": "verification code sent successfully."},
+            {"detail": "Verification code sent successfully."},
             status=status.HTTP_200_OK,
         )
 
@@ -232,114 +426,6 @@ class RegisterView(APIView):
         return Response(
             {"error": "Invalid user credintals."}, status=status.HTTP_400_BAD_REQUEST
         )
-
-
-# class LoginView(APIView):
-#     def post(self, request):
-#         email = request.data.get("email").strip()
-#         password = request.data.get("password").strip()
-
-#         if not email or not password:
-#             return Response(
-#                 {"error": "Email and password are required."},
-#                 status=status.HTTP_400_BAD_REQUEST,
-#             )
-
-#         handler = AxesProxyHandler()
-
-#         if handler.is_locked(request._request, credentials={"email": email}):
-#             ip_address = get_client_ip(request)
-
-#             # 2. Check lockout for this user + IP
-#             minutes, seconds = get_lockout_remaining(email, ip_address=ip_address)
-#             if minutes == 0:
-#                 return Response(
-#                     {
-#                         "error": f"User will be allowed to login again in {seconds} second{"" if seconds <= 1 else "s"}."
-#                     },
-#                     status=status.HTTP_401_UNAUTHORIZED,
-#                 )
-
-#             if minutes == 1:
-
-#                 return Response(
-#                     {"error": "User will be allowed to login again in 1 minute."},
-#                     status=status.HTTP_401_UNAUTHORIZED,
-#                 )
-#             return Response(
-#                 {"error": f"User will be allowed to login again in {minutes} minutes."},
-#                 status=status.HTTP_401_UNAUTHORIZED,
-#             )
-#         user = authenticate(request, email=email, password=password)
-#         if not user:
-#             return Response(
-#                 {"error": "Invalid email or password."},
-#                 status=status.HTTP_401_UNAUTHORIZED,
-#             )
-
-#         if IS_TWOFA_MANDATORY or user.twofa_endabled:
-#             old_email_ver = VerifyEmail.objects.filter(user=user).first()
-#             if old_email_ver:
-#                 old_email_ver.delete()
-
-#             email_verif = VerifyEmail.objects.create(user=user)
-
-#             try:
-#                 send_mail(
-#                     subject="Verify your email",
-#                     message=f"Your verification code is {email_verif.code}",
-#                     from_email=EMAIL,
-#                     recipient_list=[email],
-#                 )
-#             except Exception as e:
-
-#                 return Response(
-#                     {
-#                         "error": "Unable to send the code.",
-#                         "email_sent": False,
-#                     },
-#                     status=status.HTTP_400_BAD_REQUEST,
-#                 )
-#             return Response(
-#                 {
-#                     "detail": "verification code sent successfully.",
-#                     "verify_email": True,
-#                 },
-#                 status=status.HTTP_200_OK,
-#             )
-
-#         refresh = RefreshToken.for_user(user)
-
-#         response = Response(
-#             {"user": UserSerializer(user).data},
-#             status=200,
-#         )
-
-#         response.set_cookie(
-#             "access",
-#             str(refresh.access_token),
-#             httponly=True,
-#             secure=True,
-#             samesite="Lax",
-#         )
-#         response.set_cookie(
-#             "refresh",
-#             str(refresh),
-#             httponly=True,
-#             secure=True,
-#             samesite="Lax",
-#         )
-
-#         csrf_token = get_token(request)
-#         response.set_cookie(
-#             "csrftoken",
-#             csrf_token,
-#             httponly=False,
-#             secure=True,
-#             samesite="Lax",
-#         )
-
-#         return response
 
 
 class LoginView(APIView):

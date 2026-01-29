@@ -1005,3 +1005,4 @@ Some typical extensions you might add:
 ---
 
 This template gives you a solid, production‑ready starting point: **secure authentication, structured API, and a modern React front‑end** with all the common plumbing already in place."# IT-club" 
+"# IT-Club" 

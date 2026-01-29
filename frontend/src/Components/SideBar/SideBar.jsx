@@ -252,7 +252,7 @@ export default function SideBar({ children }) {
                         {/* Top Header */}
                         <header className={styles.header}>
                             <div className={styles.headerLeft}>
-                                <h1 className={styles.pageTitle}>Admin Dashboard</h1>
+                                <h1 className={styles.pageTitle}>{user.role == "admin" ? "Admin" : "User"} Dashboard</h1>
                             </div>
 
                             <div className={styles.headerRight}>
