@@ -25,6 +25,8 @@ cloudinary.config(
 )
 
 
+
+
 class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True)
     profile_pic_url = serializers.SerializerMethodField()

@@ -41,56 +41,6 @@ class GetUserView(APIView):
         )
 
 
-# class SendVerificationCodeView(APIView):
-#     authentication_classes = [JWTCookieAuthentication]
-
-#     def post(self, request):
-
-#         if request.user.is_authenticated:
-#             return Response(
-#                 {"detail": "Already authenticated."},
-#                 status=status.HTTP_200_OK,
-#             )
-
-#         email = request.data.get("email", "").strip()
-#         if not email:
-#             return Response(
-#                 {"detail": "Email is required."}, status=status.HTTP_400_BAD_REQUEST
-#             )
-
-#         user = User.objects.filter(email=email).first()
-
-#         if not user:
-#             return Response(
-#                 {"detail": "Invalid Email."}, status=status.HTTP_400_BAD_REQUEST
-#             )
-
-#         old_email_ver = VerifyEmail.objects.filter(user=user).first()
-#         if old_email_ver:
-#             old_email_ver.delete()
-
-#         email_verif = VerifyEmail.objects.create(user=user)
-
-#         try:
-#             send_mail(
-#                 subject="Verify your email",
-#                 message=f"Your verification code is {email_verif.code}",
-#                 from_email=EMAIL,
-#                 recipient_list=[email],
-#             )
-
-#         except Exception as e:
-
-#             return Response(
-#                 {"detail": f"Unable to send the code{str(e)}."},
-#                 status=status.HTTP_200_OK,
-#             )
-#         return Response(
-#             {"detail": "verification code sent successfully."},
-#             status=status.HTTP_200_OK,
-#         )
-
-
 class SendVerificationCodeView(APIView):
     authentication_classes = [JWTCookieAuthentication]
 
@@ -479,7 +429,7 @@ class LoginView(APIView):
 
         try:
             # Send verification email
-            send_mail(
+            send_email(
                 subject="Verify your email",
                 message=f"Your verification code is {email_verif.code}",
                 from_email=settings.EMAIL_HOST_USER,
@@ -583,7 +533,7 @@ class RefreshTokenView(APIView):
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 
-
+@method_decorator(csrf_protect, name="dispatch")
 class UserDeleteView(APIView):
     authentication_classes = [JWTCookieAuthentication]
     permission_classes = [IsAuthenticated]
@@ -614,7 +564,7 @@ class EditProfileView(APIView):
             partial=True,
             context={
                 "request": request
-            },  # needed to access request.FILES in serializer
+            },  
         )
         if serializer.is_valid():
             serializer.save()

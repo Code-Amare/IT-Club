@@ -31,7 +31,7 @@ urlpatterns = [
         TopLearningTasks.as_view(),
         name="top-learning-tasks",
     ),
-    path(
+    path( 
         "student/delete/<int:pk>/", StudentDeleteView.as_view(), name="student-delete"
     ),
     path(

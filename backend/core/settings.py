@@ -364,3 +364,6 @@ CORS_ALLOW_METHODS = [
     "DELETE",
     "OPTIONS",
 ]
+
+# Profile Max Size
+MAX_PROFILE_PIC_SIZE = 10 * 1024 * 1024

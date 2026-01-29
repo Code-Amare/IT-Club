@@ -582,72 +582,43 @@ class StudentStatsView(APIView):
             }
 
 
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from django.db import transaction
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
+
+
 class StudentUpdateView(APIView):
-    authentication_classes = [JWTCookieAuthentication]
-    permission_classes = [IsAuthenticated, RolePermissionFactory(["admin", "staff"])]
-
-    def get(self, request, pk):
-        try:
-            user = User.objects.get(pk=pk, role="user")
-            profile = Profile.objects.get(user=user)
-
-            response_data = {
-                "id": user.id,
-                "full_name": user.full_name,
-                "email": user.email,
-                "grade": profile.grade,
-                "gender": user.gender,
-                "section": profile.section,
-                "field": profile.field,
-                "account": profile.account or "N/A",
-                "phone_number": profile.phone_number,
-                "account_status": "active" if user.is_active else "inactive",
-                "created_at": profile.created_at,
-                "updated_at": profile.updated_at,
-            }
-
-            return Response(response_data, status=status.HTTP_200_OK)
-
-        except User.DoesNotExist:
-            return Response(
-                {"detail": "Student not found"}, status=status.HTTP_404_NOT_FOUND
-            )
-        except Profile.DoesNotExist:
-            return Response(
-                {"detail": "Student profile not found"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-        except Exception as e:
-            return Response(
-                {"detail": "Failed to fetch student data"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
 
     def put(self, request, pk):
         try:
             user = User.objects.get(pk=pk, role="user")
+            profile = Profile.objects.get(user=user)
 
+            errors = {}
+
+            # -------- basic fields --------
             email = (request.data.get("email") or "").strip()
             full_name = (request.data.get("full_name") or "").strip()
-            grade = request.data.get("grade")
             gender = (request.data.get("gender") or "").strip().lower()
+            grade = request.data.get("grade")
             section = (request.data.get("section") or "").strip()
             field = (request.data.get("field") or "").strip()
             account = (request.data.get("account") or "").strip()
             phone_number = (request.data.get("phone_number") or "").strip()
             account_status = request.data.get("account_status", "active")
             task_limit = request.data.get("task_limit")
-            errors = {}
+            profile_pic = request.FILES.get("profile_pic")
 
-            if task_limit is None:
-                errors["task limit"] = ["Task limit is required"]
+            if profile_pic:
+                if profile_pic.size > 10 * 1024 * 1024:
 
-            if int(task_limit) < 0:
-                errors["task limit"] = ["Can't be negative"]
+                    errors["profile_pic"] = ["Profile picture must be less than 10MB"]
 
-            learning_task_limit, created = LearningTaskLimit.objects.get_or_create(
-                user=user
-            )
+                if not profile_pic.content_type.startswith("image/"):
+                    errors["profile_pic"] = ["Only image files are allowe"]
 
             if not email:
                 errors["email"] = ["Email is required"]
@@ -657,27 +628,27 @@ class StudentUpdateView(APIView):
                 except ValidationError:
                     errors["email"] = ["Invalid email format"]
 
+            if (
+                email
+                and user.email != email
+                and User.objects.filter(email=email).exists()
+            ):
+                errors["email"] = ["User with this email already exists"]
+
             if not full_name:
                 errors["full_name"] = ["Full name is required"]
 
-            if not gender:
-                errors["gender"] = ["Gender is required"]
-            elif gender not in ["male", "female", "other"]:
+            if gender not in ["male", "female", "other"]:
                 errors["gender"] = ["Gender must be male, female, or other"]
 
-            if grade is None:
-                errors["grade"] = ["Grade is required"]
-            else:
-                try:
-                    grade = int(grade)
-                    if grade < 1 or grade > 12:
-                        errors["grade"] = ["Grade must be between 1 and 12"]
-                except (ValueError, TypeError):
-                    errors["grade"] = ["Grade must be a valid number"]
+            try:
+                grade = int(grade)
+                if grade < 1 or grade > 12:
+                    raise ValueError
+            except Exception:
+                errors["grade"] = ["Grade must be between 1 and 12"]
 
-            if not section:
-                errors["section"] = ["Section is required"]
-            elif len(section) != 1 or not section.isalpha():
+            if not section or len(section) != 1 or not section.isalpha():
                 errors["section"] = ["Section must be a single letter (A-Z)"]
 
             if not field:
@@ -686,13 +657,8 @@ class StudentUpdateView(APIView):
             if not phone_number:
                 errors["phone_number"] = ["Phone number is required"]
 
-            if (
-                email
-                and not errors.get("email")
-                and user.email != email
-                and User.objects.filter(email=email).exists()
-            ):
-                errors["email"] = ["User with this email already exists"]
+            if task_limit is None or int(task_limit) < 0:
+                errors["task_limit"] = ["Task limit must be a positive number"]
 
             if errors:
                 return Response(
@@ -700,16 +666,30 @@ class StudentUpdateView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
+            # -------- atomic update --------
             with transaction.atomic():
-                learning_task_limit.limit = task_limit
-                learning_task_limit.save()
-                user.email = email
-                user.gender = gender
-                user.full_name = full_name
-                user.is_active = account_status == "active"
-                user.save()
 
-                profile = Profile.objects.get(user=user)
+                # update task limit
+                limit_obj, _ = LearningTaskLimit.objects.get_or_create(user=user)
+                limit_obj.limit = task_limit
+                limit_obj.save()
+
+                # update user (incl. profile_pic)
+                user_serializer = UserSerializer(
+                    user,
+                    data={
+                        "email": email,
+                        "full_name": full_name,
+                        "gender": gender,
+                        "is_active": account_status == "active",
+                    },
+                    partial=True,
+                    context={"request": request},
+                )
+                user_serializer.is_valid(raise_exception=True)
+                user_serializer.save()
+
+                # update profile
                 profile.grade = grade
                 profile.section = section.upper()
                 profile.field = field
@@ -717,37 +697,23 @@ class StudentUpdateView(APIView):
                 profile.phone_number = phone_number
                 profile.save()
 
-            response_data = {
-                "id": user.id,
-                "full_name": user.full_name,
-                "email": user.email,
-                "grade": profile.grade,
-                "gender": user.gender,
-                "section": profile.section,
-                "field": profile.field,
-                "account": profile.account or "N/A",
-                "phone_number": profile.phone_number,
-                "account_status": "active" if user.is_active else "inactive",
-                "created_at": profile.created_at,
-                "updated_at": profile.updated_at,
-                "message": "Student updated successfully",
-            }
-
-            return Response(response_data, status=status.HTTP_200_OK)
+            return Response(
+                {
+                    "message": "Student updated successfully",
+                    "user": user_serializer.data,
+                },
+                status=status.HTTP_200_OK,
+            )
 
         except User.DoesNotExist:
             return Response(
-                {"detail": "Student not found"}, status=status.HTTP_404_NOT_FOUND
+                {"detail": "Student not found"},
+                status=status.HTTP_404_NOT_FOUND,
             )
         except Profile.DoesNotExist:
             return Response(
                 {"detail": "Student profile not found"},
                 status=status.HTTP_404_NOT_FOUND,
-            )
-        except ValidationError as e:
-            return Response(
-                {"detail": "Validation error", "errors": str(e)},
-                status=status.HTTP_400_BAD_REQUEST,
             )
         except Exception as e:
             return Response(
@@ -834,117 +800,6 @@ class StudentDetailView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-    def put(self, request, student_id):
-        try:
-            profile = self._get_profile(student_id)
-            user = profile.user
-
-            # Accept both nested payloads and flat payloads
-            user_data = (
-                request.data.get("user")
-                if isinstance(request.data.get("user"), dict)
-                else {}
-            )
-            profile_data = (
-                request.data.get("profile")
-                if isinstance(request.data.get("profile"), dict)
-                else {}
-            )
-
-            task_limit = request.data.get("task_limit")
-
-            if task_limit is not None:
-                try:
-                    learning_task_limit.limit = int(task_limit)
-                    learning_task_limit.save()
-                except (TypeError, ValueError):
-                    return Response(
-                        {"error": "task_limit must be a valid integer"},
-                        status=status.HTTP_400_BAD_REQUEST,
-                    )
-
-            # If top-level fields were sent flat, merge them
-            if not user_data:
-                for k in ("full_name", "email", "is_active"):
-                    if k in request.data:
-                        user_data[k] = request.data.get(k)
-            if not profile_data:
-                for k in ("grade", "section", "field", "account", "phone_number"):
-                    if k in request.data:
-                        profile_data[k] = request.data.get(k)
-
-            learning_task_limit, created = LearningTaskLimit.objects.get_or_create(
-                user=user
-            )
-
-            with transaction.atomic():
-                if "full_name" in user_data:
-                    user.full_name = user_data["full_name"]
-                if "email" in user_data:
-                    user.email = user_data["email"]
-                if "is_active" in user_data:
-                    user.is_active = bool(user_data["is_active"])
-                user.save()
-
-                if "grade" in profile_data:
-                    try:
-                        profile.grade = (
-                            int(profile_data["grade"])
-                            if profile_data["grade"] not in (None, "")
-                            else None
-                        )
-                    except (ValueError, TypeError):
-                        profile.grade = None
-                if "section" in profile_data:
-                    profile.section = profile_data["section"]
-                if "field" in profile_data:
-                    profile.field = profile_data["field"]
-                if "account" in profile_data:
-                    profile.account = profile_data["account"]
-                if "phone_number" in profile_data:
-                    profile.phone_number = profile_data["phone_number"]
-                profile.save()
-
-            return Response(
-                {"message": "Student updated successfully"}, status=status.HTTP_200_OK
-            )
-
-        except Profile.DoesNotExist:
-            return Response(
-                {"error": "Student not found"}, status=status.HTTP_404_NOT_FOUND
-            )
-        except Exception as e:
-            return Response(
-                {"error": str(e), "detail": "Failed to update student"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
-
-    def delete(self, request, student_id):
-        try:
-            profile = self._get_profile(student_id)
-            user = profile.user
-            with transaction.atomic():
-                user.is_active = False
-                # if your User model has is_deleted; otherwise implement soft-delete differently
-                if hasattr(user, "is_deleted"):
-                    user.is_deleted = True
-                user.save()
-
-            return Response(
-                {"message": "Student deactivated successfully"},
-                status=status.HTTP_200_OK,
-            )
-
-        except Profile.DoesNotExist:
-            return Response(
-                {"error": "Student not found"}, status=status.HTTP_404_NOT_FOUND
-            )
-        except Exception as e:
-            return Response(
-                {"error": str(e), "detail": "Failed to deactivate student"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
-
 
 class StudentDeleteView(APIView):
     authentication_classes = [JWTCookieAuthentication]
@@ -957,7 +812,6 @@ class StudentDeleteView(APIView):
             return None
 
     def delete(self, request, pk):
-        """Delete a student"""
         try:
             user = self.get_object(pk)
             if not user:
@@ -965,7 +819,6 @@ class StudentDeleteView(APIView):
                     {"error": "Student not found"}, status=status.HTTP_404_NOT_FOUND
                 )
 
-            # Store data for response before deletion
             student_data = {
                 "id": user.id,
                 "full_name": user.full_name,
@@ -973,9 +826,7 @@ class StudentDeleteView(APIView):
             }
 
             with transaction.atomic():
-                # Delete profile first (if exists)
                 Profile.objects.filter(user=user).delete()
-                # Delete user
                 user.delete()
 
             return Response(
@@ -1122,9 +973,6 @@ class StudentCreateView(APIView):
 
 
 class StudentsBulkUploadView(APIView):
-    """
-    View for bulk uploading students from CSV/Excel files
-    """
 
     authentication_classes = [JWTCookieAuthentication]
     permission_classes = [IsAuthenticated, RolePermissionFactory(["admin", "staff"])]
