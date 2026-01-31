@@ -55,8 +55,9 @@ export default function LearningTasksList() {
     const fetchTasks = async () => {
         setLoading(true);
         try {
-            const response = await api.get("/api/learning-task/");
-            setTasks(response.data || []);
+            const response = await api.get("/api/learning-task/all/");
+            console.log(response)
+            setTasks(response.data.tasks || []);
         } catch (error) {
             console.error("Error fetching learning tasks:", error);
             neonToast.error("Failed to load learning tasks", "error");

@@ -31,11 +31,9 @@ class LearningTaskSerializer(serializers.ModelSerializer):
     likes_count = serializers.SerializerMethodField()
     reviews = TaskReviewSerializer(many=True, read_only=True)
 
-    # For nested display
     languages = LanguageSerializer(many=True, read_only=True)
     frameworks = FrameworkSerializer(many=True, read_only=True)
 
-    # For writable input (POST)
     language_ids = serializers.PrimaryKeyRelatedField(
         many=True, queryset=Language.objects.all(), write_only=True, source="languages"
     )
@@ -56,10 +54,10 @@ class LearningTaskSerializer(serializers.ModelSerializer):
             "description",
             "git_link",
             "is_public",
-            "languages",  # nested read
-            "language_ids",  # write-only
-            "frameworks",  # nested read
-            "framework_ids",  # write-only
+            "languages",
+            "language_ids",
+            "frameworks",
+            "framework_ids",
             "created_at",
             "updated_at",
             "likes_count",
@@ -76,31 +74,59 @@ class LearningTaskSerializer(serializers.ModelSerializer):
     def get_likes_count(self, obj):
         return obj.likes.count()
 
+    def create(self, validated_data):
+        validated_data.pop("status", None)
 
-def create(self, validated_data):
-    # Pop the IDs for m2m fields
-    languages = validated_data.pop("languages", [])
-    frameworks = validated_data.pop("frameworks", [])
+        languages = validated_data.pop("languages", [])
+        frameworks = validated_data.pop("frameworks", [])
 
-    # Set the user from context
-    user = self.context["request"].user
-    validated_data["user"] = user
+        user = self.context["request"].user
+        validated_data["user"] = user
 
-    # Determine status based on git_link
-    git_link = validated_data.get("git_link")
-    if git_link in [None, ""]:
-        validated_data["status"] = "draft"
-    else:
-        validated_data["status"] = "under_review"
+        git_link = validated_data.get("git_link")
+        if git_link in [None, ""]:
+            validated_data["status"] = "draft"
+        else:
+            validated_data["status"] = "under_review"
 
-    # Create the LearningTask
-    task = LearningTask.objects.create(**validated_data)
+        task = LearningTask.objects.create(**validated_data)
+        task.languages.set(languages)
+        task.frameworks.set(frameworks)
 
-    # Set many-to-many relations
-    task.languages.set(languages)
-    task.frameworks.set(frameworks)
+        return task
 
-    return task
+    def update(self, instance, validated_data):
+        if instance.status == "rated":
+            raise serializers.ValidationError(
+                {"error": "You cannot update a task that has already been rated."}
+            )
+        elif instance.status == "under_review":
+            raise serializers.ValidationError(
+                {"error": "You cannot update a task that is under review."}
+            )
+
+        validated_data.pop("status", None)
+
+        languages = validated_data.pop("languages", None)
+        frameworks = validated_data.pop("frameworks", None)
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+
+        git_link = validated_data.get("git_link", instance.git_link)
+        if git_link in [None, ""]:
+            instance.status = "draft"
+        else:
+            instance.status = "under_review"
+
+        instance.save()
+
+        if languages is not None:
+            instance.languages.set(languages)
+        if frameworks is not None:
+            instance.frameworks.set(frameworks)
+
+        return instance
 
 
 class LearningTaskLimitSerializer(serializers.ModelSerializer):

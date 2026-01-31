@@ -25,7 +25,8 @@ import {
     FaExclamationTriangle,
     FaEye,
     FaEyeSlash,
-    FaExternalLinkAlt
+    FaExternalLinkAlt,
+    FaClock
 } from "react-icons/fa";
 import {
     MdLanguage,
@@ -175,17 +176,17 @@ export default function LearningTaskDetail() {
         return Object.keys(newErrors).length === 0;
     };
 
-    // Submit review
+    // Submit review - For users only (regular users can review)
     const handleSubmitReview = async (e) => {
         e.preventDefault();
 
-        // Check if user is admin/staff
-        if (!user.is_staff) {
-            neonToast.error("Only admins and staff can submit reviews", "error");
+        // Check if user is authenticated
+        if (!user.isAuthenticated) {
+            neonToast.error("Please login to submit a review", "error");
             return;
         }
 
-        // Check if user is task owner
+        // Check if user is task owner - task owners should not review their own tasks
         if (task && user.id === task.user.id) {
             neonToast.error("You cannot review your own learning task", "error");
             return;
@@ -198,13 +199,12 @@ export default function LearningTaskDetail() {
 
         setSubmittingReview(true);
         try {
-            const endpoint = userReview
-                ? `/api/learning-task/review/edit/${id}/`
-                : `/api/learning-task/review/create/${id}/`;
+            // Use the same endpoint for users
+            const endpoint = `/api/learning-task/review/edit/${id}/`;
 
             const method = userReview ? "patch" : "post";
 
-            await api[method](endpoint, {
+            const response = await api[method](endpoint, {
                 rating: parseInt(reviewForm.rating),
                 feedback: reviewForm.feedback.trim()
             });
@@ -224,7 +224,9 @@ export default function LearningTaskDetail() {
                 neonToast.error("Please fix the errors in the review form", "error");
             } else {
                 neonToast.error(
-                    error.response?.data?.detail || "Failed to submit review",
+                    error.response?.data?.detail ||
+                    error.response?.data?.error ||
+                    "Failed to submit review",
                     "error"
                 );
             }
@@ -294,12 +296,10 @@ export default function LearningTaskDetail() {
         );
     };
 
-    // Get user role badge
-    const getUserRoleBadge = (reviewUser, isAdmin) => {
-        if (isAdmin) {
-            return <span className={styles.roleBadgeAdmin}>Admin</span>;
-        } else if (reviewUser && task?.user && reviewUser.id === task.user.id) {
-            return <span className={styles.roleBadgeOwner}>Learning Task Owner</span>;
+    // Get user role badge - SIMPLIFIED: No admin badge since this is user-only page
+    const getUserRoleBadge = (reviewUser) => {
+        if (reviewUser && task?.user && reviewUser.id === task.user.id) {
+            return <span className={styles.roleBadgeOwner}>Task Owner</span>;
         } else {
             return <span className={styles.roleBadgeUser}>User</span>;
         }
@@ -355,7 +355,8 @@ export default function LearningTaskDetail() {
     }
 
     const isOwner = user.id === task.user?.id;
-    const canReview = user.is_staff && !isOwner && task.is_public;
+    // Users can review any public task except their own
+    const canReview = user.isAuthenticated && !isOwner && task.is_public;
 
     return (
         <div className={styles.container}>
@@ -432,7 +433,7 @@ export default function LearningTaskDetail() {
                     </div>
                 </div>
 
-                {/* Status Banner */}
+                {/* Status Banner - Simplified messages for users */}
                 {task.status === "draft" && (
                     <div className={styles.statusBanner}>
                         <FaExclamationTriangle />
@@ -442,7 +443,7 @@ export default function LearningTaskDetail() {
                 {task.status === "under_review" && (
                     <div className={styles.statusBanner}>
                         <FaClock />
-                        <span>This task is <strong>Under Review</strong> by administrators.</span>
+                        <span>This task is <strong>Under Review</strong>. Administrators will review it soon.</span>
                     </div>
                 )}
                 {task.status === "rated" && (
@@ -578,7 +579,7 @@ export default function LearningTaskDetail() {
 
                     {/* Right Column - Reviews & Feedback */}
                     <div className={styles.rightColumn}>
-                        {/* Review Form (for admins/staff) */}
+                        {/* Review Form (for users except task owner) */}
                         {canReview && (
                             <div className={styles.section}>
                                 <div className={styles.sectionHeader}>
@@ -618,7 +619,7 @@ export default function LearningTaskDetail() {
                                             name="feedback"
                                             value={reviewForm.feedback}
                                             onChange={handleReviewChange}
-                                            placeholder="Provide detailed feedback about the learning task..."
+                                            placeholder="Provide your feedback about this learning task..."
                                             className={`${styles.feedbackInput} ${reviewErrors.feedback ? styles.errorInput : ""
                                                 }`}
                                             rows={4}
@@ -667,7 +668,7 @@ export default function LearningTaskDetail() {
                                                             <span>{getUserDisplayName(review.user)}</span>
                                                         </div>
                                                         <div className={styles.reviewerRole}>
-                                                            {getUserRoleBadge(review.user, review.is_admin)}
+                                                            {getUserRoleBadge(review.user)}
                                                         </div>
                                                     </div>
                                                     <div className={styles.reviewRating}>
@@ -738,7 +739,7 @@ export default function LearningTaskDetail() {
                                     </span>
                                 </div>
                                 <div className={styles.metaItem}>
-                                    <span className={styles.metaLabel}>Learning Task Owner:</span>
+                                    <span className={styles.metaLabel}>Task Owner:</span>
                                     <div className={styles.ownerInfo}>
                                         <ProfilePicture user={task.user} size="small" />
                                         <span className={styles.metaValue}>

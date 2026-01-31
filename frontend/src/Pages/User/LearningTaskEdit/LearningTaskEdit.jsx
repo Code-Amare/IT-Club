@@ -39,7 +39,7 @@ export default function LearningTaskEdit() {
         is_public: false,
         language_ids: [],
         framework_ids: [],
-        is_rated: false,
+        status: "",
         reviews: [],
         user: null
     });
@@ -54,7 +54,7 @@ export default function LearningTaskEdit() {
             const taskRes = await api.get(`/api/learning-task/${id}/`);
             const taskData = taskRes.data.task;
 
-            if (taskData.is_rated || taskData.reviews?.length > 0) {
+            if (taskData.status == "rated") {
                 neonToast.error("This task has been rated and cannot be edited");
                 navigate(`/user/learning-task/${id}`);
                 return;
@@ -67,7 +67,7 @@ export default function LearningTaskEdit() {
                 is_public: taskData.is_public,
                 language_ids: taskData.languages.map(l => l.id),
                 framework_ids: taskData.frameworks.map(f => f.id),
-                is_rated: taskData.is_rated,
+                status: taskData.status,
                 reviews: taskData.reviews,
                 user: taskData.user
             });
@@ -193,7 +193,7 @@ export default function LearningTaskEdit() {
     }
 
     // Check if task is rated
-    if (task.is_rated || task.reviews.length > 0) {
+    if (task.status == "rated") {
         return (
             <div className={styles.container}>
                 <SideBar>

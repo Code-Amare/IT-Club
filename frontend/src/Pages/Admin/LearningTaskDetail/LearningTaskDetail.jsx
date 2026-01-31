@@ -19,14 +19,14 @@ import {
     FaUser,
     FaUsers,
     FaCalendar,
-    FaThumbsUp,
     FaComment,
     FaCheck,
     FaTimes,
     FaExclamationTriangle,
-    FaEye,
-    FaEyeSlash,
-    FaEllipsisV
+    FaEllipsisV,
+    FaShieldAlt,
+    FaCrown,
+    FaEye
 } from "react-icons/fa";
 import {
     MdLanguage,
@@ -42,7 +42,6 @@ export default function LearningTaskDetail() {
 
     const [loading, setLoading] = useState(true);
     const [task, setTask] = useState(null);
-    const [liked, setLiked] = useState(false);
     const [showReviewMenu, setShowReviewMenu] = useState(null);
 
     // Review form state
@@ -73,12 +72,11 @@ export default function LearningTaskDetail() {
             // Check if data is nested under 'task' property
             const taskData = responseData.task || responseData;
             setTask(taskData);
-            setLiked(responseData.user_liked || false);
 
-            // Check if current user has already reviewed this task
+            // Check if current admin has already reviewed this task
             if (taskData.reviews) {
                 const existingReview = taskData.reviews.find(
-                    review => review.user?.id === user.id
+                    review => review.user?.id === user.id && review.is_admin
                 );
                 if (existingReview) {
                     setUserReview(existingReview);
@@ -87,13 +85,11 @@ export default function LearningTaskDetail() {
                         feedback: existingReview.feedback || ""
                     });
                 } else {
-                    // If user hasn't reviewed yet, check if they can review (only if there are no reviews yet)
-                    if (taskData.reviews.length === 0) {
-                        setReviewForm({
-                            rating: 5,
-                            feedback: ""
-                        });
-                    }
+                    // If admin hasn't reviewed yet, show empty form
+                    setReviewForm({
+                        rating: 5,
+                        feedback: ""
+                    });
                 }
             }
 
@@ -123,21 +119,9 @@ export default function LearningTaskDetail() {
         }
     };
 
-    // Submit review
+    // Submit review - ADMIN ONLY
     const handleSubmitReview = async (e) => {
         e.preventDefault();
-
-        // Check if user is task owner
-        if (task && user.id === task.user?.id) {
-            neonToast.error("You cannot review your own learning task", "error");
-            return;
-        }
-
-        // Check if admin has already reviewed (they can only review once)
-        if (!userReview && task.reviews && task.reviews.length > 0) {
-            neonToast.error("You cannot review this learning task as another admin has already reviewed it", "error");
-            return;
-        }
 
         // Basic validation
         if (!reviewForm.rating || reviewForm.rating < 1 || reviewForm.rating > 5) {
@@ -152,19 +136,18 @@ export default function LearningTaskDetail() {
 
         setSubmittingReview(true);
         try {
-            const endpoint = userReview
-                ? `/api/learning-task/review/edit/${id}/`
-                : `/api/learning-task/review/create/${id}/`;
+            // Correct endpoint based on Django URL pattern
+            const endpoint = `/api/learning-task/review/create/${id}/`;
 
             const method = userReview ? "patch" : "post";
 
-            await api[method](endpoint, {
+            const response = await api.post(endpoint, {
                 rating: parseInt(reviewForm.rating),
                 feedback: reviewForm.feedback.trim()
             });
 
             neonToast.success(
-                userReview ? "Review updated successfully!" : "Review submitted successfully!",
+                userReview ? "Review updated successfully!" : "Review submitted and task marked as rated!",
                 "success"
             );
 
@@ -188,11 +171,12 @@ export default function LearningTaskDetail() {
         }
     };
 
-    // Handle delete review
-    const handleDeleteReview = async (reviewId) => {
+    // Handle delete review - ADMIN ONLY
+    const handleDeleteReview = async () => {
         setSubmittingDelete(true);
         try {
-            await api.delete(`/api/learning-task/review/delete/${reviewId}/`);
+            // Correct endpoint based on Django URL pattern - DELETE method
+            await api.delete(`/api/learning-task/${id}/review/`);
             neonToast.success("Review deleted successfully!", "success");
 
             // Refresh data
@@ -247,7 +231,7 @@ export default function LearningTaskDetail() {
         }
     };
 
-    // Handle delete learning task
+    // Handle delete learning task - ADMIN ONLY
     const handleDeleteTask = async () => {
         try {
             await api.delete(`/api/learning-task/delete/${id}/`);
@@ -259,7 +243,7 @@ export default function LearningTaskDetail() {
                 error.response?.data?.detail || "Failed to delete learning task",
                 "error"
             );
-            throw error; // Re-throw to keep the modal in error state
+            throw error;
         }
     };
 
@@ -359,11 +343,9 @@ export default function LearningTaskDetail() {
         );
     }
 
-    const isOwner = user.id === task.user?.id;
     const averageRating = calculateAverageRating();
-    const canSubmitNewReview = !userReview && (!task.reviews || task.reviews.length === 0);
+    const isRated = task.status === "rated";
     const isCurrentlyEditing = editingReview && userReview;
-    const isRated = task.is_rated || task.status === "rated";
 
     return (
         <div className={styles.container}>
@@ -375,7 +357,7 @@ export default function LearningTaskDetail() {
                             className={styles.backBtn}
                             onClick={() => navigate("/admin")}
                         >
-                            <FaArrowLeft /> Back to Dashboard
+                            <FaArrowLeft /> Back to Admin Dashboard
                         </button>
                         <div className={styles.headerMain}>
                             <div className={styles.titleSection}>
@@ -406,62 +388,63 @@ export default function LearningTaskDetail() {
                                     <span className={`${styles.ratingBadge} ${isRated ? styles.rated : styles.notRated}`}>
                                         <FaStar /> {isRated ? `Rated (${averageRating}/5)` : "Not Rated"}
                                     </span>
+                                    <span className={styles.adminBadge}>
+                                        <FaCrown /> Admin View
+                                    </span>
                                 </div>
                             </div>
 
-                            {/* Action Buttons */}
+                            {/* Admin Action Buttons */}
                             <div className={styles.headerActions}>
-                                {/* Delete Learning Task Button (for admin or owner) */}
-                                {(user.is_staff || isOwner) && !isRated && (
-                                    <ConfirmAction
-                                        title="Delete Learning Task"
-                                        message="Are you sure you want to delete this learning task? This action cannot be undone."
-                                        confirmText="Delete"
-                                        cancelText="Cancel"
-                                        onConfirm={handleDeleteTask}
+                                {/* Delete Learning Task Button (admin only) */}
+                                <ConfirmAction
+                                    title="Delete Learning Task"
+                                    message="Are you sure you want to delete this learning task? This action cannot be undone."
+                                    confirmText="Delete"
+                                    cancelText="Cancel"
+                                    onConfirm={handleDeleteTask}
+                                >
+                                    <button
+                                        className={styles.deleteTaskBtn}
+                                        title="Delete learning task"
                                     >
-                                        <button
-                                            className={styles.deleteTaskBtn}
-                                            title="Delete learning task"
-                                        >
-                                            <FaTrash /> Delete Task
-                                        </button>
-                                    </ConfirmAction>
-                                )}
+                                        <FaTrash /> Delete Task
+                                    </button>
+                                </ConfirmAction>
 
                                 {/* Admin Review Actions */}
-                                {!isOwner && (userReview || canSubmitNewReview) && (
-                                    <>
-                                        {isCurrentlyEditing ? (
-                                            <button
-                                                className={styles.cancelEditBtn}
-                                                onClick={handleCancelEdit}
-                                            >
-                                                <FaTimes /> Cancel Edit
-                                            </button>
-                                        ) : userReview ? (
-                                            <button
-                                                className={styles.editReviewBtn}
-                                                onClick={() => handleEditReview(userReview)}
-                                            >
-                                                <FaEdit /> Edit Your Review
-                                            </button>
-                                        ) : (
-                                            <button
-                                                className={styles.adminRateBtn}
-                                                onClick={() => {
-                                                    document.querySelector(`.${styles.reviewForm}`)?.scrollIntoView({
-                                                        behavior: 'smooth',
-                                                        block: 'start'
-                                                    });
-                                                    document.querySelector(`.${styles.feedbackInput}`)?.focus();
-                                                }}
-                                                title="Review & Rate this learning task"
-                                            >
-                                                <FaStar /> Rate Learning Task
-                                            </button>
-                                        )}
-                                    </>
+                                {!userReview && !isRated && (
+                                    <button
+                                        className={styles.adminRateBtn}
+                                        onClick={() => {
+                                            document.querySelector(`.${styles.reviewForm}`)?.scrollIntoView({
+                                                behavior: 'smooth',
+                                                block: 'start'
+                                            });
+                                            document.querySelector(`.${styles.feedbackInput}`)?.focus();
+                                        }}
+                                        title="Review & Rate this learning task"
+                                    >
+                                        <FaStar /> Rate Learning Task
+                                    </button>
+                                )}
+
+                                {userReview && !isCurrentlyEditing && (
+                                    <button
+                                        className={styles.editReviewBtn}
+                                        onClick={() => handleEditReview(userReview)}
+                                    >
+                                        <FaEdit /> Edit Your Review
+                                    </button>
+                                )}
+
+                                {isCurrentlyEditing && (
+                                    <button
+                                        className={styles.cancelEditBtn}
+                                        onClick={handleCancelEdit}
+                                    >
+                                        <FaTimes /> Cancel Edit
+                                    </button>
                                 )}
                             </div>
                         </div>
@@ -574,60 +557,99 @@ export default function LearningTaskDetail() {
                                     <div className={styles.statValue}>
                                         {task.reviews?.length || 0}
                                     </div>
-                                    <div className={styles.statLabel}>Reviews</div>
+                                    <div className={styles.statLabel}>Total Reviews</div>
                                 </div>
                                 <div className={styles.statItem}>
                                     <div className={styles.statValue}>
-                                        {isRated ? averageRating : "N/A"}
+                                        {task.reviews?.filter(r => r.is_admin)?.length || 0}
                                     </div>
-                                    <div className={styles.statLabel}>Avg Rating</div>
+                                    <div className={styles.statLabel}>Admin Reviews</div>
                                 </div>
                                 <div className={styles.statItem}>
                                     <div className={styles.statValue}>
-                                        {task.is_public ? "Yes" : "No"}
+                                        {isRated ? "Yes" : "No"}
                                     </div>
-                                    <div className={styles.statLabel}>Public</div>
+                                    <div className={styles.statLabel}>Rated</div>
                                 </div>
+                            </div>
+                        </div>
+
+                        {/* Admin Actions Panel */}
+                        <div className={styles.adminActionsPanel}>
+                            <div className={styles.adminSectionHeader}>
+                                <FaShieldAlt />
+                                <h3>Admin Actions</h3>
+                            </div>
+                            <div className={styles.adminActions}>
+                                <button
+                                    className={styles.viewUserBtn}
+                                    onClick={() => {
+                                        if (task.user?.id) {
+                                            navigate(`/admin/user/${task.user.id}`);
+                                        } else {
+                                            neonToast.error("User information not available", "error");
+                                        }
+                                    }}
+                                >
+                                    <FaUser /> View User Profile
+                                </button>
+                                <button
+                                    className={styles.exportBtn}
+                                    onClick={() => {
+                                        // Export functionality would go here
+                                        neonToast.info("Export feature coming soon", "info");
+                                    }}
+                                >
+                                    <FaCode /> Export Task Data
+                                </button>
                             </div>
                         </div>
                     </div>
 
-                    {/* Right Column - Reviews & Feedback */}
+                    {/* Right Column - Reviews & Admin Functions */}
                     <div className={styles.rightColumn}>
                         {/* Admin Review & Rating Section */}
-                        {!isOwner && (userReview || canSubmitNewReview || isCurrentlyEditing) && (
-                            <div className={styles.adminSection}>
-                                <div className={styles.adminSectionHeader}>
-                                    <FaStar />
-                                    <h3>
-                                        {isCurrentlyEditing ? "Edit Your Review" :
-                                            userReview ? "Your Review" : "Submit Review"}
-                                    </h3>
-                                    <span className={styles.adminBadge}>Admin</span>
-                                </div>
+                        <div className={styles.adminSection}>
+                            <div className={styles.adminSectionHeader}>
+                                <FaStar />
+                                <h3>
+                                    {isCurrentlyEditing ? "Edit Your Review" :
+                                        userReview ? "Your Admin Review" : "Admin Review & Rating"}
+                                </h3>
+                                <span className={styles.adminBadge}>
+                                    <FaCrown /> Admin
+                                </span>
+                            </div>
 
-                                <div className={styles.adminStats}>
+                            <div className={styles.adminStats}>
+                                <div className={styles.adminStat}>
+                                    <span className={styles.adminStatLabel}>Current Status:</span>
+                                    <span className={`${styles.adminStatValue} ${isRated ? styles.rated : styles.notRated}`}>
+                                        {isRated ? "✓ Rated" : "Not Rated"}
+                                    </span>
+                                </div>
+                                <div className={styles.adminStat}>
+                                    <span className={styles.adminStatLabel}>Task Owner:</span>
+                                    <span className={styles.adminStatValue}>
+                                        {getUserDisplayName(task.user)}
+                                    </span>
+                                </div>
+                                {isRated && (
                                     <div className={styles.adminStat}>
-                                        <span className={styles.adminStatLabel}>Current Status:</span>
-                                        <span className={`${styles.adminStatValue} ${isRated ? styles.rated : styles.notRated}`}>
-                                            {isRated ? "✓ Rated" : "Not Rated"}
+                                        <span className={styles.adminStatLabel}>Average Rating:</span>
+                                        <span className={styles.adminStatValue}>
+                                            {averageRating} / 5
                                         </span>
                                     </div>
-                                    {isRated && (
-                                        <div className={styles.adminStat}>
-                                            <span className={styles.adminStatLabel}>Average Rating:</span>
-                                            <span className={styles.adminStatValue}>
-                                                {averageRating} / 5
-                                            </span>
-                                        </div>
-                                    )}
-                                </div>
+                                )}
+                            </div>
 
+                            {(!isRated || userReview) && (
                                 <form onSubmit={handleSubmitReview} className={styles.reviewForm}>
                                     {/* Rating Section */}
                                     <div className={styles.formGroup}>
                                         <label className={styles.formLabel}>
-                                            <FaStar /> Rating (Required)
+                                            <FaStar /> Rating (1-5)
                                         </label>
                                         <div className={styles.ratingInput}>
                                             {[1, 2, 3, 4, 5].map(star => (
@@ -647,13 +669,16 @@ export default function LearningTaskDetail() {
                                             <span className={styles.ratingValue}>
                                                 Selected: {reviewForm.rating} / 5 stars
                                             </span>
+                                            <span className={styles.adminNote}>
+                                                Your review will mark this task as "rated"
+                                            </span>
                                         </div>
                                     </div>
 
                                     {/* Feedback Section */}
                                     <div className={styles.formGroup}>
                                         <label className={styles.formLabel}>
-                                            <FaComment /> Feedback (Required)
+                                            <FaComment /> Feedback
                                         </label>
                                         <textarea
                                             name="feedback"
@@ -685,7 +710,7 @@ export default function LearningTaskDetail() {
                                                     </>
                                                 ) : (
                                                     <>
-                                                        <FaCheck /> Submit Review
+                                                        <FaCheck /> Submit & Mark as Rated
                                                     </>
                                                 )}
                                             </AsyncButton>
@@ -693,10 +718,10 @@ export default function LearningTaskDetail() {
                                             {userReview && (
                                                 <ConfirmAction
                                                     title="Delete Review"
-                                                    message="Are you sure you want to delete your review? This action cannot be undone."
+                                                    message="Are you sure you want to delete your review? This will unmark the task as rated."
                                                     confirmText="Delete"
                                                     cancelText="Cancel"
-                                                    onConfirm={() => handleDeleteReview(userReview.id)}
+                                                    onConfirm={handleDeleteReview}
                                                 >
                                                     <button
                                                         type="button"
@@ -736,13 +761,23 @@ export default function LearningTaskDetail() {
                                         )}
                                     </div>
                                 </form>
-                            </div>
-                        )}
+                            )}
 
-                        {/* Reviews List */}
+                            {isRated && !userReview && (
+                                <div className={styles.alreadyRatedNote}>
+                                    <FaExclamationTriangle />
+                                    <p>
+                                        This task has already been rated by another administrator.
+                                        You can view all reviews below.
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* All Reviews List */}
                         <div className={styles.section}>
                             <div className={styles.sectionHeader}>
-                                <FaStar />
+                                <FaComment />
                                 <h3>All Reviews ({task.reviews?.length || 0})</h3>
                             </div>
 
@@ -751,11 +786,12 @@ export default function LearningTaskDetail() {
                                     {task.reviews.map((review, index) => {
                                         const isCurrentUserReview = review.user?.id === user.id;
                                         const isReviewMenuOpen = showReviewMenu === review.id;
+                                        const isAdminReview = review.is_admin;
 
                                         return (
                                             <div
                                                 key={review.id || index}
-                                                className={`${styles.reviewItem} ${isCurrentUserReview ? styles.currentUserReview : ""}`}
+                                                className={`${styles.reviewItem} ${isCurrentUserReview ? styles.currentUserReview : ""} ${isAdminReview ? styles.adminReview : ""}`}
                                             >
                                                 <div className={styles.reviewHeader}>
                                                     <div className={styles.reviewerInfo}>
@@ -766,9 +802,18 @@ export default function LearningTaskDetail() {
                                                                 size="small"
                                                             />
                                                             <span>{getUserDisplayName(review.user)}</span>
+                                                            {isAdminReview && (
+                                                                <span className={styles.adminReviewBadge}>
+                                                                    <FaCrown /> Admin
+                                                                </span>
+                                                            )}
                                                         </div>
                                                         <div className={styles.reviewerRole}>
-                                                            <span className={styles.roleBadgeAdmin}>Admin</span>
+                                                            {isAdminReview ? (
+                                                                <span className={styles.roleBadgeAdmin}>Administrator</span>
+                                                            ) : (
+                                                                <span className={styles.roleBadgeUser}>User</span>
+                                                            )}
                                                             {isCurrentUserReview && (
                                                                 <span className={styles.roleBadgeYou}>Your Review</span>
                                                             )}
@@ -788,8 +833,8 @@ export default function LearningTaskDetail() {
                                                             </span>
                                                         </div>
 
-                                                        {/* Review Options Menu */}
-                                                        {isCurrentUserReview && (
+                                                        {/* Review Options Menu (only for admin reviews by current admin) */}
+                                                        {isCurrentUserReview && isAdminReview && (
                                                             <div className={styles.reviewOptions}>
                                                                 <button
                                                                     className={styles.reviewOptionsToggle}
@@ -808,10 +853,10 @@ export default function LearningTaskDetail() {
                                                                         </button>
                                                                         <ConfirmAction
                                                                             title="Delete Review"
-                                                                            message="Are you sure you want to delete this review? This action cannot be undone."
+                                                                            message="Are you sure you want to delete this review? This will unmark the task as rated."
                                                                             confirmText="Delete"
                                                                             cancelText="Cancel"
-                                                                            onConfirm={() => handleDeleteReview(review.id)}
+                                                                            onConfirm={handleDeleteReview}
                                                                         >
                                                                             <button
                                                                                 className={`${styles.reviewOption} ${styles.deleteOption}`}
@@ -855,13 +900,17 @@ export default function LearningTaskDetail() {
                             )}
                         </div>
 
-                        {/* Learning Task Information */}
+                        {/* Task Information Panel */}
                         <div className={styles.section}>
                             <div className={styles.sectionHeader}>
                                 <FaEye />
-                                <h3>Learning Task Information</h3>
+                                <h3>Task Information</h3>
                             </div>
                             <div className={styles.metadata}>
+                                <div className={styles.metaItem}>
+                                    <span className={styles.metaLabel}>Task ID:</span>
+                                    <span className={styles.metaValue}>{task.id}</span>
+                                </div>
                                 <div className={styles.metaItem}>
                                     <span className={styles.metaLabel}>Created:</span>
                                     <span className={styles.metaValue}>
@@ -889,7 +938,7 @@ export default function LearningTaskDetail() {
                                     </span>
                                 </div>
                                 <div className={styles.metaItem}>
-                                    <span className={styles.metaLabel}>Learning Task Owner:</span>
+                                    <span className={styles.metaLabel}>Task Owner:</span>
                                     <div className={styles.ownerInfo}>
                                         <ProfilePicture
                                             src={getUserProfilePic(task.user)}
@@ -898,6 +947,9 @@ export default function LearningTaskDetail() {
                                         />
                                         <span className={styles.metaValue}>
                                             {getUserDisplayName(task.user)}
+                                            {task.user?.email && (
+                                                <span className={styles.userEmail}>({task.user.email})</span>
+                                            )}
                                         </span>
                                     </div>
                                 </div>

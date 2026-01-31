@@ -26,9 +26,7 @@ class MyLearningTaskView(APIView):
         user = request.user
         tasks = LearningTask.objects.filter(user=user)
         task_limit, created = LearningTaskLimit.objects.get_or_create(user=user)
-        task_rated = LearningTask.objects.filter(
-            user=user, status="rated"
-        ).count()
+        task_rated = LearningTask.objects.filter(user=user, status="rated").count()
         task_under_review = LearningTask.objects.filter(
             user=user, status="under_review"
         ).count()
@@ -140,7 +138,7 @@ class LearningTaskAPIView(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except LearningTask.DoesNotExist:
             return Response(
-                {"message": "Task not found or not owned by you."},
+                {"error": "Task not found or not owned by you."},
                 status=status.HTTP_404_NOT_FOUND,
             )
         except Exception as e:
@@ -158,8 +156,7 @@ class LearningTaskAPIView(APIView):
                 )
             with transaction.atomic():
                 task.delete()
-                task_limit.limit += 1
-                task_limit.save()
+                task_limit.deleted()
             return Response(
                 {"message": "Task deleted successfully."},
                 status=status.HTTP_204_NO_CONTENT,
@@ -263,6 +260,21 @@ class LikeLearningTaskAPIView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+
+@method_decorator(csrf_protect, name="dispatch")
+class LearningTaskAdminView(APIView):
+    authentication_classes = [JWTCookieAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, task_id):
+        try:
+            task = LearningTask.objects.get(id=task_id)
+        except LearningTask.DoesNotExist:
+            return Response(
+                {"error": "Invalid task id."}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        
 
 class LearningTaskLimitView(APIView):
     authentication_classes = [JWTCookieAuthentication]

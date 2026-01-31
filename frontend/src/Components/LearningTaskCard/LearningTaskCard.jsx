@@ -4,7 +4,6 @@ import {
     FaTrash,
     FaClock,
     FaStar,
-    FaCodeBranch,
     FaLock
 } from "react-icons/fa";
 import { FiGitPullRequest } from "react-icons/fi";
@@ -16,13 +15,17 @@ const LearningTaskCard = ({
     onDelete,
     onView
 }) => {
-    // Get status badge with appropriate styling
     const getStatusBadge = (status, grade) => {
         const badges = {
             draft: {
                 text: "Draft",
                 icon: <FaEdit />,
                 className: styles.badgeDraft,
+            },
+            redo: {
+                text: "Redo",
+                icon: <FaEdit />,
+                className: styles.badgeRedo,
             },
             submitted: {
                 text: "Under Review",
@@ -50,15 +53,11 @@ const LearningTaskCard = ({
         );
     };
 
-    // Check if task can be edited (only for owner)
     const canEditTask = () => {
         if (!isOwner) return false;
-        if (task.status === "locked") return false;
-        if (task.status === "graded" && !task.adminEditable) return false;
-        return task.status === "draft" || task.status === "submitted";
+        return task.status === "draft" || task.status === "redo";
     };
 
-    // Check if task can be deleted (only drafts for owner)
     const canDeleteTask = () => {
         return isOwner && task.status === "draft";
     };
@@ -71,7 +70,6 @@ const LearningTaskCard = ({
                     {getStatusBadge(task.status, task.grade)}
                 </div>
 
-                {/* Action buttons - only show for owner */}
                 {isOwner && (
                     <div className={styles.actionButtons}>
                         {canEditTask() && (
@@ -105,7 +103,6 @@ const LearningTaskCard = ({
             <p className={styles.description}>{task.description}</p>
 
             <div className={styles.metaInfo}>
-                {/* Languages */}
                 <div className={styles.metaItem}>
                     <span className={styles.metaLabel}>Languages:</span>
                     <div className={styles.languageTags}>
@@ -123,7 +120,6 @@ const LearningTaskCard = ({
                     </div>
                 </div>
 
-                {/* Frameworks */}
                 {task.frameworks && task.frameworks.length > 0 && (
                     <div className={styles.metaItem}>
                         <span className={styles.metaLabel}>Frameworks:</span>
@@ -138,7 +134,6 @@ const LearningTaskCard = ({
                 )}
             </div>
 
-            {/* GitHub Link */}
             {task.githubLink && (
                 <a
                     href={task.githubLink}
@@ -152,7 +147,6 @@ const LearningTaskCard = ({
                 </a>
             )}
 
-            {/* Admin Feedback & Grade (if graded or locked) */}
             {(task.status === "graded" || task.status === "locked") ? (
                 <div className={styles.gradeSection}>
                     <div className={styles.gradeDisplay}>
