@@ -40,7 +40,7 @@ class UserSerializer(serializers.ModelSerializer):
             "role",
             "gender",
             "email_verified",
-            "twofa_endabled",
+            "twofa_enabled",
             "profile_pic_id",
             "profile_pic_url",
             "password",
@@ -87,7 +87,7 @@ class UserSerializer(serializers.ModelSerializer):
                 # Log the error but don't crash the whole API request
                 print(f"Cloudinary error: {e}")
                 return None
-        return None
+        return None 
 
     # --- helper methods ---
     def upload_private_file(self, file):

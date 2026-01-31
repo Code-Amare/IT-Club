@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useUser } from "../../../Context/UserContext";
 import api from "../../../Utils/api";
@@ -11,9 +11,10 @@ import {
     FaUser,
     FaSave,
     FaTrash,
-    FaDownload,
-    FaUpload,
-    FaTasks // Added for task limit icon
+    FaTasks,
+    FaCamera,
+    FaTimes,
+    FaEye
 } from "react-icons/fa";
 import {
     MdPerson,
@@ -28,6 +29,7 @@ export default function StudentEdit() {
     const navigate = useNavigate();
     const { user } = useUser();
     const { id } = useParams();
+    const fileInputRef = useRef(null);
 
     const [formData, setFormData] = useState({
         full_name: "",
@@ -39,9 +41,12 @@ export default function StudentEdit() {
         phone_number: "",
         account: "",
         account_status: "active",
-        task_limit: 0, // Added task limit field
+        task_limit: 0,
     });
 
+    const [profilePic, setProfilePic] = useState(null);
+    const [profilePicFile, setProfilePicFile] = useState(null);
+    const [profilePicPreview, setProfilePicPreview] = useState(null);
     const [loading, setLoading] = useState(false);
     const [fetching, setFetching] = useState(true);
     const [errors, setErrors] = useState({});
@@ -59,12 +64,9 @@ export default function StudentEdit() {
 
             let student;
             if (response.data && response.data.student) {
-                console.log(response)
                 student = response.data.student;
-                console.log("Using nested student data structure");
             } else if (response.data && response.data.id) {
                 student = response.data;
-                console.log("Using flat student data structure");
             } else {
                 console.error("Unexpected response structure:", response.data);
                 throw new Error("Invalid response structure from server");
@@ -84,8 +86,14 @@ export default function StudentEdit() {
                 phone_number: student.phone_number || "",
                 account: student.account || "",
                 account_status: student.account_status || "active",
-                task_limit: taskLimit, // Set task limit
+                task_limit: taskLimit,
             });
+
+            // Set profile picture URL if available
+            if (student.profile_pic_url) {
+                setProfilePic(student.profile_pic_url);
+                setProfilePicPreview(student.profile_pic_url);
+            }
 
         } catch (error) {
             console.error("Error fetching student data:", error);
@@ -105,6 +113,47 @@ export default function StudentEdit() {
         }
     };
 
+    const handleProfilePicChange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Validate file size (max 10MB)
+        if (file.size > 10 * 1024 * 1024) {
+            neonToast.error("Profile picture must be less than 10MB", "error");
+            return;
+        }
+
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+            neonToast.error("Only image files are allowed", "error");
+            return;
+        }
+
+        setProfilePicFile(file);
+
+        // Create preview
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setProfilePicPreview(reader.result);
+        };
+        reader.readAsDataURL(file);
+
+        setHasChanges(true);
+        if (errors.profile_pic) {
+            setErrors(prev => ({ ...prev, profile_pic: "" }));
+        }
+    };
+
+    const removeProfilePic = () => {
+        setProfilePicFile(null);
+        setProfilePicPreview(profilePic); // Reset to original profile picture
+        setHasChanges(true);
+    };
+
+    const triggerFileInput = () => {
+        fileInputRef.current.click();
+    };
+
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
@@ -122,7 +171,7 @@ export default function StudentEdit() {
                 (name === "phone_number" && value !== originalData.phone_number) ||
                 (name === "account" && value !== originalData.account) ||
                 (name === "account_status" && value !== originalData.account_status) ||
-                (name === "task_limit" && parseInt(value) !== originalTaskLimit); // Added task limit check
+                (name === "task_limit" && parseInt(value) !== originalTaskLimit);
 
             setHasChanges(isChanged || hasChanges);
         }
@@ -161,6 +210,16 @@ export default function StudentEdit() {
         else if (parseInt(formData.task_limit) > 100)
             newErrors.task_limit = "Task limit cannot exceed 100";
 
+        // Validate profile picture if new file is selected
+        if (profilePicFile) {
+            if (profilePicFile.size > 10 * 1024 * 1024) {
+                newErrors.profile_pic = "Profile picture must be less than 10MB";
+            }
+            if (!profilePicFile.type.startsWith("image/")) {
+                newErrors.profile_pic = "Only image files are allowed";
+            }
+        }
+
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
@@ -174,23 +233,53 @@ export default function StudentEdit() {
 
         setLoading(true);
         try {
-            const studentData = {
-                full_name: formData.full_name.trim(),
-                email: formData.email.trim().toLowerCase(),
-                gender: formData.gender,
-                grade: parseInt(formData.grade),
-                section: formData.section.toUpperCase(),
-                field: formData.field,
-                phone_number: formData.phone_number.trim(),
-                account: formData.account.trim() || "N/A",
-                account_status: formData.account_status,
-                task_limit: parseInt(formData.task_limit) || 0, // Add task limit to payload
-            };
-            const response = await api.put(`/api/management/student/edit/${id}/`, studentData);
+            // Create FormData object to handle file upload
+            const formDataToSend = new FormData();
+
+            // Append all form fields
+            formDataToSend.append("full_name", formData.full_name.trim());
+            formDataToSend.append("email", formData.email.trim().toLowerCase());
+            formDataToSend.append("gender", formData.gender);
+            formDataToSend.append("grade", parseInt(formData.grade));
+            formDataToSend.append("section", formData.section.toUpperCase());
+            formDataToSend.append("field", formData.field);
+            formDataToSend.append("phone_number", formData.phone_number.trim());
+            formDataToSend.append("account", formData.account.trim() || "N/A");
+            formDataToSend.append("account_status", formData.account_status);
+            formDataToSend.append("task_limit", parseInt(formData.task_limit) || 0);
+
+            // Append profile picture if selected
+            if (profilePicFile) {
+                formDataToSend.append("profile_pic", profilePicFile);
+            }
+
+            // Send request with FormData
+            const response = await api.put(
+                `/api/management/student/edit/${id}/`,
+                formDataToSend,
+                {
+                    headers: {
+                        'Content-Type': 'multipart/form-data'
+                    }
+                }
+            );
 
             neonToast.success("Student updated successfully!", "success");
             setOriginalData(response.data);
             setHasChanges(false);
+
+            // Update profile picture preview with new URL if returned
+            if (response.data.user?.profile_pic_url) {
+                setProfilePic(response.data.user.profile_pic_url);
+                setProfilePicPreview(response.data.user.profile_pic_url);
+            }
+
+            // Clear the file input
+            setProfilePicFile(null);
+            if (fileInputRef.current) {
+                fileInputRef.current.value = "";
+            }
+
             navigate(`/admin/student/${id}`);
 
         } catch (error) {
@@ -216,9 +305,7 @@ export default function StudentEdit() {
                     neonToast.error("Please check the form data", "error");
                 }
             } else if (error.response?.status === 404) {
-                console.log(error)
                 neonToast.error("Student not found", "error");
-                // navigate("/admin/students");
             } else if (error.response?.data?.detail) {
                 neonToast.error(error.response.data.detail, "error");
             } else if (error.response?.data?.error) {
@@ -264,31 +351,6 @@ export default function StudentEdit() {
         }
     };
 
-    const downloadTemplate = async () => {
-        try {
-            const response = await api.get("/api/management/students/template/", {
-                responseType: 'blob'
-            });
-
-            const url = window.URL.createObjectURL(new Blob([response.data]));
-            const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', 'student_template.xlsx');
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-
-            neonToast.success("Template downloaded successfully!", "success");
-        } catch (error) {
-            console.error("Error downloading template:", error);
-            neonToast.error("Failed to download template", "error");
-        }
-    };
-
-    const goToBulkUpload = () => {
-        navigate("/admin/students/bulk");
-    };
-
     if (fetching) {
         return (
             <div className={styles.container}>
@@ -310,21 +372,83 @@ export default function StudentEdit() {
                         <button className={styles.backBtn} onClick={() => navigate("/admin/students")}>
                             <FaArrowLeft /> Back to Students
                         </button>
-                        <h1 className={styles.title}><FaUser /> Edit Student</h1>
+                        <div className={styles.headerActions}>
+                            <button
+                                className={styles.viewBtn}
+                                onClick={() => navigate(`/admin/student/${id}`)}
+                            >
+                                <FaEye /> View Student
+                            </button>
+                        </div>
                     </div>
 
-                    <div className={styles.headerActions}>
-                        <button className={styles.templateBtn} onClick={downloadTemplate}>
-                            <FaDownload /> Download Template
-                        </button>
-                        <button className={styles.uploadBtn} onClick={goToBulkUpload}>
-                            <FaUpload /> Bulk Upload
-                        </button>
+                    <div className={styles.studentHeader}>
+                        <div className={styles.studentAvatar}>
+                            <div className={styles.profilePicCenter}>
+                                <div className={styles.profilePicWrapper}>
+                                    {profilePicPreview ? (
+                                        <img
+                                            src={profilePicPreview}
+                                            alt="Profile preview"
+                                            className={styles.profilePicImage}
+                                        />
+                                    ) : (
+                                        <div className={styles.profilePicPlaceholder}>
+                                            <FaUser size={32} />
+                                        </div>
+                                    )}
+                                    {profilePicFile && (
+                                        <button
+                                            type="button"
+                                            className={styles.removeProfilePicBtn}
+                                            onClick={removeProfilePic}
+                                            title="Remove selected image"
+                                        >
+                                            <FaTimes />
+                                        </button>
+                                    )}
+                                </div>
+                                <div className={styles.profilePicActions}>
+                                    <button
+                                        type="button"
+                                        className={styles.uploadPicBtn}
+                                        onClick={triggerFileInput}
+                                    >
+                                        <FaCamera /> {profilePicPreview ? "Change Picture" : "Upload Picture"}
+                                    </button>
+                                    <input
+                                        type="file"
+                                        ref={fileInputRef}
+                                        onChange={handleProfilePicChange}
+                                        accept="image/*"
+                                        style={{ display: 'none' }}
+                                    />
+                                    <small className={styles.helperText}>
+                                        Max size: 10MB. Allowed: JPG, PNG, GIF, WEBP
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        <div className={styles.studentInfo}>
+                            <h1 className={styles.title}><FaUser /> Edit Student: {formData.full_name}</h1>
+                            <div className={styles.studentMeta}>
+                                <span className={styles.studentId}>ID: {id}</span>
+                                <span className={`${styles.status} ${styles[formData.account_status]}`}>
+                                    {formData.account_status === "active" ? "Active" : "Inactive"}
+                                </span>
+                                {formData.grade && (
+                                    <span className={styles.gradeBadge}>
+                                        <MdSchool /> Grade {formData.grade}
+                                    </span>
+                                )}
+                                {formData.section && (
+                                    <span className={styles.sectionBadge}>
+                                        <MdClass /> Section {formData.section}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
                     </div>
-
-                    <p className={styles.subtitle}>
-                        Edit student information. All fields are required except account.
-                    </p>
                 </div>
 
                 <form onSubmit={handleSubmit} className={styles.form}>
@@ -424,49 +548,6 @@ export default function StudentEdit() {
                                     Leave empty to use default value "N/A"
                                 </small>
                             </div>
-
-                            <div className={styles.formGroup}>
-                                <label htmlFor="task_limit">Task Limit</label>
-                                <div className={styles.inputWithIcon}>
-                                    <FaTasks className={styles.inputIcon} />
-                                    <input
-                                        type="number"
-                                        id="task_limit"
-                                        name="task_limit"
-                                        value={formData.task_limit}
-                                        onChange={handleChange}
-                                        placeholder="0"
-                                        min="0"
-                                        max="100"
-                                        className={errors.task_limit ? styles.errorInput : ""}
-                                    />
-                                </div>
-                                {errors.task_limit && <span className={styles.errorText}>{errors.task_limit}</span>}
-                                <small className={styles.helperText}>
-                                    Maximum number of tasks allowed (0-100)
-                                </small>
-                            </div>
-
-                            <div className={styles.formGroup}>
-                                <label htmlFor="account_status">Account Status</label>
-                                <div className={styles.inputWithIcon}>
-                                    <select
-                                        id="account_status"
-                                        name="account_status"
-                                        value={formData.account_status}
-                                        onChange={handleChange}
-                                        className={styles.statusSelect}
-                                    >
-                                        <option value="active">Active</option>
-                                        <option value="inactive">Inactive</option>
-                                    </select>
-                                </div>
-                                <small className={styles.helperText}>
-                                    {formData.account_status === "active"
-                                        ? "Student can log in and access the system"
-                                        : "Student cannot log in"}
-                                </small>
-                            </div>
                         </div>
 
                         <div className={styles.formSection}>
@@ -542,6 +623,49 @@ export default function StudentEdit() {
                                     </select>
                                 </div>
                                 {errors.field && <span className={styles.errorText}>{errors.field}</span>}
+                            </div>
+
+                            <div className={styles.formGroup}>
+                                <label htmlFor="task_limit">Task Limit</label>
+                                <div className={styles.inputWithIcon}>
+                                    <FaTasks className={styles.inputIcon} />
+                                    <input
+                                        type="number"
+                                        id="task_limit"
+                                        name="task_limit"
+                                        value={formData.task_limit}
+                                        onChange={handleChange}
+                                        placeholder="0"
+                                        min="0"
+                                        max="100"
+                                        className={errors.task_limit ? styles.errorInput : ""}
+                                    />
+                                </div>
+                                {errors.task_limit && <span className={styles.errorText}>{errors.task_limit}</span>}
+                                <small className={styles.helperText}>
+                                    Maximum number of tasks allowed (0-100)
+                                </small>
+                            </div>
+
+                            <div className={styles.formGroup}>
+                                <label htmlFor="account_status">Account Status</label>
+                                <div className={styles.inputWithIcon}>
+                                    <select
+                                        id="account_status"
+                                        name="account_status"
+                                        value={formData.account_status}
+                                        onChange={handleChange}
+                                        className={styles.statusSelect}
+                                    >
+                                        <option value="active">Active</option>
+                                        <option value="inactive">Inactive</option>
+                                    </select>
+                                </div>
+                                <small className={styles.helperText}>
+                                    {formData.account_status === "active"
+                                        ? "Student can log in and access the system"
+                                        : "Student cannot log in"}
+                                </small>
                             </div>
                         </div>
                     </div>

@@ -54,7 +54,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default="user")
     email_verified = models.BooleanField(default=False)
     gender = models.CharField(max_length=10, choices=GENDER_CHOICES, default="male")
-    twofa_endabled = models.BooleanField(default=False)
+    twofa_enabled = models.BooleanField(default=False)
     profile_pic_id = models.CharField(max_length=255, null=True, blank=True)
     has_password = models.BooleanField(default=True)
     is_active = models.BooleanField(default=True)
@@ -107,3 +107,18 @@ class Profile(models.Model):
 
     def __str__(self):
         return self.user.full_name
+
+
+class ChangePasswordViaEmail(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    code = models.PositiveIntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def is_expired(self):
+        return timezone.now() > self.created_at + timedelta(minutes=10)
+
+    def save(self, *args, **kwargs):
+        if self.pk is None:
+            self.code = secrets.randbelow(900000) + 100000
+
+        super().save(*args, **kwargs)

@@ -18,21 +18,75 @@ from django.contrib.auth import get_user_model
 User = get_user_model()
 
 
+class MyLearningTaskView(APIView):
+    authentication_classes = [JWTCookieAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        tasks = LearningTask.objects.filter(user=user)
+        task_limit, created = LearningTaskLimit.objects.get_or_create(user=user)
+        task_rated = LearningTask.objects.filter(
+            user=user, is_rated=True, status="rated"
+        ).count()
+        task_under_review = LearningTask.objects.filter(
+            user=user, status="under_review"
+        ).count()
+        task_draft = LearningTask.objects.filter(user=user, status="draft").count()
+        task_count = tasks.count()
+        if not tasks:
+            return Response(
+                {
+                    "message": "You have no learning tasks yet.",
+                    "task_limit": task_limit.limit,
+                },
+                status=status.HTTP_200_OK,
+            )
+        serializer = LearningTaskSerializer(tasks, many=True)
+        return Response(
+            {
+                "task_count": task_count,
+                "task_rated": task_rated,
+                "task_draft": task_draft,
+                "task_limit": task_limit.limit,
+                "task_under_review": task_under_review,
+                "tasks": serializer.data,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class LearningTaskAllView(APIView):
+    authentication_classes = [JWTCookieAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        tasks = LearningTask.objects.all()
+        if not tasks:
+            return Response({"message": "No learning yet."}, status=status.HTTP_200_OK)
+        serializer = LearningTaskSerializer(tasks, many=True)
+
+        return Response({"tasks": serializer.data}, status=status.HTTP_200_OK)
+
+
 @method_decorator(csrf_protect, name="dispatch")
 class LearningTaskAPIView(APIView):
     authentication_classes = [JWTCookieAuthentication]
     permission_classes = [IsAuthenticated]
 
-    def get(self, request, task_id=None):
-        try:
-            if task_id:
-                task = LearningTask.objects.get(id=task_id)
-                serializer = LearningTaskSerializer(task)
-            else:
-                tasks = LearningTask.objects.all()
-                serializer = LearningTaskSerializer(tasks, many=True)
+    def get(self, request, task_id):
+        user = request.user
 
-            return Response(serializer.data)
+        try:
+
+            task = LearningTask.objects.get(id=task_id)
+            user_liked = task.likes.filter(id=user.id).exists()
+            serializer = LearningTaskSerializer(task)
+
+            return Response(
+                {"task": serializer.data, "user_liked": user_liked},
+                status=status.HTTP_200_OK,
+            )
 
         except LearningTask.DoesNotExist:
             return Response(
@@ -43,8 +97,20 @@ class LearningTaskAPIView(APIView):
 
     def post(self, request):
         try:
-            serializer = LearningTaskSerializer(data=request.data)
-            task_limit = LearningTaskLimit.objects.get(user=request.user)
+            import json
+
+            try:
+                data = json.loads(request.body)  # request.body is raw bytes
+            except json.JSONDecodeError:
+                data = {}
+            print("Request JSON:", data)
+            serializer = LearningTaskSerializer(
+                data=request.data, context={"request": request}
+            )
+
+            task_limit, created = LearningTaskLimit.objects.get_or_create(
+                user=request.user
+            )
             if not task_limit.is_valid():
                 return Response(
                     {"error": "You have reached your task creation limit."},
@@ -89,20 +155,16 @@ class LearningTaskAPIView(APIView):
         try:
             task = LearningTask.objects.get(id=task_id, user=request.user)
             task_limit = LearningTaskLimit.objects.get(user=request.user)
-            if not task_limit.is_valid():
-                return Response(
-                    {"error": "You have reached your task limit."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
 
-            if task.is_rated:
+            if task.is_rated or task.status == "rated":
                 return Response(
                     {"error": "Tasks cannot be deleted after being rated."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             with transaction.atomic():
                 task.delete()
-                task_limit.deleted()
+                task_limit.limit += 1
+                task_limit.save()
             return Response(
                 {"message": "Task deleted successfully."},
                 status=status.HTTP_204_NO_CONTENT,
@@ -207,25 +269,14 @@ class LikeLearningTaskAPIView(APIView):
             )
 
 
-@method_decorator(csrf_protect, name="dispatch")
 class LearningTaskLimitView(APIView):
     authentication_classes = [JWTCookieAuthentication]
-    permission_classes = [IsAuthenticated, RolePermissionFactory(["admin", "staff"])]
+    permission_classes = [IsAuthenticated]
 
-    def get(self, request, id):
-        try:
-            user = User.objects.get(id=id)
+    def get(self, request):
+        user = request.user
+        task_limit, created = LearningTaskLimit.objects.get_or_create(user=user)
 
-            task_limit = LearningTaskLimit.objects.get(user=user)
-
-        except User.DoesNotExist:
-            return Response(
-                {"error": f"User with '{id}' doesn't exist."},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-        except LearningTaskLimit.DoesNotExist:
-            task_limit = LearningTaskLimit.objects.create(user=user)
-
-        serializer = LearningTaskLimitSerializer(data=task_limit)
+        serializer = LearningTaskLimitSerializer(task_limit)
 
         return Response({"task_limit": serializer.data}, status=status.HTTP_200_OK)

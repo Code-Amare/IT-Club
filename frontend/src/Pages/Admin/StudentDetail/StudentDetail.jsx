@@ -5,11 +5,12 @@ import api from "../../../Utils/api";
 import { neonToast } from "../../../Components/NeonToast/NeonToast";
 import SideBar from "../../../Components/SideBar/SideBar";
 import ConfirmAction from "../../../Components/ConfirmAction/ConfirmAction";
+import AsyncButton from "../../../Components/AsyncButton/AsyncButton";
 import {
     FaArrowLeft, FaUser, FaPhone, FaCalendarAlt, FaEdit, FaTrash,
     FaGraduationCap, FaUsers, FaBook, FaChalkboardTeacher,
     FaChartLine, FaHistory, FaFileAlt, FaStar, FaCheckCircle,
-    FaTimesCircle, FaExclamationTriangle, FaTasks
+    FaTimesCircle, FaExclamationTriangle, FaTasks, FaCamera
 } from "react-icons/fa";
 import {
     MdEmail, MdLocationOn, MdDateRange,
@@ -57,6 +58,7 @@ export default function StudentDetail() {
             setLoading(true);
             try {
                 const response = await api.get(`/api/management/student/${id}/`);
+                console.log(response.data.student)
                 if (!mounted) return;
 
                 // Handle both response structures
@@ -75,16 +77,33 @@ export default function StudentDetail() {
         return () => { mounted = false; };
     }, [id, user, navigate]);
 
-    const handleDelete = async (_pendingEvent, reason) => {
+    const handleDelete = async (event, typedName) => {
+        if (!student) return false;
+
+        if (typedName !== student.full_name) {
+            neonToast.error(
+                `The name you typed does not match the student's full name. Please type "${student.full_name}" exactly to delete.`,
+                "error"
+            );
+            return false;
+        }
+
         setLoadingDelete(true);
         try {
-            await api.delete(`/api/management/students/${id}/`, { data: { reason } });
+            await api.delete(`/api/management/student/delete/${id}/`);
             neonToast.success("Student deleted successfully", "success");
             navigate("/admin/students");
             return true;
         } catch (error) {
             console.error("Error deleting student:", error);
-            neonToast.error("Failed to delete student", "error");
+
+            if (error.response?.status === 404) {
+                neonToast.error("Student not found", "error");
+            } else if (error.response?.data?.detail) {
+                neonToast.error(error.response.data.detail, "error");
+            } else {
+                neonToast.error("Failed to delete student", "error");
+            }
             return false;
         } finally {
             setLoadingDelete(false);
@@ -166,22 +185,35 @@ export default function StudentDetail() {
 
                             <ConfirmAction
                                 title="Delete Student"
-                                message={`You are about to delete ${student.full_name || "this student"}. This action cannot be undone.`}
-                                confirmText={loadingDelete ? "Deleting..." : "Delete"}
+                                message={`Are you sure you want to delete this student? This action cannot be undone. To confirm, please type the student's full name exactly as shown below:`}
+                                confirmText="Delete Student"
                                 cancelText="Cancel"
-                                requireReason={false}
+                                requireReason={true}
+                                placeholder={`Type: "${student.full_name}"`}
                                 onConfirm={handleDelete}
                             >
-                                <button className={styles.deleteBtn}>
-                                    <FaTrash /> Delete
-                                </button>
+                                <AsyncButton
+                                    className={styles.deleteBtn}
+                                    loading={loadingDelete}
+                                    disabled={loadingDelete}
+                                >
+                                    <FaTrash /> Delete Student
+                                </AsyncButton>
                             </ConfirmAction>
                         </div>
                     </div>
 
                     <div className={styles.studentHeader}>
                         <div className={styles.avatar}>
-                            {student.full_name?.charAt(0) || "S"}
+                            {student.profile_pic_url ? (
+                                <img
+                                    src={student.profile_pic_url}
+                                    alt={student.full_name}
+                                    className={styles.avatarImage}
+                                />
+                            ) : (
+                                <FaUser size={32} />
+                            )}
                         </div>
                         <div className={styles.studentInfo}>
                             <h1>{student.full_name || "Unnamed Student"}</h1>
@@ -192,8 +224,21 @@ export default function StudentDetail() {
                                         student.account_status === "inactive" ? <><FaTimesCircle /> Inactive</> :
                                             <><FaExclamationTriangle /> Pending</>}
                                 </span>
-                                <span className={styles.gradeBadge}><FaGraduationCap /> Grade {student.grade ?? "N/A"}</span>
-                                <span className={styles.sectionBadge}><MdClass /> Section {student.section ?? "N/A"}</span>
+                                {student.grade && (
+                                    <span className={styles.gradeBadge}>
+                                        <FaGraduationCap /> Grade {student.grade}
+                                    </span>
+                                )}
+                                {student.section && (
+                                    <span className={styles.sectionBadge}>
+                                        <MdClass /> Section {student.section}
+                                    </span>
+                                )}
+                                {student.field && (
+                                    <span className={styles.fieldBadge}>
+                                        <FaBook /> {student.field.charAt(0).toUpperCase() + student.field.slice(1)}
+                                    </span>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -201,26 +246,108 @@ export default function StudentDetail() {
 
                 {/* STATS */}
                 <div className={styles.statsGrid}>
-                    <Stat title="Average Grade" value={performance.averageGrade ?? "N/A"} icon={<MdGrade />} />
-                    <Stat title="Completed Tasks" value={performance.completedTasks ?? 0} icon={<MdAssignment />} />
-                    <Stat title="Attendance Rate" value={`${performance.attendanceRate ?? 0}%`} icon={<FaChartLine />} />
-                    <Stat title="Class Rank" value={performance.rank ?? "N/A"} icon={<FaStar />} />
+                    <div className={styles.statCard}>
+                        <div className={styles.statIcon}>
+                            <MdGrade />
+                        </div>
+                        <div className={styles.statContent}>
+                            <h3>Average Grade</h3>
+                            <p className={styles.statNumber}>{performance.averageGrade ?? "N/A"}</p>
+                        </div>
+                    </div>
+                    <div className={styles.statCard}>
+                        <div className={styles.statIcon}>
+                            <MdAssignment />
+                        </div>
+                        <div className={styles.statContent}>
+                            <h3>Completed Tasks</h3>
+                            <p className={styles.statNumber}>{performance.completedTasks ?? 0}</p>
+                        </div>
+                    </div>
+                    <div className={styles.statCard}>
+                        <div className={styles.statIcon}>
+                            <FaChartLine />
+                        </div>
+                        <div className={styles.statContent}>
+                            <h3>Attendance Rate</h3>
+                            <p className={styles.statNumber}>{performance.attendanceRate ?? 0}%</p>
+                        </div>
+                    </div>
+                    <div className={styles.statCard}>
+                        <div className={styles.statIcon}>
+                            <FaStar />
+                        </div>
+                        <div className={styles.statContent}>
+                            <h3>Class Rank</h3>
+                            <p className={styles.statNumber}>{performance.rank ?? "N/A"}</p>
+                        </div>
+                    </div>
                 </div>
 
                 {/* CONTENT */}
                 <div className={styles.contentGrid}>
                     <div className={styles.leftColumn}>
-                        <InfoCard title="Personal Information" icon={<FaUser />}>
-                            <Info label="Email Address" value={student.email} icon={<MdEmail />} />
-                            {student.phone_number && <Info label="Phone Number" value={student.phone_number} icon={<FaPhone />} />}
-                            {student.address && <Info label="Address" value={student.address} icon={<MdLocationOn />} />}
-                            <Info label="Date of Birth" value={student.date_of_birth ? formatDate(student.date_of_birth) : "Not specified"} icon={<FaCalendarAlt />} />
-                            <Info label="Joined Date" value={formatDate(student.created_at || student.date_joined)} icon={<MdDateRange />} />
-                            {student.parent_name && <Info label="Parent/Guardian" value={student.parent_name} icon={<FaUsers />} />}
-                            <Info label="Gender" value={student.gender ? student.gender.charAt(0).toUpperCase() + student.gender.slice(1) : "Not specified"} icon={<FaUser />} />
-                            <Info label="Account Identifier" value={student.account || "N/A"} icon={<FaUser />} />
-                        </InfoCard>
+                        {/* Personal Information Card */}
+                        <div className={styles.card}>
+                            <h2 className={styles.cardTitle}><FaUser /> Personal Information</h2>
+                            <div className={styles.infoGrid}>
+                                <div className={styles.infoItem}>
+                                    <div className={styles.infoIcon}><MdEmail /></div>
+                                    <div>
+                                        <label>Email Address</label>
+                                        <p>{student.email || "Not specified"}</p>
+                                    </div>
+                                </div>
+                                {student.phone_number && (
+                                    <div className={styles.infoItem}>
+                                        <div className={styles.infoIcon}><FaPhone /></div>
+                                        <div>
+                                            <label>Phone Number</label>
+                                            <p>{student.phone_number}</p>
+                                        </div>
+                                    </div>
+                                )}
+                                <div className={styles.infoItem}>
+                                    <div className={styles.infoIcon}><FaUser /></div>
+                                    <div>
+                                        <label>Gender</label>
+                                        <p>{student.gender ? student.gender.charAt(0).toUpperCase() + student.gender.slice(1) : "Not specified"}</p>
+                                    </div>
+                                </div>
+                                <div className={styles.infoItem}>
+                                    <div className={styles.infoIcon}><FaUser /></div>
+                                    <div>
+                                        <label>Account Identifier</label>
+                                        <p>{student.account || "N/A"}</p>
+                                    </div>
+                                </div>
+                                <div className={styles.infoItem}>
+                                    <div className={styles.infoIcon}><MdDateRange /></div>
+                                    <div>
+                                        <label>Joined Date</label>
+                                        <p>{formatDate(student.created_at || student.date_joined)}</p>
+                                    </div>
+                                </div>
+                                {student.profile_pic_url && (
+                                    <div className={styles.infoItem}>
+                                        <div className={styles.infoIcon}><FaCamera /></div>
+                                        <div>
+                                            <label>Profile Picture</label>
+                                            <p className={styles.profilePicUrl}>
+                                                <img
+                                                    src={student.profile_pic_url}
+                                                    alt="Profile"
+                                                    className={styles.profilePicThumb}
+                                                />
+                                                <span>Uploaded</span>
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
 
+                        {/* Academic Information Card */}
                         <div className={styles.card}>
                             <h2 className={styles.cardTitle}><MdSchool /> Academic Information</h2>
                             <div className={styles.infoGrid}>
@@ -252,22 +379,24 @@ export default function StudentDetail() {
                                         <p>{student.academic_year || "2024-2025"}</p>
                                     </div>
                                 </div>
-                                <div className={styles.infoItem}>
-                                    <div className={styles.infoIcon}><FaChalkboardTeacher /></div>
-                                    <div>
-                                        <label>Homeroom Teacher</label>
-                                        <p>{student.homeroom_teacher || "Not assigned"}</p>
+                                {student.homeroom_teacher && (
+                                    <div className={styles.infoItem}>
+                                        <div className={styles.infoIcon}><FaChalkboardTeacher /></div>
+                                        <div>
+                                            <label>Homeroom Teacher</label>
+                                            <p>{student.homeroom_teacher}</p>
+                                        </div>
                                     </div>
-                                </div>
+                                )}
                             </div>
                         </div>
 
-                        {/* Simple Task Limit Card */}
+                        {/* Task Limit Card */}
                         <div className={styles.card}>
                             <div className={styles.cardHeader}>
                                 <h2 className={styles.cardTitle}><FaTasks /> Task Limit</h2>
                                 <button
-                                    className={styles.viewAllBtn}
+                                    className={styles.editLimitBtn}
                                     onClick={() => navigate(`/admin/student/edit/${id}/`)}
                                 >
                                     <FaEdit /> Edit
@@ -283,6 +412,7 @@ export default function StudentDetail() {
                     </div>
 
                     <div className={styles.rightColumn}>
+                        {/* Recent Activities Card */}
                         <div className={styles.card}>
                             <div className={styles.cardHeader}>
                                 <h2 className={styles.cardTitle}><FaHistory /> Recent Activities</h2>
@@ -318,6 +448,7 @@ export default function StudentDetail() {
                             </div>
                         </div>
 
+                        {/* Notes Card */}
                         <div className={styles.card}>
                             <h2 className={styles.cardTitle}><FaFileAlt /> Notes</h2>
                             {student.notes ? (
@@ -330,7 +461,10 @@ export default function StudentDetail() {
                             ) : (
                                 <div className={styles.emptyNotes}>
                                     <p>No notes added yet.</p>
-                                    <button className={styles.addNoteBtn} onClick={() => navigate(`/admin/student/edit/${id}/`)}>
+                                    <button
+                                        className={styles.addNoteBtn}
+                                        onClick={() => navigate(`/admin/student/edit/${id}/`)}
+                                    >
                                         Add Note
                                     </button>
                                 </div>
@@ -339,41 +473,6 @@ export default function StudentDetail() {
                     </div>
                 </div>
             </SideBar>
-        </div>
-    );
-}
-
-/* ---------------- SMALL HELPERS ---------------- */
-
-function Stat({ title, value, icon }) {
-    return (
-        <div className={styles.statCard}>
-            <div className={styles.statIcon}>{icon}</div>
-            <div className={styles.statContent}>
-                <h3>{title}</h3>
-                <p className={styles.statNumber}>{value}</p>
-            </div>
-        </div>
-    );
-}
-
-function InfoCard({ title, icon, children }) {
-    return (
-        <div className={styles.card}>
-            <h2 className={styles.cardTitle}>{icon} {title}</h2>
-            <div className={styles.infoGrid}>{children}</div>
-        </div>
-    );
-}
-
-function Info({ label, value, icon }) {
-    return (
-        <div className={styles.infoItem}>
-            <div className={styles.infoIcon}>{icon}</div>
-            <div>
-                <label>{label}</label>
-                <p>{value || "Not specified"}</p>
-            </div>
         </div>
     );
 }

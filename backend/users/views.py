@@ -5,7 +5,7 @@ from rest_framework import status
 from utils.auth import JWTCookieAuthentication, RolePermissionFactory
 from rest_framework.permissions import IsAuthenticated
 from django.middleware.csrf import get_token
-from .models import VerifyEmail
+from .models import VerifyEmail, ChangePasswordViaEmail
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from utils.mail import send_email
@@ -14,11 +14,14 @@ from .serializers import UserSerializer
 from django.conf import settings
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_protect
-from axes.handlers.proxy import AxesProxyHandler
 from utils.axes import get_lockout_message, is_user_locked
+from django.core import signing
+from axes.utils import reset as axes_reset
+
 
 
 IS_TWOFA_MANDATORY = settings.IS_TWOFA_MANDATORY
+BASE_URL = settings.BASE_URL
 
 User = get_user_model()
 
@@ -66,72 +69,8 @@ class SendVerificationCodeView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        old_email_ver = VerifyEmail.objects.filter(user=user).first()
-        if old_email_ver:
-            old_email_ver.delete()
-
+        VerifyEmail.objects.filter(user=user).delete()
         email_verif = VerifyEmail.objects.create(user=user)
-
-        # # 🔹 Inline HTML email (simple + modern)
-        # html_content = f"""
-        # <div style="
-        #     max-width:600px;
-        #     margin:40px auto;
-        #     background:#ffffff;
-        #     border-radius:8px;
-        #     font-family:Arial, Helvetica, sans-serif;
-        #     box-shadow:0 4px 10px rgba(0,0,0,0.08);
-        #     overflow:hidden;
-        # ">
-        #     <div style="
-        #         background:#0f4c81;
-        #         color:#ffffff;
-        #         padding:20px;
-        #         text-align:center;
-        #     ">
-        #         <h2 style="margin:0;font-weight:600;">CSSS IT Club</h2>
-        #     </div>
-
-        #     <div style="padding:30px;color:#333333;">
-        #         <p style="margin-top:0;">Hello 👋,</p>
-
-        #         <p>
-        #             You requested to verify your email address.
-        #             Use the verification code below:
-        #         </p>
-
-        #         <div style="
-        #             margin:24px 0;
-        #             text-align:center;
-        #             font-size:28px;
-        #             font-weight:bold;
-        #             letter-spacing:4px;
-        #             color:#0f4c81;
-        #         ">
-        #             {email_verif.code}
-        #         </div>
-
-        #         <p style="font-size:14px;color:#555555;">
-        #             Please do <strong>not share</strong> this code with anyone.
-        #         </p>
-
-        #         <p style="margin-top:24px;">
-        #             Regards,<br>
-        #             <strong>CSSS IT Club</strong>
-        #         </p>
-        #     </div>
-
-        #     <div style="
-        #         background:#f7f7f7;
-        #         padding:12px;
-        #         text-align:center;
-        #         font-size:12px;
-        #         color:#888888;
-        #     ">
-        #         If you did not request this email, you can safely ignore it.
-        #     </div>
-        # </div>
-        # """
 
         html_content = f"""
 <div style="
@@ -349,7 +288,7 @@ class RegisterView(APIView):
                 user = serializer.save()
                 if IS_TWOFA_MANDATORY:
                     user.is_active = False
-                    user.twofa_endabled = True
+                    user.twofa_enabled = True
                 user.save()
                 email_ver = VerifyEmail.objects.create(user=user)
 
@@ -410,6 +349,7 @@ class LoginView(APIView):
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 
+        axes_reset(username=user.email)
         # Handle 2FA if enabled
         if getattr(settings, "IS_TWOFA_MANDATORY", False) or getattr(
             user, "twofa_enabled", False
@@ -421,21 +361,102 @@ class LoginView(APIView):
 
     def _handle_twofa(self, user, email):
         """Handle Two-Factor Authentication flow"""
-        # Delete old verification codes
+
+        # Remove old verification codes
         VerifyEmail.objects.filter(user=user).delete()
 
         # Create new verification code
         email_verif = VerifyEmail.objects.create(user=user)
 
+        html_content = f"""
+        <div style="
+            max-width:600px;
+            margin:40px auto;
+            background:#ffffff;
+            border-radius:8px;
+            font-family:Arial, Helvetica, sans-serif;
+            box-shadow:0 4px 10px rgba(0,0,0,0.1);
+            overflow:hidden;
+            border:1px solid #e5e7eb;
+        ">
+            <!-- Header -->
+            <div style="
+                background:#4f46e5;
+                color:#ffffff;
+                padding:20px;
+                text-align:center;
+            ">
+                <h2 style="margin:0;font-weight:600;">CSSS IT Club</h2>
+            </div>
+
+            <!-- Body -->
+            <div style="padding:30px;color:#1f2937;">
+                <p style="margin-top:0;">
+                    Hello <strong>{user.full_name}</strong> 👋,
+                </p>
+
+                <p style="color:#4b5563;">
+                    You requested to verify your email address.
+                    Use the verification code below:
+                </p>
+
+                <!-- Verification Code -->
+                <div style="
+                    margin:24px 0;
+                    text-align:center;
+                    font-size:28px;
+                    font-weight:bold;
+                    letter-spacing:4px;
+                    color:#4f46e5;
+                    background:#eef2ff;
+                    padding:14px 0;
+                    border-radius:6px;
+                ">
+                    {email_verif.code}
+                </div>
+
+                <!-- Danger note -->
+                <div style="
+                    margin-top:20px;
+                    padding:12px 14px;
+                    background:rgba(71, 45, 55, 0.3);
+                    border-left:4px solid #dc2626;
+                    border-radius:4px;
+                    color:#1f2937;
+                    font-size:14px;
+                ">
+                    <strong style="color:#dc2626;">⚠️ Important:</strong>
+                    Do <strong>not share</strong> this verification code with anyone.
+                </div>
+
+                <p style="margin-top:26px;">
+                    Regards,<br>
+                    <strong>CSSS IT Club</strong>
+                </p>
+            </div>
+
+            <!-- Footer -->
+            <div style="
+                background:#f9fafb;
+                padding:12px;
+                text-align:center;
+                font-size:12px;
+                color:#6b7280;
+                border-top:1px solid #e5e7eb;
+            ">
+                If you did not request this email, you can safely ignore it.
+            </div>
+        </div>
+        """
+
         try:
-            # Send verification email
             send_email(
-                subject="Verify your email",
-                message=f"Your verification code is {email_verif.code}",
-                from_email=settings.EMAIL_HOST_USER,
-                recipient_list=[email],
+                to_email=email,
+                subject="Verify your email address",
+                html_content=html_content,
+                sender_name="CSSS IT Club",
             )
-        except Exception as e:
+        except Exception:
             return Response(
                 {
                     "error": "Unable to send the verification code.",
@@ -451,6 +472,8 @@ class LoginView(APIView):
             },
             status=status.HTTP_200_OK,
         )
+
+
 
     def _generate_auth_response(self, user, request):
         """Generate JWT tokens and set cookies"""
@@ -533,6 +556,7 @@ class RefreshTokenView(APIView):
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 
+
 @method_decorator(csrf_protect, name="dispatch")
 class UserDeleteView(APIView):
     authentication_classes = [JWTCookieAuthentication]
@@ -562,9 +586,7 @@ class EditProfileView(APIView):
             user,
             data=request.data,
             partial=True,
-            context={
-                "request": request
-            },  
+            context={"request": request},
         )
         if serializer.is_valid():
             serializer.save()
@@ -572,4 +594,328 @@ class EditProfileView(APIView):
 
         return Response(
             {"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
+        )
+
+
+@method_decorator(csrf_protect, name="dispatch")
+class PasswordChangeView(APIView):
+    authentication_classes = [JWTCookieAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        current_password = request.data.get("current_password", "")
+        new_password = request.data.get("new_password", "")
+
+        if not new_password or not current_password:
+            return Response(
+                {"error": "All fields are required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        user = request.user
+        if not user.check_password(current_password):
+            return Response(
+                {"error": "The current password is invalid."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if user.check_password(new_password):
+            return Response(
+                {"error": "New password cannot match the current password."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        user.set_password(new_password)
+        user.save()
+        return Response(
+            {"message": "Password changed successfully."}, status=status.HTTP_200_OK
+        )
+
+
+@method_decorator(csrf_protect, name="dispatch")
+class PasswordChangeViaEmailRequestView(APIView):
+    authentication_classes = [JWTCookieAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        email = user.email
+
+        ChangePasswordViaEmail.objects.filter(user=user).delete()
+
+        change_pass = ChangePasswordViaEmail.objects.create(user=user)
+        signed_code = signing.dumps(
+            {
+                "code": change_pass.code,
+                "user_id": user.id,
+            }
+        )
+
+        reset_url = f"{BASE_URL}/password/reset/{signed_code}/"
+
+        html_content = f"""
+        <div style="max-width:600px;margin:40px auto;background:#ffffff;border-radius:8px;font-family:Arial,Helvetica,sans-serif;box-shadow:0 4px 10px rgba(0,0,0,0.1);overflow:hidden;border:1px solid #e5e7eb;">
+
+    <!-- Header -->
+    <div style="background:#4f46e5;color:#ffffff;padding:20px;text-align:center;">
+        <h2 style="margin:0;font-weight:600;">CSSS IT Club</h2>
+    </div>
+
+    <!-- Body -->
+    <div style="padding:30px;color:#1f2937;">
+
+        <p style="margin-top:0;margin-bottom:16px;">
+            Hello <strong>{user.full_name}</strong>,
+        </p>
+
+        <p style="color:#4b5563;line-height:1.6;margin:0 0 20px 0;">
+            We received a request to reset the password for your account.
+            Click the button below to continue. If you did not request a password reset,
+            you can safely ignore this email.
+        </p>
+
+        <!-- Button -->
+        <div style="text-align:center;margin:32px 0;">
+            <a href="{reset_url}"
+               style="display:inline-block;padding:14px 30px;background:#4f46e5;color:#ffffff;text-decoration:none;font-size:16px;font-weight:600;border-radius:6px;">
+                Reset Your Password
+            </a>
+        </div>
+
+        <p style="color:#4b5563;line-height:1.6;margin:0 0 16px 0;">
+            If the button does not work, you may use the verification code below:
+        </p>
+
+        <!-- Verification Code -->
+        <div style="margin:24px 0;text-align:center;font-size:28px;font-weight:bold;letter-spacing:4px;color:#4f46e5;background:#eef2ff;padding:16px 0;border-radius:6px;">
+            {change_pass.code}
+        </div>
+
+        <!-- Security Notice -->
+        <div style="margin-top:20px;padding:12px 14px;background:#fde8e8;border-left:4px solid #dc2626;border-radius:4px;color:#1f2937;font-size:14px;line-height:1.5;">
+            <strong style="color:#dc2626;">⚠️ Security Notice</strong><br>
+            Do <strong>not</strong> share this code or link with anyone.
+            Our team will never ask for your password or verification code.
+        </div>
+
+        <p style="margin-top:26px;margin-bottom:0;">
+            Regards,<br>
+            <strong>CSSS IT Club</strong>
+        </p>
+    </div>
+
+    <!-- Footer -->
+    <div style="background:#f9fafb;padding:12px;text-align:center;font-size:12px;color:#6b7280;border-top:1px solid #e5e7eb;">
+        This password reset link and verification code will expire in 5 minutes for your security.
+    </div>
+
+</div>
+
+        """
+
+        try:
+            send_email(
+                to_email=email,
+                subject="Password Change Verification Code",
+                html_content=html_content,
+                sender_name="CSSS IT Club",
+            )
+
+        except Exception as e:
+            return Response(
+                {"detail": f"Unable to send the verification code. {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+        return Response(
+            {"detail": "Password change verification code sent successfully."},
+            status=status.HTTP_200_OK,
+        )
+
+
+@method_decorator(csrf_protect, name="dispatch")
+class ConfPasswordChangeViaEmailView(APIView):
+    authentication_classes = [JWTCookieAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, signed_inst):
+        try:
+            change_pass_dic = signing.loads(signed_inst)
+        except signing.BadSignature:
+            return Response(
+                {"error": "Invalid request."}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        code = change_pass_dic["code"]
+        user_id = change_pass_dic["user_id"]
+        user = request.user
+        if not user_id == user.id:
+            return Response(
+                {"error": "You are not allowed to perform this action."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+        try:
+            user = User.objects.get(id=user_id)
+            change_pass = ChangePasswordViaEmail.objects.get(user=user, code=code)
+        except ChangePasswordViaEmail.DoesNotExist:
+            return Response(
+                {"error": "Invalid request."}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if change_pass.is_expired():
+            return Response(
+                {"error": "This action has been expired."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return Response(
+            {
+                "message": "You can change your password now.",
+                "signed_inst": signed_inst,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+@method_decorator(csrf_protect, name="dispatch")
+class PasswordChangeViaEmailView(APIView):
+    authentication_classes = [JWTCookieAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        signed_inst = request.data.get("signed_inst", "")
+        new_password = request.data.get("new_password", "")
+
+        try:
+            change_pass_dic = signing.loads(signed_inst)
+        except signing.BadSignature:
+            return Response(
+                {"error": "Invalid request."}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        code = change_pass_dic["code"]
+        user_id = change_pass_dic["user_id"]
+        user = request.user
+        if not user_id == user.id:
+            return Response(
+                {"error": "You are not allowed to perform this action."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        try:
+            user = User.objects.get(id=user_id)
+            change_pass = ChangePasswordViaEmail.objects.get(user=user, code=code)
+        except ChangePasswordViaEmail.DoesNotExist:
+            return Response(
+                {"error": "Invalid request."}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if change_pass.is_expired():
+            return Response(
+                {"error": "This action has been expired."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if user.check_password(new_password):
+            return Response(
+                {"error": "New password cannot match the current password."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        with transaction.atomic():
+            user.set_password(new_password)
+            user.save()
+            change_pass.delete()
+
+        return Response({"message": "Successfully set your new password"})
+
+
+@method_decorator(csrf_protect, name="dispatch")
+class PasswordChangeViaCodeView(APIView):
+    authentication_classes = [JWTCookieAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        code = request.data.get("code", None)
+        new_password = request.data.get("new_password", "")
+
+        user = request.user
+        change_pass = ChangePasswordViaEmail.objects.filter(user=user).first()
+        if not change_pass:
+            return Response(
+                {"error": "Request to change password hasn't been sent yet."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if change_pass.is_expired():
+            return Response(
+                {"error": "Code has been expired."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not change_pass.code == int(code):
+            return Response(
+                {"error": "Invalid code."}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if user.check_password(new_password):
+            return Response(
+                {"error": "New password cannot match the current password."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        with transaction.atomic():
+            user.set_password(new_password)
+            user.save()
+            change_pass.delete()
+
+        return Response({"message": "Successfully set your new password"})
+
+
+@method_decorator(csrf_protect, name="dispatch")
+class EnableTwoFaView(APIView):
+    authentication_classes = [JWTCookieAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+
+        if user.twofa_enabled:
+            return Response(
+                {"warning": "Two factor authentication is already enabled."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        user.twofa_enabled = True
+        user.save()
+        return Response(
+            {"message": "Two factor authentication has been enabled."},
+            status=status.HTTP_200_OK,
+        )
+
+
+@method_decorator(csrf_protect, name="dispatch")
+class DisableTwoFaView(APIView):
+    authentication_classes = [JWTCookieAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+
+        if IS_TWOFA_MANDATORY:
+            return Response(
+                {"error": "Two factor authentication can't be disabled."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not user.twofa_enabled:
+            return Response(
+                {"warning": "Two factor authentication is already disabled."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        user.twofa_enabled = False
+        user.save()
+        return Response(
+            {"message": "Two factor authentication has been disabled."},
+            status=status.HTTP_200_OK,
         )

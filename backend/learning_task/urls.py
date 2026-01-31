@@ -4,17 +4,19 @@ from .views import (
     TaskReviewAPIView,
     LikeLearningTaskAPIView,
     LearningTaskLimitView,
+    MyLearningTaskView,
+    LearningTaskAllView,
 )
 
 urlpatterns = [
     path("", LearningTaskAPIView.as_view(), name="tasks-list"),
+    path("all/", LearningTaskAllView.as_view(), name="tasks-list"),
     path("create/", LearningTaskAPIView.as_view(), name="task-create"),
+    path("<int:task_id>/", LearningTaskAPIView.as_view(), name="task-detail"),
+    path("my-task/", MyLearningTaskView.as_view(), name="my-task"),
     path("edit/<int:task_id>/", LearningTaskAPIView.as_view(), name="task-edit"),
     path("delete/<int:task_id>/", LearningTaskAPIView.as_view(), name="task-delete"),
-    path("<int:task_id>/", LearningTaskAPIView.as_view(), name="task-detail"),
-    path(
-        "task-limit/<int:task_id>/", LearningTaskLimitView.as_view(), name="task-limit"
-    ),
+    path("limit/", LearningTaskLimitView.as_view(), name="task-limit"),
     path(
         "review/create/<int:task_id>/",
         TaskReviewAPIView.as_view(),

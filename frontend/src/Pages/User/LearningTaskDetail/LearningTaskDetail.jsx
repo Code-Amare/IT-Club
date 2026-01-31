@@ -24,7 +24,8 @@ import {
     FaTimes,
     FaExclamationTriangle,
     FaEye,
-    FaEyeSlash
+    FaEyeSlash,
+    FaExternalLinkAlt
 } from "react-icons/fa";
 import {
     MdLanguage,
@@ -40,8 +41,6 @@ export default function LearningTaskDetail() {
 
     const [loading, setLoading] = useState(true);
     const [task, setTask] = useState(null);
-    const [languages, setLanguages] = useState([]);
-    const [frameworks, setFrameworks] = useState([]);
     const [liked, setLiked] = useState(false);
     const [likeCount, setLikeCount] = useState(0);
 
@@ -66,44 +65,50 @@ export default function LearningTaskDetail() {
         try {
             // Fetch task
             const taskResponse = await api.get(`/api/learning-task/${id}/`);
-            const taskData = taskResponse.data;
+            const responseData = taskResponse.data;
 
-            // Check if user liked this task
-            if (user.isAuthenticated) {
-                try {
-                    // We need to check if user liked this task
-                    // You might need to implement an endpoint to check if user liked a task
-                    // For now, we'll assume we have this data in the task response
-                    setLiked(taskData.user_has_liked || false);
-                } catch (error) {
-                    console.error("Error checking like status:", error);
+            if (responseData.task) {
+                const taskData = responseData.task;
+
+                // Check if user liked this task
+                setLiked(responseData.user_liked || false);
+
+                setTask(taskData);
+                setLikeCount(taskData.likes_count || 0);
+
+                // Check if current user has already reviewed this task
+                if (user.isAuthenticated && taskData.reviews) {
+                    const existingReview = taskData.reviews.find(
+                        review => review.user?.id === user.id
+                    );
+                    if (existingReview) {
+                        setUserReview(existingReview);
+                        setReviewForm({
+                            rating: existingReview.rating,
+                            feedback: existingReview.feedback || ""
+                        });
+                    }
+                }
+            } else {
+                // Handle case where task data is directly in response
+                const taskData = responseData;
+                setLiked(responseData.user_liked || false);
+                setTask(taskData);
+                setLikeCount(taskData.likes_count || 0);
+
+                if (user.isAuthenticated && taskData.reviews) {
+                    const existingReview = taskData.reviews.find(
+                        review => review.user?.id === user.id
+                    );
+                    if (existingReview) {
+                        setUserReview(existingReview);
+                        setReviewForm({
+                            rating: existingReview.rating,
+                            feedback: existingReview.feedback || ""
+                        });
+                    }
                 }
             }
-
-            setTask(taskData);
-            setLikeCount(taskData.likes_count || 0);
-
-            // Check if current user has already reviewed this task
-            if (user.isAuthenticated && taskData.reviews) {
-                const existingReview = taskData.reviews.find(
-                    review => review.user_id === user.id
-                );
-                if (existingReview) {
-                    setUserReview(existingReview);
-                    setReviewForm({
-                        rating: existingReview.rating,
-                        feedback: existingReview.feedback || ""
-                    });
-                }
-            }
-
-            // Fetch languages and frameworks for names
-            const [languagesResponse, frameworksResponse] = await Promise.all([
-                api.get("/api/management/languages/"),
-                api.get("/api/management/frameworks/")
-            ]);
-            setLanguages(languagesResponse.data || []);
-            setFrameworks(frameworksResponse.data || []);
 
         } catch (error) {
             console.error("Error fetching task data:", error);
@@ -120,7 +125,6 @@ export default function LearningTaskDetail() {
 
     // Handle like/unlike
     const handleLike = async () => {
-        console.log(task)
         if (!user.isAuthenticated) {
             neonToast.error("Please login to like learning tasks", "error");
             return;
@@ -129,7 +133,7 @@ export default function LearningTaskDetail() {
         try {
             const response = await api.post(`/api/learning-task/like/${id}/`);
             setLiked(response.data.action === "liked");
-            setLikeCount(response.data.total_likes);
+            setLikeCount(response.data.total_likes || response.data.likes_count);
 
             neonToast.success(
                 response.data.action === "liked"
@@ -147,7 +151,13 @@ export default function LearningTaskDetail() {
     const handleReviewChange = (e) => {
         const { name, value } = e.target;
         setReviewForm(prev => ({ ...prev, [name]: value }));
-        if (reviewErrors[name]) setReviewErrors(prev => ({ ...prev, [name]: "" }));
+
+        // Fix: Replace optional chaining assignment with regular if statement
+        if (reviewErrors[name]) {
+            const newErrors = { ...reviewErrors };
+            delete newErrors[name];
+            setReviewErrors(newErrors);
+        }
     };
 
     // Validate review form
@@ -223,17 +233,6 @@ export default function LearningTaskDetail() {
         }
     };
 
-    // Get language/framework name by ID
-    const getLanguageName = (id) => {
-        const lang = languages.find(l => l.id === id);
-        return lang ? lang.name : `Language ${id}`;
-    };
-
-    const getFrameworkName = (id) => {
-        const fw = frameworks.find(f => f.id === id);
-        return fw ? fw.name : `Framework ${id}`;
-    };
-
     // Format date
     const formatDate = (dateString) => {
         const date = new Date(dateString);
@@ -251,25 +250,38 @@ export default function LearningTaskDetail() {
         if (!userObj) return "Unknown User";
         if (typeof userObj === 'string') return userObj;
         if (typeof userObj === 'object') {
-            return userObj.full_name || userObj.username || "Unknown User";
+            return userObj.full_name || userObj.username || userObj.email || "Unknown User";
         }
         return String(userObj);
+    };
+
+    // Get user profile picture
+    const getUserProfilePic = (userObj) => {
+        if (!userObj) return null;
+        if (typeof userObj === 'object') {
+            return userObj?.profile_pic_url || null;
+        }
+        return null;
     };
 
     // Profile picture component
     const ProfilePicture = ({ user, size = "small" }) => {
         const sizeClass = size === "small" ? styles.profilePicSmall : styles.profilePicMedium;
+        const profilePicUrl = getUserProfilePic(user);
 
-        if (user?.profile_pic_url) {
+        if (profilePicUrl) {
             return (
                 <img
-                    src={user.profile_pic_url}
+                    src={profilePicUrl}
                     alt={getUserDisplayName(user)}
                     className={`${styles.profilePic} ${sizeClass}`}
                     onError={(e) => {
                         e.target.onerror = null;
                         e.target.style.display = 'none';
-                        e.target.nextSibling.style.display = 'flex';
+                        const nextSibling = e.target.nextSibling;
+                        if (nextSibling && nextSibling.style) {
+                            nextSibling.style.display = 'flex';
+                        }
                     }}
                 />
             );
@@ -290,6 +302,22 @@ export default function LearningTaskDetail() {
             return <span className={styles.roleBadgeOwner}>Learning Task Owner</span>;
         } else {
             return <span className={styles.roleBadgeUser}>User</span>;
+        }
+    };
+
+    // Handle delete task
+    const handleDeleteTask = async () => {
+        if (!window.confirm("Are you sure you want to delete this task? This action cannot be undone.")) {
+            return;
+        }
+
+        try {
+            await api.delete(`/api/learning-task/delete/${id}/`);
+            neonToast.success("Task deleted successfully", "success");
+            navigate("/user/learning-tasks");
+        } catch (error) {
+            console.error("Error deleting task:", error);
+            neonToast.error(error.response?.data?.error || "Failed to delete task", "error");
         }
     };
 
@@ -326,7 +354,7 @@ export default function LearningTaskDetail() {
         );
     }
 
-    const isOwner = user.id === task.user.id;
+    const isOwner = user.id === task.user?.id;
     const canReview = user.is_staff && !isOwner && task.is_public;
 
     return (
@@ -373,13 +401,14 @@ export default function LearningTaskDetail() {
                                     className={`${styles.likeBtn} ${liked ? styles.liked : ""}`}
                                     onClick={handleLike}
                                     title={liked ? "Unlike this learning task" : "Like this learning task"}
+                                    disabled={!user.isAuthenticated}
                                 >
                                     <FaThumbsUp />
                                     <span>{likeCount}</span>
                                 </button>
 
-                                {/* Edit for owner */}
-                                {isOwner && !task.is_rated && (
+                                {/* Edit and Delete for owner */}
+                                {isOwner && task.status === "draft" && (
                                     <>
                                         <button
                                             className={styles.editBtn}
@@ -388,7 +417,13 @@ export default function LearningTaskDetail() {
                                         >
                                             <FaEdit />
                                         </button>
-
+                                        <button
+                                            className={styles.deleteBtn}
+                                            onClick={handleDeleteTask}
+                                            title="Delete learning task"
+                                        >
+                                            <FaTrash />
+                                        </button>
                                     </>
                                 )}
                             </div>
@@ -396,6 +431,26 @@ export default function LearningTaskDetail() {
 
                     </div>
                 </div>
+
+                {/* Status Banner */}
+                {task.status === "draft" && (
+                    <div className={styles.statusBanner}>
+                        <FaExclamationTriangle />
+                        <span>This task is in <strong>Draft</strong> status. It is only visible to you.</span>
+                    </div>
+                )}
+                {task.status === "under_review" && (
+                    <div className={styles.statusBanner}>
+                        <FaClock />
+                        <span>This task is <strong>Under Review</strong> by administrators.</span>
+                    </div>
+                )}
+                {task.status === "rated" && (
+                    <div className={styles.statusBanner}>
+                        <FaStar />
+                        <span>This task has been <strong>Rated</strong> by administrators.</span>
+                    </div>
+                )}
 
                 {/* Main Content */}
                 <div className={styles.contentGrid}>
@@ -425,7 +480,7 @@ export default function LearningTaskDetail() {
                                     rel="noopener noreferrer"
                                     className={styles.githubLink}
                                 >
-                                    <FaCode />
+                                    <FaExternalLinkAlt />
                                     <span>{task.git_link}</span>
                                 </a>
                             </div>
@@ -443,25 +498,22 @@ export default function LearningTaskDetail() {
                                 <h4>Programming Languages</h4>
                                 <div className={styles.techList}>
                                     {task.languages && task.languages.length > 0 ? (
-                                        task.languages.map(langId => {
-                                            const lang = languages.find(l => l.id === langId);
-                                            return (
-                                                <div key={langId} className={styles.techItem}>
-                                                    <div
-                                                        className={styles.techColor}
-                                                        style={{ backgroundColor: lang?.color || "#3b82f6" }}
-                                                    />
-                                                    <span className={styles.techName}>
-                                                        {getLanguageName(langId)}
+                                        task.languages.map(lang => (
+                                            <div key={lang.id} className={styles.techItem}>
+                                                <div
+                                                    className={styles.techColor}
+                                                    style={{ backgroundColor: lang?.color || "#3b82f6" }}
+                                                />
+                                                <span className={styles.techName}>
+                                                    {lang.name}
+                                                </span>
+                                                {lang.code && (
+                                                    <span className={styles.techCode}>
+                                                        {lang.code}
                                                     </span>
-                                                    {lang && (
-                                                        <span className={styles.techCode}>
-                                                            {lang.code}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            );
-                                        })
+                                                )}
+                                            </div>
+                                        ))
                                     ) : (
                                         <div className={styles.emptyTech}>No languages specified</div>
                                     )}
@@ -473,22 +525,19 @@ export default function LearningTaskDetail() {
                                 <div className={styles.techGroup}>
                                     <h4>Frameworks & Libraries</h4>
                                     <div className={styles.techList}>
-                                        {task.frameworks.map(fwId => {
-                                            const fw = frameworks.find(f => f.id === fwId);
-                                            return (
-                                                <div key={fwId} className={styles.techItem}>
-                                                    <MdCode className={styles.frameworkIcon} />
-                                                    <span className={styles.techName}>
-                                                        {getFrameworkName(fwId)}
+                                        {task.frameworks.map(fw => (
+                                            <div key={fw.id} className={styles.techItem}>
+                                                <MdCode className={styles.frameworkIcon} />
+                                                <span className={styles.techName}>
+                                                    {fw.name}
+                                                </span>
+                                                {fw.language && (
+                                                    <span className={styles.techLanguage}>
+                                                        {fw.language.name}
                                                     </span>
-                                                    {fw?.language && (
-                                                        <span className={styles.techLanguage}>
-                                                            {fw.language.name}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            );
-                                        })}
+                                                )}
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
                             )}
@@ -513,7 +562,7 @@ export default function LearningTaskDetail() {
                                 </div>
                                 <div className={styles.statItem}>
                                     <div className={styles.statValue}>
-                                        {task.is_rated ? "Yes" : "No"}
+                                        {task.status === "rated" ? "Yes" : "No"}
                                     </div>
                                     <div className={styles.statLabel}>Rated</div>
                                 </div>
@@ -603,7 +652,7 @@ export default function LearningTaskDetail() {
                             {task.reviews && task.reviews.length > 0 ? (
                                 <div className={styles.reviewsList}>
                                     {task.reviews.map((review, index) => {
-                                        const isCurrentUserReview = review.user_id === user.id;
+                                        const isCurrentUserReview = review.user?.id === user.id;
 
                                         return (
                                             <div
@@ -677,9 +726,8 @@ export default function LearningTaskDetail() {
                                 )}
                                 <div className={styles.metaItem}>
                                     <span className={styles.metaLabel}>Status:</span>
-                                    <span className={`${styles.metaValue} ${task.is_rated ? styles.rated : styles.notRated
-                                        }`}>
-                                        {task.is_rated ? "Rated" : "Not Rated"}
+                                    <span className={`${styles.metaValue} ${styles[`status-${task.status}`]}`}>
+                                        {task.status.charAt(0).toUpperCase() + task.status.slice(1).replace('_', ' ')}
                                     </span>
                                 </div>
                                 <div className={styles.metaItem}>

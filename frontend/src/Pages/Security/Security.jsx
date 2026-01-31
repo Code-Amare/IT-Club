@@ -18,9 +18,12 @@ import {
     FaMobileAlt,
     FaClock,
     FaLock,
-    FaUnlock
+    FaUnlock,
+    FaEnvelope,
+    FaRedo,
+    FaSpinner
 } from "react-icons/fa";
-import { MdSecurity, MdDevices, MdWarning } from "react-icons/md";
+import { MdSecurity, MdDevices, MdWarning, MdEmail } from "react-icons/md";
 import { IoShieldCheckmark } from "react-icons/io5";
 
 export default function Security() {
@@ -29,10 +32,12 @@ export default function Security() {
 
     const [twoFaLoading, setTwoFaLoading] = useState(false);
     const [pwLoading, setPwLoading] = useState(false);
+    const [emailPwLoading, setEmailPwLoading] = useState(false);
     const [showCurrentPassword, setShowCurrentPassword] = useState(false);
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [message, setMessage] = useState({ text: "", type: "" });
+    const [emailMessage, setEmailMessage] = useState({ text: "", type: "" });
 
     const [passwordForm, setPasswordForm] = useState({
         current_password: "",
@@ -54,24 +59,14 @@ export default function Security() {
 
         try {
             if (user.twoFaEnabled) {
-                await api.post("/api/2fa/disable/");
+                await api.post("/api/users/twofa/disable/");
                 setMessage({
                     text: "Two-factor authentication disabled successfully",
                     type: "success"
                 });
             } else {
-                const response = await api.post("/api/2fa/enable/");
+                const response = await api.post("/api/users/twofa/enable/");
 
-                if (response.data?.setup_qr) {
-                    // Navigate to 2FA setup page with QR code
-                    navigate("/2fa-setup", {
-                        state: {
-                            qrCode: response.data.setup_qr,
-                            backupCodes: response.data.backup_codes
-                        }
-                    });
-                    return;
-                }
 
                 setMessage({
                     text: "Two-factor authentication enabled successfully",
@@ -83,7 +78,9 @@ export default function Security() {
                 await refreshUser();
             }
         } catch (err) {
-            const errorMessage = err.response?.data?.detail ||
+            // Update error handling to match your Django response structure
+            const errorMessage = err.response?.data?.warning ||  // Changed from detail/message
+                err.response?.data?.error ||
                 err.response?.data?.message ||
                 "Failed to update 2FA settings";
             setMessage({ text: errorMessage, type: "error" });
@@ -152,7 +149,7 @@ export default function Security() {
         setPwLoading(true);
 
         try {
-            await api.post("/api/auth/password/change/", {
+            await api.post("/api/users/password/change/", {
                 current_password: passwordForm.current_password,
                 new_password: passwordForm.new_password,
             });
@@ -174,13 +171,44 @@ export default function Security() {
             }
 
         } catch (err) {
-            const errorMessage = err.response?.data?.detail ||
+            const errorMessage = err.response?.data?.error ||
                 err.response?.data?.message?.[0] ||
                 "Failed to change password";
             setMessage({ text: errorMessage, type: "error" });
             neonToast.error(errorMessage, "error");
         } finally {
             setPwLoading(false);
+        }
+    };
+
+    // NEW: Request password reset via email
+    const requestPasswordChangeViaEmail = async () => {
+        setEmailMessage({ text: "", type: "" });
+        setEmailPwLoading(true);
+
+        try {
+            const response = await api.post("/api/users/password/change/request/");
+
+            setEmailMessage({
+                text: "Password reset email sent! Check your inbox for verification instructions.",
+                type: "success"
+            });
+
+            neonToast.success("Password reset email sent!", "success");
+
+        } catch (err) {
+            const errorMessage = err.response?.data?.detail ||
+                err.response?.data?.error ||
+                "Failed to send password reset email";
+
+            setEmailMessage({
+                text: errorMessage,
+                type: "error"
+            });
+
+            neonToast.error(errorMessage, "error");
+        } finally {
+            setEmailPwLoading(false);
         }
     };
 
@@ -425,8 +453,8 @@ export default function Security() {
                                     {/* Password Match Indicator */}
                                     {passwordForm.new_password && passwordForm.confirm_password && (
                                         <div className={`${styles.matchIndicator} ${passwordForm.new_password === passwordForm.confirm_password
-                                                ? styles.matches
-                                                : styles.noMatch
+                                            ? styles.matches
+                                            : styles.noMatch
                                             }`}>
                                             {passwordForm.new_password === passwordForm.confirm_password
                                                 ? "✓ Passwords match"
@@ -450,62 +478,78 @@ export default function Security() {
                         </form>
                     </div>
 
-                    {/* Active Sessions Card */}
-                    <div className={styles.card}>
+                    {/* NEW: Reset Password via Email Card */}
+                    <div className={`${styles.card} ${styles.emailResetCard}`}>
                         <div className={styles.cardHeader}>
                             <h2>
-                                <MdDevices className={styles.cardIcon} />
-                                Active Sessions
+                                <MdEmail className={styles.cardIcon} />
+                                Reset Password via Email
                             </h2>
                         </div>
 
-                        <div className={styles.sessionsList}>
-                            <div className={styles.sessionHeader}>
-                                <span>Device</span>
-                                <span>Location</span>
-                                <span>Last Active</span>
-                                <span>Status</span>
-                            </div>
+                        <div className={styles.emailResetContent}>
+                            <div className={styles.emailResetInfo}>
 
-                            {activeSessions.map(session => (
-                                <div key={session.id} className={`${styles.sessionItem} ${session.current ? styles.currentSession : ''}`}>
-                                    <div className={styles.sessionDevice}>
-                                        <FaMobileAlt />
-                                        <span>{session.device}</span>
-                                    </div>
-                                    <div className={styles.sessionLocation}>
-                                        {session.location}
-                                    </div>
-                                    <div className={styles.sessionLastActive}>
-                                        <FaClock />
-                                        <span>{session.lastActive}</span>
-                                    </div>
-                                    <div className={styles.sessionStatus}>
-                                        {session.current ? (
-                                            <span className={styles.currentBadge}>Current</span>
-                                        ) : (
-                                            <button className={styles.logoutBtn}>
-                                                <FaSignOutAlt />
-                                                <span>Logout</span>
-                                            </button>
-                                        )}
+                                <div>
+                                    <h3>Forgot your password?</h3>
+                                    <p>
+                                        Request a password reset email if you don't remember your current password.
+                                        You'll receive a verification link at <br /><br /><strong>{user.email}</strong>
+                                    </p>
+
+                                    {emailMessage.text && (
+                                        <div className={`${styles.emailMessage} ${styles[emailMessage.type]}`}>
+                                            {emailMessage.type === "success" ?
+                                                <FaCheckCircle /> : <FaExclamationTriangle />
+                                            }
+                                            <span>{emailMessage.text}</span>
+                                        </div>
+                                    )}
+
+                                    <div className={styles.emailResetTips}>
+                                        <h4>How it works:</h4>
+                                        <ul>
+                                            <li>
+                                                <FaClock /> You'll receive an email with a verification link
+                                            </li>
+                                            <li>
+                                                <FaKey /> The link will take you to a secure page to set a new password
+                                            </li>
+                                            <li>
+                                                <FaShieldAlt /> The link expires in 5 minutes for security
+                                            </li>
+                                        </ul>
                                     </div>
                                 </div>
-                            ))}
-                        </div>
+                            </div>
 
-                        <div className={styles.sessionActions}>
-                            <ConfirmAction
-                                onConfirm={handleLogoutAll}
-                                message="Are you sure you want to logout from all devices? This will end all active sessions."
-                                confirmText="Logout All"
-                                cancelText="Cancel"
-                            >
-                                <button className={styles.dangerBtn}>
-                                    <FaSignOutAlt />
-                                    <span>Logout All Devices</span>
-                                </button>
-                            </ConfirmAction>
+                            <div className={styles.emailResetActions}>
+                                <AsyncButton
+                                    onClick={requestPasswordChangeViaEmail}
+                                    loading={emailPwLoading}
+                                    disabled={emailPwLoading}
+                                    className={styles.secondaryBtn}
+                                >
+                                    {emailPwLoading ? (
+                                        <>
+                                            <FaSpinner className={styles.spinner} />
+                                            <span>Sending Email...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <FaRedo />
+                                            <span>Send Reset Email</span>
+                                        </>
+                                    )}
+                                </AsyncButton>
+
+                                <div className={styles.emailResetNote}>
+                                    <MdWarning />
+                                    <span>
+                                        Make sure you have access to your email before requesting a reset.
+                                    </span>
+                                </div>
+                            </div>
                         </div>
                     </div>
 

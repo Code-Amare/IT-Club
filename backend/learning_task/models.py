@@ -8,6 +8,11 @@ User = get_user_model()
 
 
 class LearningTask(models.Model):
+    STATUS_CHOICE = [
+        ("draft", "Draft"),
+        ("under_review", "Under Review"),
+        ("rated", "Rated"),
+    ]
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     title = models.CharField(max_length=100)
     description = models.TextField()
@@ -18,6 +23,7 @@ class LearningTask(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     is_rated = models.BooleanField(default=False)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICE, default="draft")
     likes = models.ManyToManyField(User, related_name="liked_tasks", blank=True)
 
     def total_likes(self):
@@ -67,4 +73,3 @@ class LearningTaskLimit(models.Model):
 
     def is_valid(self):
         return self.limit > 0
- 

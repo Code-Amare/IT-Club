@@ -255,6 +255,7 @@ const AdminDashboard = () => {
             });
 
             const response = await api.get("/api/management/students/", { params });
+            console.log(response.data.students)
             const data = response.data;
 
             setStudents(data.students || []);
@@ -890,10 +891,10 @@ const AdminDashboard = () => {
                                                                         className={styles.profileImage}
                                                                         onError={handleImageError}
                                                                     />
-                                                                ) : null}
-                                                                <div className={styles.avatarPlaceholder}>
+                                                                ) : <div className={styles.avatarPlaceholder}>
                                                                     {student.full_name?.charAt(0) || '?'}
-                                                                </div>
+                                                                </div>}
+
                                                                 <div className={styles.studentInfo}>
                                                                     <span className={styles.studentName}>{student.full_name}</span>
                                                                     <span className={styles.mobileEmail}>{student.email}</span>

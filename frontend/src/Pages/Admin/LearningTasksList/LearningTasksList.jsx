@@ -49,8 +49,9 @@ export default function LearningTasksList() {
     const fetchTasks = async () => {
         setLoading(true);
         try {
-            const response = await api.get("/api/learning-task/");
-            setTasks(response.data || []);
+            const response = await api.get("/api/learning-task/all/");
+            console.log(response.data);  // Fixed typo: consooe -> console
+            setTasks(response.data.tasks || []);
         } catch (error) {
             console.error("Error fetching learning tasks:", error);
             neonToast.error("Failed to load learning tasks", "error");
@@ -75,17 +76,6 @@ export default function LearningTasksList() {
         }
     };
 
-    // Get language/framework name by ID
-    const getLanguageName = (id) => {
-        const lang = languages.find(l => l.id === id);
-        return lang ? lang.name : `Language ${id}`;
-    };
-
-    const getFrameworkName = (id) => {
-        const fw = frameworks.find(f => f.id === id);
-        return fw ? fw.name : `Framework ${id}`;
-    };
-
     // Filter and sort tasks
     const filteredTasks = useMemo(() => {
         let result = [...tasks];
@@ -96,14 +86,17 @@ export default function LearningTasksList() {
             result = result.filter(task => {
                 // Get language/framework names for search
                 const languageNames = task.languages ?
-                    task.languages.map(id => getLanguageName(id).toLowerCase()).join(' ') : '';
+                    task.languages.map(lang => lang.name.toLowerCase()).join(' ') : '';
                 const frameworkNames = task.frameworks ?
-                    task.frameworks.map(id => getFrameworkName(id).toLowerCase()).join(' ') : '';
+                    task.frameworks.map(fw => fw.name.toLowerCase()).join(' ') : '';
+                const userName = task.user?.full_name || task.user?.username || "";
+                const userEmail = task.user?.email || "";
 
                 return (
                     (task.title?.toLowerCase().includes(query)) ||
                     (task.description?.toLowerCase().includes(query)) ||
-                    (task.user?.toLowerCase().includes(query)) ||
+                    (userName.toLowerCase().includes(query)) ||
+                    (userEmail.toLowerCase().includes(query)) ||
                     (task.git_link?.toLowerCase().includes(query)) ||
                     languageNames.includes(query) ||
                     frameworkNames.includes(query)
@@ -123,14 +116,14 @@ export default function LearningTasksList() {
         if (filters.language) {
             const languageId = parseInt(filters.language);
             result = result.filter(task =>
-                task.languages && task.languages.includes(languageId)
+                task.languages && task.languages.some(lang => lang.id === languageId)
             );
         }
 
         if (filters.framework) {
             const frameworkId = parseInt(filters.framework);
             result = result.filter(task =>
-                task.frameworks && task.frameworks.includes(frameworkId)
+                task.frameworks && task.frameworks.some(fw => fw.id === frameworkId)
             );
         }
 
@@ -165,14 +158,12 @@ export default function LearningTasksList() {
         });
 
         return result;
-    }, [tasks, searchQuery, filters, languages, frameworks]);
+    }, [tasks, searchQuery, filters]);
 
     // Handle task actions
     const handleViewTask = (task) => {
         navigate(`/admin/learning-task/${task.id}`);
     };
-
-    ;
 
     const handleDeleteTask = async (taskId) => {
         try {
@@ -191,7 +182,7 @@ export default function LearningTasksList() {
 
     // Check if user owns the task
     const isOwner = (task) => {
-        return user.username === task.user;
+        return user.id === task.user?.id;
     };
 
     // Clear all filters
@@ -219,13 +210,45 @@ export default function LearningTasksList() {
 
     // Get task status (derived from API data)
     const getTaskStatus = (task) => {
-        if (task.reviews && task.reviews.length > 0) {
+        if (task.is_rated || task.status === "rated") {
             return "graded";
-        } else if (task.is_public) {
+        } else if (task.status === "under_review" || task.is_public) {
             return "submitted";
         } else {
             return "draft";
         }
+    };
+
+    // Get user profile picture URL
+    const getUserProfilePic = (task) => {
+        return task.user?.profile_pic_url || task.profile?.profile_pic_url || null;
+    };
+
+    // Get user display name
+    const getUserDisplayName = (task) => {
+        if (task.user?.full_name) {
+            return task.user.full_name;
+        } else if (task.user?.username) {
+            return task.user.username;
+        } else if (task.user?.email) {
+            return task.user.email;
+        } else {
+            return "Unknown User";
+        }
+    };
+
+    // Get admin review for grade
+    const getAdminReview = (task) => {
+        if (task.reviews && task.reviews.length > 0) {
+            const adminReview = task.reviews.find(review => review.is_admin || review.user?.is_staff);
+            if (adminReview) {
+                return {
+                    rating: adminReview.rating,
+                    feedback: adminReview.feedback
+                };
+            }
+        }
+        return null;
     };
 
     return (
@@ -386,7 +409,7 @@ export default function LearningTasksList() {
                         <FaStar className={styles.statIcon} />
                         <div>
                             <span className={styles.statNumber}>
-                                {tasks.filter(t => t.reviews && t.reviews.length > 0).length}
+                                {tasks.filter(t => t.is_rated || t.status === "rated").length}
                             </span>
                             <span className={styles.statLabel}>Reviewed</span>
                         </div>
@@ -430,28 +453,28 @@ export default function LearningTasksList() {
                         <div className={styles.tasksGrid}>
                             {filteredTasks.map((task) => {
                                 // Transform API data to match card component expectations
+                                const adminReview = getAdminReview(task);
                                 const cardTask = {
                                     id: task.id,
                                     title: task.title,
                                     description: task.description,
                                     githubLink: task.git_link,
-                                    languages: task.languages ?
-                                        task.languages.map(id => getLanguageName(id)) : [],
-                                    frameworks: task.frameworks ?
-                                        task.frameworks.map(id => getFrameworkName(id)) : [],
+                                    languages: task.languages?.map(lang => lang.name) || [],
+                                    frameworks: task.frameworks?.map(fw => fw.name) || [],
                                     status: getTaskStatus(task),
-                                    // For graded tasks, use average rating from reviews
-                                    grade: task.reviews && task.reviews.length > 0
-                                        ? (task.reviews.reduce((acc, review) => acc + review.rating, 0) / task.reviews.length).toFixed(1)
-                                        : null,
-                                    adminFeedback: task.reviews && task.reviews.length > 0
-                                        ? task.reviews[0].feedback
-                                        : null,
+                                    grade: adminReview ? adminReview.rating : null,
+                                    adminFeedback: adminReview ? adminReview.feedback : null,
                                     createdAt: formatDate(task.created_at),
-                                    likes: task.likes_count || 0,
+                                    likes_count: task.likes_count || 0,
                                     reviews: task.reviews || [],
                                     is_public: task.is_public,
-                                    is_rated: task.reviews && task.reviews.length > 0
+                                    is_rated: task.is_rated,
+                                    user: {
+                                        ...task.user,
+                                        profile_pic_url: getUserProfilePic(task),
+                                        displayName: getUserDisplayName(task)
+                                    },
+                                    profile: task.profile
                                 };
 
                                 return (
@@ -461,6 +484,7 @@ export default function LearningTasksList() {
                                         isOwner={isOwner(task)}
                                         onView={() => handleViewTask(task)}
                                         onDelete={() => handleDeleteTask(task.id)}
+                                        isAdmin={true}
                                     />
                                 );
                             })}

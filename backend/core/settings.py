@@ -241,6 +241,9 @@ AXES_COOLOFF_TIME = 60 * 60
 # Lock out at failure
 AXES_LOCK_OUT_AT_FAILURE = True
 
+AXES_LOCK_OUT_BY_COMBINATION = True
+
+AXES_ONLY_USER_FAILURES = True
 # Optional: ignore local/dev IPs so you don't lock yourself out
 AXES_IGNORE_IP_ADDRESSES = ["127.0.0.1", "::1"]
 
@@ -278,9 +281,9 @@ SECURE_BROWSER_XSS_FILTER = True
 # Frame options
 X_FRAME_OPTIONS = "DENY"
 AUTHENTICATION_BACKENDS = [
+    "users.backends.EmailBackend",
     "axes.backends.AxesBackend",  # must be first
     # "django.contrib.auth.backends.ModelBackend",
-    "users.backends.EmailBackend",
 ]
 
 
@@ -309,8 +312,8 @@ REST_FRAMEWORK = {
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=5),
-    "ROTATE_REFRESH_TOKENS": True,
-    "BLACKLIST_AFTER_ROTATION": True,
+    "ROTATE_REFRESH_TOKENS": False,
+    "BLACKLIST_AFTER_ROTATION": False,
     "AUTH_HEADER_TYPES": ("Bearer",),
     # Cookie mode
     "AUTH_COOKIE": "access_token",
@@ -367,3 +370,7 @@ CORS_ALLOW_METHODS = [
 
 # Profile Max Size
 MAX_PROFILE_PIC_SIZE = 10 * 1024 * 1024
+
+
+# Base URL
+BASE_URL = "https://localhost:5173"

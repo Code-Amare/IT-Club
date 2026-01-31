@@ -15,7 +15,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
   flex-wrap: wrap;
   gap: 16px;
 }
@@ -40,6 +40,122 @@
   border-color: var(--primary);
 }
 
+/* Student Header */
+.studentHeader {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  padding: 32px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  box-shadow: 0 2px 8px var(--card-shadow);
+}
+
+.studentAvatar {
+  flex-shrink: 0;
+}
+
+.profilePicCenter {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.profilePicWrapper {
+  position: relative;
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 4px solid var(--border-color);
+  background: var(--bg-body);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.profilePicWrapper:hover {
+  border-color: var(--primary);
+  transform: scale(1.02);
+}
+
+.profilePicImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profilePicPlaceholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--bg-hover), var(--bg-surface));
+  color: var(--text-secondary);
+}
+
+.removeProfilePicBtn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--danger);
+  color: white;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s ease;
+  padding: 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.removeProfilePicBtn:hover {
+  background: var(--danger-dark);
+  transform: scale(1.1);
+}
+
+.profilePicActions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.uploadPicBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: var(--primary);
+  color: white;
+  border: 1px solid var(--primary);
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.uploadPicBtn:hover {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
+}
+
+.studentInfo {
+  flex: 1;
+}
+
 .title {
   font-size: 28px;
   font-weight: 700;
@@ -47,60 +163,81 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  margin: 0;
+  margin: 0 0 16px 0;
 }
 
-.subtitle {
+.studentMeta {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.studentId {
   font-size: 14px;
   color: var(--text-secondary);
-  max-width: 600px;
-  line-height: 1.5;
-  margin-top: 8px;
+  background: var(--bg-body);
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--border-color);
 }
 
-/* Header Actions */
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.status.active {
+  background: var(--success-light);
+  color: var(--success);
+}
+
+.status.inactive {
+  background: var(--danger-light);
+  color: var(--danger);
+}
+
+.gradeBadge,
+.sectionBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  background: var(--bg-body);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
 .headerActions {
   display: flex;
   gap: 12px;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
 }
 
-.templateBtn,
-.uploadBtn {
+.viewBtn {
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 10px 16px;
+  background: var(--warning-light);
+  color: var(--warning);
+  border: 1px solid var(--warning-border);
   border-radius: 8px;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
-  border: 1px solid transparent;
 }
 
-.templateBtn {
-  background: var(--bg-surface);
-  color: var(--text-primary);
-  border-color: var(--border-color);
-}
-
-.templateBtn:hover {
-  background: var(--bg-hover);
-  border-color: var(--primary);
-}
-
-.uploadBtn {
-  background: var(--primary);
-  color: white;
-  border-color: var(--primary);
-}
-
-.uploadBtn:hover {
-  background: var(--primary-dark);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
+.viewBtn:hover {
+  background: var(--warning-lighter);
 }
 
 /* Form */
@@ -271,7 +408,7 @@
 }
 
 .primaryBtn:hover:not(:disabled) {
-  background: var(--primary-dark);
+  background: var(--primary-hover);
 }
 
 .dangerBtn {
@@ -353,8 +490,25 @@
     align-items: flex-start;
   }
 
+  .studentHeader {
+    flex-direction: column;
+    text-align: center;
+    gap: 24px;
+    padding: 24px;
+  }
+
+  .profilePicWrapper {
+    width: 120px;
+    height: 120px;
+  }
+
   .title {
     font-size: 24px;
+    justify-content: center;
+  }
+
+  .studentMeta {
+    justify-content: center;
   }
 
   .formActions {
@@ -371,5 +525,26 @@
   .primaryBtn,
   .dangerBtn {
     width: 100%;
+  }
+
+  .headerActions {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .profilePicWrapper {
+    width: 100px;
+    height: 100px;
+  }
+
+  .title {
+    font-size: 20px;
+  }
+
+  .studentMeta {
+    flex-direction: column;
+    align-items: center;
   }
 }

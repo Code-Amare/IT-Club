@@ -3,6 +3,9 @@ import SideBar from "../../../Components/SideBar/SideBar";
 import LearningTaskCard from "../../../Components/LearningTaskCard/LearningTaskCard";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useUser } from "../../../Context/UserContext";
+import api from "../../../Utils/api";
+import { neonToast } from "../../../Components/NeonToast/NeonToast";
 import {
     FaPlus,
     FaTasks,
@@ -14,122 +17,160 @@ import {
 
 const MyLearningTask = () => {
     const navigate = useNavigate();
+    const { user } = useUser();
 
-    // Mock data for student's learning tasks
-    const [learningTasks, setLearningTasks] = useState([
-        {
-            id: 1,
-            title: "Database Entity Creation",
-            description: "Building a complete database system with entities, relationships, and migrations",
-            githubLink: "https://github.com/john/database-project",
-            languages: ["JavaScript", "SQL"],
-            frameworks: ["Node.js", "Sequelize", "PostgreSQL"],
-            status: "submitted", // draft, submitted, graded, locked
-            grade: 0,
-            adminFeedback: "",
-            createdAt: "2024-01-15",
-            adminEditable: false,
-        },
-        {
-            id: 2,
-            title: "React E-commerce Dashboard",
-            description: "Creating a responsive admin dashboard with charts and analytics",
-            githubLink: "",
-            languages: ["TypeScript"],
-            frameworks: ["React", "Redux", "Tailwind CSS"],
-            status: "draft",
-            grade: 0,
-            adminFeedback: "",
-            createdAt: "2024-01-20",
-            adminEditable: false,
-        },
-        {
-            id: 3,
-            title: "Authentication System",
-            description: "JWT-based authentication with refresh tokens and role-based access",
-            githubLink: "https://github.com/john/auth-system",
-            languages: ["Python", "JavaScript"],
-            frameworks: ["Django", "Django REST", "PostgreSQL"],
-            status: "graded",
-            grade: 4.5,
-            adminFeedback: "Great implementation! Consider adding rate limiting for security.",
-            createdAt: "2024-01-10",
-            adminEditable: true,
-        },
-        {
-            id: 4,
-            title: "Real-time Chat Application",
-            description: "WebSocket-based chat with rooms, user presence, and file sharing",
-            githubLink: "https://github.com/john/chat-app",
-            languages: ["JavaScript"],
-            frameworks: ["Socket.io", "Express", "React"],
-            status: "locked",
-            grade: 4.8,
-            adminFeedback: "Excellent real-time implementation! Production ready.",
-            createdAt: "2024-01-05",
-            adminEditable: false,
-        },
-    ]);
+    // Real data states
+    const [learningTasks, setLearningTasks] = useState([]);
+    const [taskStats, setTaskStats] = useState({
+        task_count: 0,
+        task_rated: 0,
+        task_draft: 0,
+        task_under_review: 0,
+        task_limit: 0 // Remaining tasks user can create
+    });
+    const [isLoading, setIsLoading] = useState(true);
+    const [loadingDelete, setLoadingDelete] = useState(false);
 
-    // Task limit configuration
-    const [taskLimit, setTaskLimit] = useState(5); // Max tasks per student
-    const [isLoading, setIsLoading] = useState(false);
-
-    // Mock fetch to check task limit and current count
+    // Fetch learning tasks and task limit
     useEffect(() => {
-        const fetchTaskLimit = async () => {
+        const fetchData = async () => {
             setIsLoading(true);
-            // Simulate API call delay
-            await new Promise(resolve => setTimeout(resolve, 500));
+            try {
+                // Fetch learning tasks
+                const tasksResponse = await api.get('/api/learning-task/my-task/');
+                const tasksData = tasksResponse.data;
 
-            // Mock API response
-            const mockResponse = {
-                maxTasksPerStudent: 5,
-                currentTaskCount: learningTasks.length,
-                canCreateMore: learningTasks.length < 5
-            };
+                // Check if there are no tasks yet (backend returns different structure)
+                if (tasksData.message && tasksData.message === "You have no learning tasks yet.") {
+                    // Handle empty state
+                    setLearningTasks([]);
+                    setTaskStats({
+                        task_count: 0,
+                        task_rated: 0,
+                        task_draft: 0,
+                        task_under_review: 0,
+                        task_limit: tasksData.task_limit || 0
+                    });
+                } else {
+                    // Map API data to component format
+                    const mappedTasks = tasksData.tasks?.map(task => {
+                        // Find admin review for grade and feedback
+                        const adminReview = task.reviews?.find(review => review.user?.is_staff || review.is_admin);
+                        const grade = adminReview?.rating || 0;
+                        const adminFeedback = adminReview?.feedback || "";
 
-            setTaskLimit(mockResponse.maxTasksPerStudent);
-            setIsLoading(false);
+                        // Determine status for component
+                        let componentStatus = task.status;
+                        if (task.status === "rated") componentStatus = "graded";
+                        if (task.status === "under_review") componentStatus = "submitted";
+
+                        return {
+                            id: task.id,
+                            title: task.title,
+                            description: task.description,
+                            githubLink: task.git_link || "",
+                            languages: task.languages?.map(lang => lang.name) || [],
+                            frameworks: task.frameworks?.map(fw => fw.name) || [],
+                            status: componentStatus,
+                            grade: grade,
+                            adminFeedback: adminFeedback,
+                            createdAt: new Date(task.created_at).toLocaleDateString(),
+                            adminEditable: task.status === "draft",
+                            user: task.user, // Keep user data for card
+                            profile: task.profile, // Keep profile data for card
+                            reviews: task.reviews || [],
+                            likes_count: task.likes_count || 0,
+                            is_public: task.is_public || false
+                        };
+                    }) || [];
+
+                    setLearningTasks(mappedTasks);
+                    setTaskStats({
+                        task_count: tasksData.task_count || 0,
+                        task_rated: tasksData.task_rated || 0,
+                        task_draft: tasksData.task_draft || 0,
+                        task_under_review: tasksData.task_under_review || 0,
+                        task_limit: tasksData.task_limit || 0 // This is the remaining currency
+                    });
+                }
+
+            } catch (error) {
+                console.error("Error fetching learning tasks:", error);
+                // Check for 404 or empty response
+                if (error.response?.status === 404 || error.response?.data?.message === "You have no learning tasks yet.") {
+                    // User has no tasks yet, this is normal
+                    setLearningTasks([]);
+                    setTaskStats({
+                        task_count: 0,
+                        task_rated: 0,
+                        task_draft: 0,
+                        task_under_review: 0,
+                        task_limit: error.response?.data?.task_limit || 0
+                    });
+                } else {
+                    neonToast.error("Failed to load learning tasks", "error");
+                }
+            } finally {
+                setIsLoading(false);
+            }
         };
 
-        fetchTaskLimit();
-    }, [learningTasks.length]);
+        fetchData();
+    }, []);
 
     // Handle task creation
     const handleCreateTask = () => {
-        if (learningTasks.length >= taskLimit) {
-            alert(`You have reached the maximum limit of ${taskLimit} learning tasks.`);
+        if (taskStats.task_limit <= 0) {
+            neonToast.error(`You have no task credits remaining. You cannot create new tasks.`, "error");
             return;
         }
         navigate("/user/learning-task/create");
     };
 
     // Handle task deletion (only for drafts)
-    const handleDeleteTask = (taskId) => {
+    const handleDeleteTask = async (taskId) => {
         const task = learningTasks.find(t => t.id === taskId);
-        if (task.status !== "draft") {
-            alert("Only draft tasks can be deleted.");
+        if (task?.status !== "draft") {
+            neonToast.error("Only draft tasks can be deleted.", "error");
             return;
         }
 
-        if (window.confirm("Are you sure you want to delete this draft task?")) {
+        if (!window.confirm("Are you sure you want to delete this draft task?")) {
+            return;
+        }
+
+        setLoadingDelete(true);
+        try {
+            await api.delete(`/api/learning-task/${taskId}/`);
             setLearningTasks(tasks => tasks.filter(t => t.id !== taskId));
+            setTaskStats(prev => ({
+                ...prev,
+                task_count: prev.task_count - 1,
+                task_draft: prev.task_draft - 1,
+                // When deleting a draft, the task_limit should increase by 1 (return the credit)
+                task_limit: prev.task_limit + 1
+            }));
+            neonToast.success("Task deleted successfully. Your task credit has been returned.", "success");
+        } catch (error) {
+            console.error("Error deleting task:", error);
+            neonToast.error("Failed to delete task", "error");
+        } finally {
+            setLoadingDelete(false);
         }
     };
 
     // Handle task edit
     const handleEditTask = (task) => {
-        console.log("Edit task:", task.id);
-        // Navigate to edit page or open modal
-        navigate(`/edit-learning-task/${task.id}`);
+        if (task.status === "draft") {
+            navigate(`/user/learning-task/edit/${task.id}`);
+        } else {
+            neonToast.error("Only draft tasks can be edited", "error");
+        }
     };
 
     // Handle task view
     const handleViewTask = (task) => {
-        console.log("View task:", task.id);
-        // Navigate to task detail page
-        navigate(`/learning-task/${task.id}`);
+        navigate(`/user/learning-task/${task.id}`);
     };
 
     return (
@@ -145,21 +186,21 @@ const MyLearningTask = () => {
                                 </p>
                             </div>
 
-                            {/* Task Limit Indicator */}
+                            {/* Task Limit Indicator - Shows remaining credits */}
                             <div className={styles.taskLimitCard}>
                                 <div className={styles.limitInfo}>
                                     <FaTasks className={styles.limitIcon} />
                                     <div className={styles.limitText}>
                                         <span className={styles.limitCount}>
-                                            {learningTasks.length}/{taskLimit}
+                                            {taskStats.task_limit}
                                         </span>
-                                        <span className={styles.limitLabel}>Learning Tasks</span>
+                                        <span className={styles.limitLabel}>Task Credits Available</span>
                                     </div>
                                 </div>
-                                {learningTasks.length >= taskLimit && (
+                                {taskStats.task_limit <= 0 && (
                                     <div className={styles.limitWarning}>
                                         <FaExclamationTriangle />
-                                        <span>Limit reached</span>
+                                        <span>No credits</span>
                                     </div>
                                 )}
                             </div>
@@ -170,10 +211,15 @@ const MyLearningTask = () => {
                             <button
                                 className={styles.createTaskBtn}
                                 onClick={handleCreateTask}
-                                disabled={learningTasks.length >= taskLimit || isLoading}
+                                disabled={taskStats.task_limit <= 0 || isLoading}
                             >
                                 <FaPlus />
                                 <span>Create Learning Task</span>
+                                {taskStats.task_limit > 0 && (
+                                    <span className={styles.creditCount}>
+                                        ({taskStats.task_limit} credit{taskStats.task_limit !== 1 ? 's' : ''} remaining)
+                                    </span>
+                                )}
                             </button>
                         </div>
                     </header>
@@ -182,72 +228,74 @@ const MyLearningTask = () => {
                     {isLoading ? (
                         <div className={styles.loadingContainer}>
                             <div className={styles.loadingSpinner}></div>
-                            <p>Checking your task limit...</p>
+                            <p>Loading your learning tasks...</p>
                         </div>
                     ) : (
                         <>
-                            {/* Task Limit Alert */}
-                            {learningTasks.length >= taskLimit && (
+                            {/* Task Limit Alert - When no credits left */}
+                            {taskStats.task_limit <= 0 && learningTasks.length > 0 && (
                                 <div className={styles.alertBox}>
                                     <FaExclamationTriangle className={styles.alertIcon} />
                                     <div>
-                                        <strong>Task Limit Reached</strong>
+                                        <strong>No Task Credits Available</strong>
                                         <p>
-                                            You have reached the maximum limit of {taskLimit} learning tasks.
-                                            Please complete or delete existing tasks before creating new ones.
+                                            You have used all your task credits. You cannot create new tasks
+                                            until you receive more credits from an administrator.
                                         </p>
                                     </div>
                                 </div>
                             )}
 
-                            {/* Task Stats */}
-                            <div className={styles.statsGrid}>
-                                <div className={styles.statCard}>
-                                    <div className={styles.statIcon} style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)' }}>
-                                        <FaTasks />
+                            {/* Task Stats - Only show if user has tasks */}
+                            {learningTasks.length > 0 && (
+                                <div className={styles.statsGrid}>
+                                    <div className={styles.statCard}>
+                                        <div className={styles.statIcon} style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)' }}>
+                                            <FaTasks />
+                                        </div>
+                                        <div className={styles.statContent}>
+                                            <h3>Total Tasks</h3>
+                                            <p className={styles.statValue}>{taskStats.task_count}</p>
+                                        </div>
                                     </div>
-                                    <div className={styles.statContent}>
-                                        <h3>Total Tasks</h3>
-                                        <p className={styles.statValue}>{learningTasks.length}</p>
-                                    </div>
-                                </div>
 
-                                <div className={styles.statCard}>
-                                    <div className={styles.statIcon} style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)' }}>
-                                        <FaCheckCircle />
+                                    <div className={styles.statCard}>
+                                        <div className={styles.statIcon} style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)' }}>
+                                            <FaCheckCircle />
+                                        </div>
+                                        <div className={styles.statContent}>
+                                            <h3>Graded</h3>
+                                            <p className={styles.statValue}>
+                                                {taskStats.task_rated}
+                                            </p>
+                                        </div>
                                     </div>
-                                    <div className={styles.statContent}>
-                                        <h3>Graded</h3>
-                                        <p className={styles.statValue}>
-                                            {learningTasks.filter(t => t.status === 'graded' || t.status === 'locked').length}
-                                        </p>
-                                    </div>
-                                </div>
 
-                                <div className={styles.statCard}>
-                                    <div className={styles.statIcon} style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)' }}>
-                                        <FaClock />
+                                    <div className={styles.statCard}>
+                                        <div className={styles.statIcon} style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)' }}>
+                                            <FaClock />
+                                        </div>
+                                        <div className={styles.statContent}>
+                                            <h3>In Review</h3>
+                                            <p className={styles.statValue}>
+                                                {taskStats.task_under_review}
+                                            </p>
+                                        </div>
                                     </div>
-                                    <div className={styles.statContent}>
-                                        <h3>In Review</h3>
-                                        <p className={styles.statValue}>
-                                            {learningTasks.filter(t => t.status === 'submitted').length}
-                                        </p>
-                                    </div>
-                                </div>
 
-                                <div className={styles.statCard}>
-                                    <div className={styles.statIcon} style={{ backgroundColor: 'rgba(236, 72, 153, 0.1)' }}>
-                                        <FaEdit />
-                                    </div>
-                                    <div className={styles.statContent}>
-                                        <h3>Drafts</h3>
-                                        <p className={styles.statValue}>
-                                            {learningTasks.filter(t => t.status === 'draft').length}
-                                        </p>
+                                    <div className={styles.statCard}>
+                                        <div className={styles.statIcon} style={{ backgroundColor: 'rgba(236, 72, 153, 0.1)' }}>
+                                            <FaEdit />
+                                        </div>
+                                        <div className={styles.statContent}>
+                                            <h3>Drafts</h3>
+                                            <p className={styles.statValue}>
+                                                {taskStats.task_draft}
+                                            </p>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
+                            )}
 
                             {/* Tasks Grid */}
                             {learningTasks.length === 0 ? (
@@ -258,19 +306,39 @@ const MyLearningTask = () => {
                                     <button
                                         className={styles.createTaskBtn}
                                         onClick={handleCreateTask}
-                                        disabled={isLoading}
+                                        disabled={taskStats.task_limit <= 0 || isLoading}
                                     >
                                         <FaPlus />
                                         Create Your First Task
+                                        {taskStats.task_limit > 0 && (
+                                            <span className={styles.creditCount}>
+                                                ({taskStats.task_limit} credit{taskStats.task_limit !== 1 ? 's' : ''} available)
+                                            </span>
+                                        )}
                                     </button>
+                                    {taskStats.task_limit <= 0 && (
+                                        <p className={styles.noCreditsMessage}>
+                                            You need task credits to create new tasks. Please contact an administrator.
+                                        </p>
+                                    )}
                                 </div>
                             ) : (
                                 <>
                                     <div className={styles.tasksHeader}>
-                                        <h2>Your Learning Tasks ({learningTasks.length})</h2>
-                                        <p className={styles.tasksSubtitle}>
-                                            Tasks are locked after admin review to maintain integrity
-                                        </p>
+                                        <div className={styles.tasksHeaderLeft}>
+                                            <h2>Your Learning Tasks ({taskStats.task_count})</h2>
+                                            <p className={styles.tasksSubtitle}>
+                                                Tasks are locked after admin review to maintain integrity
+                                            </p>
+                                        </div>
+                                        <div className={styles.tasksHeaderRight}>
+                                            <div className={styles.creditsInfo}>
+                                                <FaTasks className={styles.creditIcon} />
+                                                <span className={styles.creditsText}>
+                                                    {taskStats.task_limit} task credit{taskStats.task_limit !== 1 ? 's' : ''} available
+                                                </span>
+                                            </div>
+                                        </div>
                                     </div>
 
                                     <div className={styles.tasksGrid}>
@@ -282,6 +350,7 @@ const MyLearningTask = () => {
                                                 onEdit={handleEditTask}
                                                 onDelete={handleDeleteTask}
                                                 onView={handleViewTask}
+                                                loadingDelete={loadingDelete}
                                             />
                                         ))}
                                     </div>

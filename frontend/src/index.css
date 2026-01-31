@@ -16,10 +16,10 @@ html.no-transition * {
   --bg-surface: #ffffff;
   --text-primary: #1f2937;
   --text-secondary: #4b5563;
-  --border-color: #e5e7eb; 
+  --border-color: #e5e7eb;
   --primary: #4f46e5;
   --primary-hover: #4338ca;
-  --primary-contrast: #ffffff; 
+  --primary-contrast: #ffffff;
   --badge-bg: #eef2ff;
   --badge-text: #4f46e5;
   --card-shadow: rgba(0, 0, 0, 0.1);
@@ -38,6 +38,7 @@ html.no-transition * {
   --desktop-bp: 993px;
   --danger: #dc2626;
   --danger-hover: #dc2626cb;
+  --white: #fff;
 }
 
 /* Dark Mode */
@@ -70,9 +71,13 @@ html.no-transition * {
 body {
   background-color: var(--bg-body);
   color: var(--text-primary);
-  transition: background-color 0.3s, color 0.3s;
+  transition:
+    background-color 0.3s,
+    color 0.3s;
 }
 
 * {
-  transition: background-color 0.5s ease, color 0.3s ease;
+  transition:
+    background-color 0.5s ease,
+    color 0.3s ease;
 }

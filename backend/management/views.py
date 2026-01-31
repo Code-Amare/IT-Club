@@ -45,7 +45,23 @@ from datetime import timedelta
 import math
 from learning_task.models import LearningTaskLimit
 import openpyxl
+import environ
+import cloudinary
+import cloudinary.utils
+from pathlib import Path
+import time
 
+
+env = environ.Env()
+BASE_DIR = Path(__file__).resolve().parent
+environ.Env.read_env(str(BASE_DIR / ".env"))
+
+cloudinary.config(
+    cloud_name=env("CLOUD_NAME"),
+    api_key=env("API_KEY"),
+    api_secret=env("API_SECRET"),
+    secure=True,
+)
 
 User = get_user_model()
 
@@ -69,31 +85,35 @@ class StudentsView(APIView):
             page_size = int(request.query_params.get("page_size", 10))
 
             # Build base queryset with attendance annotations
-            profiles = Profile.objects.select_related("user").annotate(
-                # Attendance statistics
-                total_sessions_attended=Count("user__attendances", distinct=True),
-                present_count=Count(
-                    "user__attendances", filter=Q(user__attendances__status="present")
-                ),
-                late_count=Count(
-                    "user__attendances", filter=Q(user__attendances__status="late")
-                ),
-                absent_count=Count(
-                    "user__attendances", filter=Q(user__attendances__status="absent")
-                ),
-                # Calculate attendance percentage (avoid division by zero)
-                attendance_percentage=Case(
-                    When(total_sessions_attended=0, then=Value(0.0)),
-                    default=(
-                        100.0
-                        * Count(
-                            "user__attendances",
-                            filter=Q(user__attendances__status="present"),
-                        )
-                        / F("total_sessions_attended")
+            profiles = (
+                Profile.objects.select_related("user")
+                .filter(user__role="user")
+                .annotate(
+                    total_sessions_attended=Count("user__attendances", distinct=True),
+                    present_count=Count(
+                        "user__attendances",
+                        filter=Q(user__attendances__status="present"),
                     ),
-                    output_field=FloatField(),
-                ),
+                    late_count=Count(
+                        "user__attendances", filter=Q(user__attendances__status="late")
+                    ),
+                    absent_count=Count(
+                        "user__attendances",
+                        filter=Q(user__attendances__status="absent"),
+                    ),
+                    attendance_percentage=Case(
+                        When(total_sessions_attended=0, then=Value(0.0)),
+                        default=(
+                            100.0
+                            * Count(
+                                "user__attendances",
+                                filter=Q(user__attendances__status="present"),
+                            )
+                            / F("total_sessions_attended")
+                        ),
+                        output_field=FloatField(),
+                    ),
+                )
             )
 
             # Apply text search across multiple fields
@@ -170,6 +190,14 @@ class StudentsView(APIView):
             # Prepare student data with attendance statistics
             students_data = []
             for profile in paginated_profiles:
+                user = profile.user
+                profile_pic_url, _ = cloudinary.utils.cloudinary_url(
+                    user.profile_pic_id,
+                    resource_type="image",
+                    type="authenticated",
+                    sign_url=True,
+                    secure=True,
+                )
                 # Get recent attendance (last 30 days)
                 thirty_days_ago = timezone.now() - timedelta(days=30)
                 recent_attendance = profile.user.attendances.filter(
@@ -195,11 +223,11 @@ class StudentsView(APIView):
                     "section": profile.section or "",
                     "field": profile.field or "",
                     "account": profile.account or "",
+                    "profile_pic_url": profile_pic_url or "",
                     "phone_number": profile.phone_number or "",
                     "account_status": (
                         "active" if profile.user.is_active else "inactive"
                     ),
-                    "profile_pic_url": profile.user.profile_pic_id or "",
                     "created_at": (
                         profile.created_at.isoformat() if profile.created_at else None
                     ),
@@ -582,14 +610,6 @@ class StudentStatsView(APIView):
             }
 
 
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from django.db import transaction
-from django.core.validators import validate_email
-from django.core.exceptions import ValidationError
-
-
 class StudentUpdateView(APIView):
 
     def put(self, request, pk):
@@ -606,7 +626,7 @@ class StudentUpdateView(APIView):
             grade = request.data.get("grade")
             section = (request.data.get("section") or "").strip()
             field = (request.data.get("field") or "").strip()
-            account = (request.data.get("account") or "").strip()
+            account = (request.data.get("account") or "N/A").strip()
             phone_number = (request.data.get("phone_number") or "").strip()
             account_status = request.data.get("account_status", "active")
             task_limit = request.data.get("task_limit")
@@ -693,7 +713,7 @@ class StudentUpdateView(APIView):
                 profile.grade = grade
                 profile.section = section.upper()
                 profile.field = field
-                profile.account = account if account and account != "N/A" else None
+                profile.account = account
                 profile.phone_number = phone_number
                 profile.save()
 
@@ -752,15 +772,15 @@ class StudentDetailView(APIView):
             task_limit_serializer = LearningTaskLimitSerializer(task_limit)
 
             # best-effort profile pic URL (if ImageField used)
-            profile_pic_url = None
             user = profile.user
-            if hasattr(user, "profile_pic") and getattr(user, "profile_pic"):
-                try:
-                    profile_pic_url = user.profile_pic.url
-                except Exception:
-                    profile_pic_url = getattr(user, "profile_pic_id", None)
-            else:
-                profile_pic_url = getattr(user, "profile_pic_id", None)
+
+            profile_pic_url, _ = cloudinary.utils.cloudinary_url(
+                user.profile_pic_id,
+                resource_type="image",
+                type="authenticated",
+                sign_url=True,
+                secure=True,
+            )
 
             student_data = {
                 "id": user.id,
@@ -863,7 +883,7 @@ class StudentCreateView(APIView):
             grade = request.data.get("grade")
             section = (request.data.get("section") or "").strip()
             field = (request.data.get("field") or "").strip()
-            account = (request.data.get("account") or "").strip()
+            account = (request.data.get("account") or "N/A").strip()
             phone_number = (request.data.get("phone_number") or "").strip()
 
             # Validate all required fields
@@ -930,7 +950,7 @@ class StudentCreateView(APIView):
                     grade=grade,
                     section=section.upper() if section else None,
                     field=field if field else None,
-                    account=account if account and account != "N/A" else None,
+                    account=account,
                     phone_number=phone_number if phone_number else None,
                 )
 
@@ -941,8 +961,7 @@ class StudentCreateView(APIView):
                 "grade": profile.grade,
                 "section": profile.section,
                 "field": profile.field,
-                "account": profile.account
-                or "N/A",  # Convert None to "N/A" for frontend
+                "account": profile.account,
                 "phone_number": profile.phone_number,
                 "account_status": "active",
                 "created_at": profile.created_at,

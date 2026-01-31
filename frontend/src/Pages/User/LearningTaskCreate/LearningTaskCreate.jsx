@@ -14,12 +14,7 @@ import {
     FaPalette,
     FaTimes
 } from "react-icons/fa";
-import {
-    MdTitle,
-    MdDescription,
-    MdLanguage,
-    MdCode
-} from "react-icons/md";
+import { MdTitle, MdDescription, MdLanguage, MdCode } from "react-icons/md";
 import styles from "./LearningTaskCreate.module.css";
 
 export default function LearningTaskCreate() {
@@ -37,11 +32,11 @@ export default function LearningTaskCreate() {
         description: "",
         git_link: "",
         is_public: false,
-        languages: [],
-        frameworks: []
+        language_ids: [],
+        framework_ids: []
     });
 
-    // Check if user is allowed to create tasks (non-admin)
+    // Redirect if admin
     useEffect(() => {
         if (user.isAuthenticated && user.is_staff) {
             neonToast.error("Admins cannot create learning tasks", "error");
@@ -51,26 +46,26 @@ export default function LearningTaskCreate() {
 
     // Fetch languages and frameworks
     useEffect(() => {
+        const fetchData = async () => {
+            setLoadingData(true);
+            try {
+                const [languagesRes, frameworksRes] = await Promise.all([
+                    api.get("/api/management/languages/"),
+                    api.get("/api/management/frameworks/")
+                ]);
+                setLanguages(languagesRes.data || []);
+                setFrameworks(frameworksRes.data || []);
+            } catch (error) {
+                console.error("Error fetching data:", error);
+                neonToast.error("Failed to load languages and frameworks", "error");
+            } finally {
+                setLoadingData(false);
+            }
+        };
         fetchData();
     }, []);
 
-    const fetchData = async () => {
-        setLoadingData(true);
-        try {
-            const [languagesResponse, frameworksResponse] = await Promise.all([
-                api.get("/api/management/languages/"),
-                api.get("/api/management/frameworks/")
-            ]);
-            setLanguages(languagesResponse.data || []);
-            setFrameworks(frameworksResponse.data || []);
-        } catch (error) {
-            console.error("Error fetching data:", error);
-            neonToast.error("Failed to load languages and frameworks", "error");
-        } finally {
-            setLoadingData(false);
-        }
-    };
-
+    // Form handlers
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
         setFormData(prev => ({
@@ -82,36 +77,36 @@ export default function LearningTaskCreate() {
 
     const handleLanguageSelect = (languageId) => {
         setFormData(prev => {
-            const newLanguages = prev.languages.includes(languageId)
-                ? prev.languages.filter(id => id !== languageId)
-                : [...prev.languages, languageId];
-            return { ...prev, languages: newLanguages };
+            const newIds = prev.language_ids.includes(languageId)
+                ? prev.language_ids.filter(id => id !== languageId)
+                : [...prev.language_ids, languageId];
+            return { ...prev, language_ids: newIds };
         });
     };
 
     const handleFrameworkSelect = (frameworkId) => {
         setFormData(prev => {
-            const newFrameworks = prev.frameworks.includes(frameworkId)
-                ? prev.frameworks.filter(id => id !== frameworkId)
-                : [...prev.frameworks, frameworkId];
-            return { ...prev, frameworks: newFrameworks };
+            const newIds = prev.framework_ids.includes(frameworkId)
+                ? prev.framework_ids.filter(id => id !== frameworkId)
+                : [...prev.framework_ids, frameworkId];
+            return { ...prev, framework_ids: newIds };
         });
     };
 
+    // Validation
     const validateForm = () => {
         const newErrors = {};
-
         if (!formData.title.trim()) newErrors.title = "Title is required";
         if (!formData.description.trim()) newErrors.description = "Description is required";
-        if (formData.languages.length === 0) newErrors.languages = "Select at least one language";
+        if (formData.language_ids.length === 0) newErrors.language_ids = "Select at least one language";
         if (formData.git_link && !formData.git_link.startsWith("https://github.com/")) {
             newErrors.git_link = "GitHub link must start with https://github.com/";
         }
-
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
 
+    // Submit
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!validateForm()) {
@@ -125,9 +120,7 @@ export default function LearningTaskCreate() {
                 ...formData,
                 title: formData.title.trim(),
                 description: formData.description.trim(),
-                git_link: formData.git_link.trim() || null,
-                languages: formData.languages,
-                frameworks: formData.frameworks
+                git_link: formData.git_link.trim() || null
             };
 
             await api.post("/api/learning-task/create/", taskData);
@@ -135,6 +128,7 @@ export default function LearningTaskCreate() {
             navigate("/user/learning-tasks");
 
         } catch (error) {
+            console.log(error)
             console.error("Error creating learning task:", error?.response?.data || error);
             if (error.response?.data?.errors) {
                 setErrors(error.response.data.errors);
@@ -142,10 +136,7 @@ export default function LearningTaskCreate() {
             } else if (error.response?.data?.non_field_errors) {
                 neonToast.error(error.response.data.non_field_errors[0], "error");
             } else {
-                neonToast.error(
-                    error.response?.data?.error || "Failed to create learning task",
-                    "error"
-                );
+                neonToast.error(error.response?.data?.error || "Failed to create learning task", "error");
             }
         } finally {
             setLoading(false);
@@ -158,8 +149,8 @@ export default function LearningTaskCreate() {
             description: "",
             git_link: "",
             is_public: false,
-            languages: [],
-            frameworks: []
+            language_ids: [],
+            framework_ids: []
         });
         setErrors({});
         window.scrollTo(0, 0);
@@ -304,27 +295,22 @@ export default function LearningTaskCreate() {
                                 <label>
                                     <MdLanguage /> Programming Languages <span className={styles.required}>*</span>
                                 </label>
-                                {errors.languages && <span className={styles.errorText}>{errors.languages}</span>}
+                                {errors.language_ids && <span className={styles.errorText}>{errors.language_ids}</span>}
                                 <small className={styles.helpText}>
                                     Select all programming languages used in this task
                                 </small>
 
                                 <div className={styles.selectionGrid}>
                                     {loadingData ? (
-                                        <div className={styles.loadingText}>
-                                            Loading languages...
-                                        </div>
+                                        <div className={styles.loadingText}>Loading languages...</div>
                                     ) : languages.length === 0 ? (
-                                        <div className={styles.emptyText}>
-                                            No languages available
-                                        </div>
+                                        <div className={styles.emptyText}>No languages available</div>
                                     ) : (
                                         languages.map(language => (
                                             <button
                                                 key={language.id}
                                                 type="button"
-                                                className={`${styles.selectionItem} ${formData.languages.includes(language.id) ? styles.selected : ""
-                                                    }`}
+                                                className={`${styles.selectionItem} ${formData.language_ids.includes(language.id) ? styles.selected : ""}`}
                                                 onClick={() => handleLanguageSelect(language.id)}
                                                 disabled={loading}
                                             >
@@ -332,16 +318,10 @@ export default function LearningTaskCreate() {
                                                     <FaPalette style={{ color: language.color }} />
                                                 </div>
                                                 <div className={styles.selectionInfo}>
-                                                    <span className={styles.selectionName}>
-                                                        {language.name}
-                                                    </span>
-                                                    <span className={styles.selectionCode}>
-                                                        {language.code}
-                                                    </span>
+                                                    <span className={styles.selectionName}>{language.name}</span>
+                                                    <span className={styles.selectionCode}>{language.code}</span>
                                                 </div>
-                                                {formData.languages.includes(language.id) && (
-                                                    <FaTimes className={styles.removeIcon} />
-                                                )}
+                                                {formData.language_ids.includes(language.id) && <FaTimes className={styles.removeIcon} />}
                                             </button>
                                         ))
                                     )}
@@ -359,20 +339,15 @@ export default function LearningTaskCreate() {
 
                                 <div className={styles.selectionGrid}>
                                     {loadingData ? (
-                                        <div className={styles.loadingText}>
-                                            Loading frameworks...
-                                        </div>
+                                        <div className={styles.loadingText}>Loading frameworks...</div>
                                     ) : frameworks.length === 0 ? (
-                                        <div className={styles.emptyText}>
-                                            No frameworks available
-                                        </div>
+                                        <div className={styles.emptyText}>No frameworks available</div>
                                     ) : (
                                         frameworks.map(framework => (
                                             <button
                                                 key={framework.id}
                                                 type="button"
-                                                className={`${styles.selectionItem} ${formData.frameworks.includes(framework.id) ? styles.selected : ""
-                                                    }`}
+                                                className={`${styles.selectionItem} ${formData.framework_ids.includes(framework.id) ? styles.selected : ""}`}
                                                 onClick={() => handleFrameworkSelect(framework.id)}
                                                 disabled={loading}
                                             >
@@ -380,16 +355,10 @@ export default function LearningTaskCreate() {
                                                     <MdCode />
                                                 </div>
                                                 <div className={styles.selectionInfo}>
-                                                    <span className={styles.selectionName}>
-                                                        {framework.name}
-                                                    </span>
-                                                    <span className={styles.selectionLanguage}>
-                                                        {framework.language?.name}
-                                                    </span>
+                                                    <span className={styles.selectionName}>{framework.name}</span>
+                                                    <span className={styles.selectionLanguage}>{framework.language?.name}</span>
                                                 </div>
-                                                {formData.frameworks.includes(framework.id) && (
-                                                    <FaTimes className={styles.removeIcon} />
-                                                )}
+                                                {formData.framework_ids.includes(framework.id) && <FaTimes className={styles.removeIcon} />}
                                             </button>
                                         ))
                                     )}
@@ -400,15 +369,11 @@ export default function LearningTaskCreate() {
                             <div className={styles.selectedCounts}>
                                 <div className={styles.countItem}>
                                     <span className={styles.countLabel}>Languages:</span>
-                                    <span className={styles.countValue}>
-                                        {formData.languages.length} selected
-                                    </span>
+                                    <span className={styles.countValue}>{formData.language_ids.length} selected</span>
                                 </div>
                                 <div className={styles.countItem}>
                                     <span className={styles.countLabel}>Frameworks:</span>
-                                    <span className={styles.countValue}>
-                                        {formData.frameworks.length} selected
-                                    </span>
+                                    <span className={styles.countValue}>{formData.framework_ids.length} selected</span>
                                 </div>
                             </div>
                         </div>

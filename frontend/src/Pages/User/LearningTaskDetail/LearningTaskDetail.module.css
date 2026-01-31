@@ -786,13 +786,13 @@
 }
 
 .profilePicSmall {
-  width: 32px;
-  height: 32px;
+  width: 40px;
+  height: 40px;
 }
 
 .profilePicMedium {
-  width: 48px;
-  height: 48px;
+  width: 50px;
+  height: 50px;
 }
 
 .profilePicPlaceholder {
@@ -849,4 +849,12 @@
     height: 28px;
     font-size: 12px;
   }
+}
+
+.statusBanner {
+  display: flex;
+  align-items: center;
+  gap: 1em;
+  margin-bottom: 0.4em;
+  padding-left: 0.4em;
 }

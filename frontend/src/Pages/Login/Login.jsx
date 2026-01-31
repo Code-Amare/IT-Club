@@ -27,11 +27,12 @@ const Login = () => {
         console.log(password)
 
         try {
-            await api.post("api/users/login/", { email, password }, { publicApi: true });
-
+            const res = await api.post("api/users/login/", { "email": email, "password": password, }, { publicApi: true });
+            const verifyEmail = res.data.verify_email
             user.getUser();
 
-            if (site.isTwoFaMandatory) {
+            if (verifyEmail) {
+                neonToast.success("Verification code sent successfully");
                 return navigate(`/verify-email/?email=${email}`);
             }
 

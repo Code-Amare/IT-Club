@@ -8,23 +8,15 @@ import ConfirmAction from "../../../Components/ConfirmAction/ConfirmAction";
 import SideBar from "../../../Components/SideBar/SideBar";
 import {
     FaArrowLeft,
-    FaCode,
     FaGlobe,
     FaLock,
     FaLink,
-    FaPalette,
     FaTimes,
     FaTrash,
     FaSave,
     FaStar
 } from "react-icons/fa";
-import {
-    MdTitle,
-    MdDescription,
-    MdLanguage,
-    MdCode,
-    MdEdit
-} from "react-icons/md";
+import { MdTitle, MdDescription, MdLanguage, MdCode, MdEdit } from "react-icons/md";
 import styles from "./LearningTaskEdit.module.css";
 
 export default function LearningTaskEdit() {
@@ -45,14 +37,13 @@ export default function LearningTaskEdit() {
         description: "",
         git_link: "",
         is_public: false,
-        languages: [],
-        frameworks: [],
+        language_ids: [],
+        framework_ids: [],
         is_rated: false,
         reviews: [],
         user: null
     });
 
-    // Fetch task data
     useEffect(() => {
         fetchTaskData();
     }, [id]);
@@ -60,155 +51,117 @@ export default function LearningTaskEdit() {
     const fetchTaskData = async () => {
         setFetching(true);
         try {
-            // Fetch task
-            const taskResponse = await api.get(`/api/learning-task/${id}/`);
-            const taskData = taskResponse.data;
+            const taskRes = await api.get(`/api/learning-task/${id}/`);
+            const taskData = taskRes.data.task;
 
-            // Check if task is rated
-            if (taskData.is_rated || (taskData.reviews && taskData.reviews.length > 0)) {
-                neonToast.error("This task has been rated and cannot be edited", "error");
+            if (taskData.is_rated || taskData.reviews?.length > 0) {
+                neonToast.error("This task has been rated and cannot be edited");
                 navigate(`/user/learning-task/${id}`);
                 return;
             }
 
-            // Check if user owns the task
-            if (user.id !== taskData.user.id) {
-                neonToast.error("You can only edit your own tasks", "error");
-                navigate("/user/learning-tasks");
-                return;
-            }
-
             setTask({
-                title: taskData.title || "",
-                description: taskData.description || "",
+                title: taskData.title,
+                description: taskData.description,
                 git_link: taskData.git_link || "",
-                is_public: taskData.is_public || false,
-                languages: taskData.languages || [],
-                frameworks: taskData.frameworks || [],
-                is_rated: taskData.is_rated || false,
-                reviews: taskData.reviews || [],
+                is_public: taskData.is_public,
+                language_ids: taskData.languages.map(l => l.id),
+                framework_ids: taskData.frameworks.map(f => f.id),
+                is_rated: taskData.is_rated,
+                reviews: taskData.reviews,
                 user: taskData.user
             });
 
-            // Fetch languages and frameworks
-            const [languagesResponse, frameworksResponse] = await Promise.all([
+            const [langsRes, fwRes] = await Promise.all([
                 api.get("/api/management/languages/"),
                 api.get("/api/management/frameworks/")
             ]);
-            setLanguages(languagesResponse.data || []);
-            setFrameworks(frameworksResponse.data || []);
 
-        } catch (error) {
-            console.error("Error fetching task data:", error);
-            if (error.response?.status === 404) {
-                neonToast.error("Task not found", "error");
-            } else {
-                neonToast.error("Failed to load task data", "error");
-            }
-            navigate("/user/learning-tasks");
+            setLanguages(langsRes.data);
+            setFrameworks(fwRes.data);
+
+        } catch (err) {
+            console.log(err);
+            neonToast.error("Failed to load task");
+            navigate(`/user/learning-tasks/${id}`);
         } finally {
             setFetching(false);
         }
     };
 
-    const handleChange = (e) => {
+    const handleChange = e => {
         const { name, value, type, checked } = e.target;
         setTask(prev => ({
             ...prev,
             [name]: type === "checkbox" ? checked : value
         }));
-        if (errors[name]) setErrors(prev => ({ ...prev, [name]: "" }));
+        // Clear error when user starts typing
+        if (errors[name]) {
+            setErrors(prev => ({ ...prev, [name]: "" }));
+        }
     };
 
-    const handleLanguageSelect = (languageId) => {
-        setTask(prev => {
-            const newLanguages = prev.languages.includes(languageId)
-                ? prev.languages.filter(id => id !== languageId)
-                : [...prev.languages, languageId];
-            return { ...prev, languages: newLanguages };
-        });
+    const toggleLanguage = id => {
+        setTask(prev => ({
+            ...prev,
+            language_ids: prev.language_ids.includes(id)
+                ? prev.language_ids.filter(l => l !== id)
+                : [...prev.language_ids, id]
+        }));
+        // Clear languages error when user selects one
+        if (errors.language_ids) {
+            setErrors(prev => ({ ...prev, language_ids: "" }));
+        }
     };
 
-    const handleFrameworkSelect = (frameworkId) => {
-        setTask(prev => {
-            const newFrameworks = prev.frameworks.includes(frameworkId)
-                ? prev.frameworks.filter(id => id !== frameworkId)
-                : [...prev.frameworks, frameworkId];
-            return { ...prev, frameworks: newFrameworks };
-        });
+    const toggleFramework = id => {
+        setTask(prev => ({
+            ...prev,
+            framework_ids: prev.framework_ids.includes(id)
+                ? prev.framework_ids.filter(f => f !== id)
+                : [...prev.framework_ids, id]
+        }));
     };
 
     const validateForm = () => {
-        const newErrors = {};
-
-        if (!task.title.trim()) newErrors.title = "Title is required";
-        if (!task.description.trim()) newErrors.description = "Description is required";
-        if (task.languages.length === 0) newErrors.languages = "Select at least one language";
-        if (task.git_link && !task.git_link.startsWith("https://github.com/")) {
-            newErrors.git_link = "GitHub link must start with https://github.com/";
-        }
-
-        setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
+        const e = {};
+        if (!task.title.trim()) e.title = "Title is required";
+        if (!task.description.trim()) e.description = "Description is required";
+        if (task.language_ids.length === 0) e.language_ids = "Select at least one language";
+        setErrors(e);
+        return Object.keys(e).length === 0;
     };
 
-    const handleSubmit = async (e) => {
+    const handleSubmit = async e => {
         e.preventDefault();
-
-        // Check if task is rated
-        if (task.is_rated || task.reviews.length > 0) {
-            neonToast.error("This task has been rated and cannot be edited", "error");
-            return;
-        }
-
-        if (!validateForm()) {
-            neonToast.error("Please fix the errors in the form", "error");
-            return;
-        }
+        if (!validateForm()) return;
 
         setLoading(true);
         try {
-            const taskData = {
-                ...task,
+            await api.patch(`/api/learning-task/edit/${id}/`, {
                 title: task.title.trim(),
                 description: task.description.trim(),
-                git_link: task.git_link.trim() || null,
-                languages: task.languages,
-                frameworks: task.frameworks
-            };
+                git_link: task.git_link || null,
+                is_public: task.is_public,
+                language_ids: task.language_ids,
+                framework_ids: task.framework_ids
+            });
 
-            await api.patch(`/api/learning-task/edit/${id}/`, taskData);
-            neonToast.success("Learning task updated successfully!", "success");
+            neonToast.success("Task updated successfully!");
             navigate(`/user/learning-task/${id}`);
 
-        } catch (error) {
-            console.error("Error updating learning task:", error?.response?.data || error);
-            if (error.response?.data?.error) {
-                neonToast.error(error.response.data.error, "error");
-            } else if (error.response?.data?.errors) {
-                setErrors(error.response.data.errors);
-                neonToast.error("Please fix the errors in the form", "error");
-            } else if (error.response?.data?.non_field_errors) {
-                neonToast.error(error.response.data.non_field_errors[0], "error");
-            } else {
-                neonToast.error(
-                    error.response?.data?.detail || "Failed to update learning task",
-                    "error"
-                );
+        } catch (err) {
+            console.error("Update failed:", err);
+            if (err.response?.data?.errors) {
+                setErrors(err.response.data.errors);
             }
+            neonToast.error("Failed to update task");
         } finally {
             setLoading(false);
         }
     };
 
-    const handleDeleteTask = async () => {
-        // Check if task is rated
-        if (task.is_rated || task.reviews.length > 0) {
-            neonToast.error("This task has been rated and cannot be deleted", "error");
-            return false;
-        }
-
-        // Validate confirmation
+    const handleDelete = async () => {
         if (deleteConfirmation !== task.title) {
             setDeleteError(`Please type "${task.title}" exactly to confirm deletion.`);
             return false;
@@ -216,33 +169,14 @@ export default function LearningTaskEdit() {
 
         try {
             await api.delete(`/api/learning-task/delete/${id}/`);
-            neonToast.success("Task deleted successfully", "success");
-            navigate("/learning-tasks");
+            neonToast.success("Task deleted successfully!");
+            navigate("/user/learning-tasks");
             return true;
-        } catch (error) {
-            console.error("Error deleting task:", error);
-            if (error.response?.data?.error) {
-                neonToast.error(error.response.data.error, "error");
-            } else {
-                neonToast.error("Failed to delete task", "error");
-            }
+        } catch (err) {
+            console.error("Delete failed:", err);
+            neonToast.error("Failed to delete task");
             return false;
         }
-    };
-
-    const handleDeleteModalOpen = () => {
-        setDeleteConfirmation("");
-        setDeleteError("");
-    };
-
-    const getLanguageName = (id) => {
-        const lang = languages.find(l => l.id === id);
-        return lang ? lang.name : `Language ${id}`;
-    };
-
-    const getFrameworkName = (id) => {
-        const fw = frameworks.find(f => f.id === id);
-        return fw ? fw.name : `Framework ${id}`;
     };
 
     if (fetching) {
@@ -277,7 +211,7 @@ export default function LearningTaskEdit() {
                                 </button>
                                 <button
                                     className={styles.primaryBtn}
-                                    onClick={() => navigate("/learning-tasks")}
+                                    onClick={() => navigate("/user/learning-tasks")}
                                 >
                                     Back to Tasks
                                 </button>
@@ -292,7 +226,6 @@ export default function LearningTaskEdit() {
     return (
         <div className={styles.container}>
             <SideBar>
-                {/* Header */}
                 <div className={styles.header}>
                     <div className={styles.headerContent}>
                         <button
@@ -311,17 +244,6 @@ export default function LearningTaskEdit() {
                     </div>
                 </div>
 
-                {/* Warning for rated tasks */}
-                {task.reviews.length > 0 && (
-                    <div className={styles.warningBanner}>
-                        <FaStar />
-                        <div>
-                            <strong>Note:</strong> This task has been reviewed. Some changes may be restricted.
-                        </div>
-                    </div>
-                )}
-
-                {/* Main Form */}
                 <form onSubmit={handleSubmit} className={styles.form}>
                     <div className={styles.formGrid}>
                         {/* Left Column */}
@@ -337,9 +259,9 @@ export default function LearningTaskEdit() {
                                     name="title"
                                     value={task.title}
                                     onChange={handleChange}
-                                    placeholder="e.g., E-commerce Website, Todo App, Weather Dashboard"
+                                    placeholder="e.g., E-commerce Website, Todo App"
                                     className={errors.title ? styles.errorInput : ""}
-                                    disabled={loading || task.is_rated}
+                                    disabled={loading}
                                     maxLength={200}
                                 />
                                 {errors.title && <span className={styles.errorText}>{errors.title}</span>}
@@ -358,9 +280,9 @@ export default function LearningTaskEdit() {
                                     name="description"
                                     value={task.description}
                                     onChange={handleChange}
-                                    placeholder="Describe your project, features, technologies used, and what you learned..."
+                                    placeholder="Describe your project, features, technologies used..."
                                     className={`${styles.textarea} ${errors.description ? styles.errorInput : ""}`}
-                                    disabled={loading || task.is_rated}
+                                    disabled={loading}
                                     rows={6}
                                     maxLength={2000}
                                 />
@@ -385,7 +307,7 @@ export default function LearningTaskEdit() {
                                         onChange={handleChange}
                                         placeholder="https://github.com/username/repository"
                                         className={errors.git_link ? styles.errorInput : ""}
-                                        disabled={loading || task.is_rated}
+                                        disabled={loading}
                                     />
                                 </div>
                                 {errors.git_link && <span className={styles.errorText}>{errors.git_link}</span>}
@@ -405,7 +327,7 @@ export default function LearningTaskEdit() {
                                         name="is_public"
                                         checked={task.is_public}
                                         onChange={handleChange}
-                                        disabled={loading || task.is_rated}
+                                        disabled={loading}
                                     />
                                     <span className={styles.checkboxCustom}></span>
                                     <div className={styles.checkboxContent}>
@@ -437,7 +359,7 @@ export default function LearningTaskEdit() {
                                 <label>
                                     <MdLanguage /> Programming Languages <span className={styles.required}>*</span>
                                 </label>
-                                {errors.languages && <span className={styles.errorText}>{errors.languages}</span>}
+                                {errors.language_ids && <span className={styles.errorText}>{errors.language_ids}</span>}
                                 <small className={styles.helpText}>
                                     Select all programming languages used in this task
                                 </small>
@@ -447,13 +369,20 @@ export default function LearningTaskEdit() {
                                         <button
                                             key={language.id}
                                             type="button"
-                                            className={`${styles.selectionItem} ${task.languages.includes(language.id) ? styles.selected : ""
+                                            className={`${styles.selectionItem} ${task.language_ids.includes(language.id) ? styles.selected : ""
                                                 }`}
-                                            onClick={() => !task.is_rated && handleLanguageSelect(language.id)}
-                                            disabled={loading || task.is_rated}
+                                            onClick={() => toggleLanguage(language.id)}
+                                            disabled={loading}
                                         >
                                             <div className={styles.selectionIcon}>
-                                                <FaPalette style={{ color: language.color }} />
+                                                <div
+                                                    style={{
+                                                        backgroundColor: language.color || "#3b82f6",
+                                                        width: "100%",
+                                                        height: "100%",
+                                                        borderRadius: "6px"
+                                                    }}
+                                                />
                                             </div>
                                             <div className={styles.selectionInfo}>
                                                 <span className={styles.selectionName}>
@@ -463,7 +392,7 @@ export default function LearningTaskEdit() {
                                                     {language.code}
                                                 </span>
                                             </div>
-                                            {task.languages.includes(language.id) && (
+                                            {task.language_ids.includes(language.id) && (
                                                 <FaTimes className={styles.removeIcon} />
                                             )}
                                         </button>
@@ -485,10 +414,10 @@ export default function LearningTaskEdit() {
                                         <button
                                             key={framework.id}
                                             type="button"
-                                            className={`${styles.selectionItem} ${task.frameworks.includes(framework.id) ? styles.selected : ""
+                                            className={`${styles.selectionItem} ${task.framework_ids.includes(framework.id) ? styles.selected : ""
                                                 }`}
-                                            onClick={() => !task.is_rated && handleFrameworkSelect(framework.id)}
-                                            disabled={loading || task.is_rated}
+                                            onClick={() => toggleFramework(framework.id)}
+                                            disabled={loading}
                                         >
                                             <div className={styles.selectionIcon}>
                                                 <MdCode />
@@ -501,7 +430,7 @@ export default function LearningTaskEdit() {
                                                     {framework.language?.name}
                                                 </span>
                                             </div>
-                                            {task.frameworks.includes(framework.id) && (
+                                            {task.framework_ids.includes(framework.id) && (
                                                 <FaTimes className={styles.removeIcon} />
                                             )}
                                         </button>
@@ -514,13 +443,13 @@ export default function LearningTaskEdit() {
                                 <div className={styles.countItem}>
                                     <span className={styles.countLabel}>Languages:</span>
                                     <span className={styles.countValue}>
-                                        {task.languages.length} selected
+                                        {task.language_ids.length} selected
                                     </span>
                                 </div>
                                 <div className={styles.countItem}>
                                     <span className={styles.countLabel}>Frameworks:</span>
                                     <span className={styles.countValue}>
-                                        {task.frameworks.length} selected
+                                        {task.framework_ids.length} selected
                                     </span>
                                 </div>
                             </div>
@@ -531,8 +460,11 @@ export default function LearningTaskEdit() {
                     <div className={styles.formActions}>
                         <div className={styles.leftActions}>
                             <ConfirmAction
-                                onConfirm={handleDeleteTask}
-                                onOpen={handleDeleteModalOpen}
+                                onConfirm={handleDelete}
+                                onOpen={() => {
+                                    setDeleteConfirmation("");
+                                    setDeleteError("");
+                                }}
                                 title="Delete Learning Task"
                                 message={
                                     <div className={styles.deleteConfirmation}>
@@ -562,13 +494,13 @@ export default function LearningTaskEdit() {
                                 confirmText="Delete Task"
                                 cancelText="Cancel"
                                 confirmButtonProps={{
-                                    disabled: deleteConfirmation !== task.title || task.is_rated
+                                    disabled: deleteConfirmation !== task.title
                                 }}
                             >
                                 <button
                                     type="button"
                                     className={styles.dangerBtn}
-                                    disabled={loading || task.is_rated}
+                                    disabled={loading}
                                 >
                                     <FaTrash /> Delete Task
                                 </button>
@@ -588,7 +520,7 @@ export default function LearningTaskEdit() {
                                 type="submit"
                                 className={styles.primaryBtn}
                                 loading={loading}
-                                disabled={loading || task.is_rated}
+                                disabled={loading}
                             >
                                 <FaSave /> Update Task
                             </AsyncButton>

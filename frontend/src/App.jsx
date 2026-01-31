@@ -36,6 +36,8 @@ import LearningTaskCreate from './Pages/User/LearningTaskCreate/LearningTaskCrea
 import LearningTaskEdit from './Pages/User/LearningTaskEdit/LearningTaskEdit'
 import AdminLearningTaskDetail from "./Pages/Admin/LearningTaskDetail/LearningTaskDetail"
 import StudentEdit from './Pages/Admin/StudentEdit/StudentEdit'
+import ResetPassword from './Pages/ResetPassword/ResetPassword'
+import ResetPasswordViaCode from './Pages/ResetPasswordviaCode/ResetPasswordViaCode'
 
 function App() {
   return (
@@ -58,6 +60,8 @@ function App() {
           <Route path="/profile/edit" element={<ProfileEdit />} />
           <Route path="/security" element={<Security />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/password/reset/code/" element={<ResetPasswordViaCode />} />
+          <Route path="/password/reset/:signed_inst/" element={<ResetPassword />} />
         </Route>
         <Route element={<ProtectedRoute requiredRole={["admin", "staff"]} />}>
           <Route path="/admin" element={<AdminDashboard />} />

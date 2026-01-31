@@ -54,26 +54,22 @@
   border: none;
   cursor: pointer;
   transition: all 0.2s ease;
+  color: var(--white);
 }
-
 .editBtn {
-  background: var(--warning-light);
-  color: var(--warning);
-  border: 1px solid var(--warning-border);
+  background: var(--primary);
 }
 
 .editBtn:hover {
-  background: var(--warning-lighter);
+  background: var(--primary-hover);
 }
 
 .deleteBtn {
-  background: var(--danger-light);
-  color: var(--danger);
-  border: 1px solid var(--danger-border);
+  background: var(--danger);
 }
 
 .deleteBtn:hover {
-  background: var(--danger-lighter);
+  background: var(--danger-hover) !important;
 }
 
 .studentHeader {
@@ -177,7 +173,9 @@
   display: flex;
   align-items: center;
   gap: 16px;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
   box-shadow: 0 1px 3px var(--card-shadow);
 }
 
@@ -917,4 +915,80 @@
   color: var(--text-secondary);
   max-width: 300px;
   margin: 0;
+}
+
+/* Add these styles to your existing StudentDetail.module.css file */
+
+/* Avatar Image Style */
+.avatarImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+/* Field Badge */
+.fieldBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  background: var(--bg-body);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+/* Profile Picture Thumbnail */
+.profilePicUrl {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.profilePicThumb {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--border-color);
+}
+
+/* Edit Limit Button */
+.editLimitBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--warning-light);
+  color: var(--warning);
+  border: 1px solid var(--warning-border);
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.editLimitBtn:hover {
+  background: var(--warning-lighter);
+}
+
+/* Responsive adjustments for profile picture */
+@media (max-width: 768px) {
+  .studentMeta {
+    justify-content: center;
+  }
+
+  .fieldBadge {
+    display: none; /* Hide on mobile to save space */
+  }
+
+  .profilePicUrl {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
 }

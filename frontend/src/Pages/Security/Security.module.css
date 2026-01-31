@@ -470,7 +470,7 @@
   align-items: flex-start;
   gap: 16px;
   padding: 20px;
-  background: white;
+  background: var(--bg-surface);
   border-radius: 8px;
   border: 1px solid var(--border-color);
 }
@@ -630,4 +630,325 @@
   .card {
     padding: 20px;
   }
+}
+
+/* Email Reset Password Card */
+.emailResetCard {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 32px;
+  box-shadow: 0 1px 3px var(--card-shadow);
+}
+
+.emailResetContent {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.emailResetInfo {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.emailResetIcon {
+  width: 60px;
+  height: 60px;
+  border-radius: 12px;
+  background-color: var(--badge-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.emailResetIcon svg {
+  font-size: 28px;
+  color: var(--primary);
+}
+
+.emailResetInfo > div {
+  flex: 1;
+}
+
+.emailResetInfo h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 8px 0;
+}
+
+.emailResetInfo p {
+  font-size: 15px;
+  color: var(--text-secondary);
+  margin: 0 0 20px 0;
+  line-height: 1.5;
+}
+
+.emailResetInfo strong {
+  color: var(--primary);
+  background-color: var(--badge-bg);
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-weight: 500;
+}
+
+/* Email Message */
+.emailMessage {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 8px;
+  margin: 16px 0;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.emailMessage.success {
+  background-color: var(--toast-bg-success);
+  color: var(--toast-success);
+  border: 1px solid var(--toast-success);
+}
+
+.emailMessage.error {
+  background-color: var(--toast-bg-error);
+  color: var(--toast-error);
+  border: 1px solid var(--toast-error);
+}
+
+.emailMessage svg {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.emailMessage span {
+  line-height: 1.4;
+}
+
+/* Email Reset Tips */
+.emailResetTips {
+  margin-top: 24px;
+  padding: 20px;
+  background-color: var(--bg-body);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.emailResetTips h4 {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 16px 0;
+}
+
+.emailResetTips ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.emailResetTips li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.emailResetTips li svg {
+  color: var(--primary);
+  font-size: 14px;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+/* Email Reset Actions */
+.emailResetActions {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Secondary Button */
+.secondaryBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 28px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 2px solid var(--primary);
+  background-color: transparent;
+  color: var(--primary);
+  text-decoration: none;
+}
+
+.secondaryBtn:hover:not(:disabled) {
+  border-color: var(--badge-bg);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px var(--card-shadow);
+}
+
+.secondaryBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.secondaryBtn .spinner {
+  animation: spin 1s linear infinite;
+  font-size: 16px;
+}
+
+/* Email Reset Note */
+.emailResetNote {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  background-color: var(--toast-bg-warning);
+  border-radius: 8px;
+  border-left: 4px solid var(--toast-warning);
+  font-size: 14px;
+  color: var(--toast-warning);
+}
+
+.emailResetNote svg {
+  color: var(--toast-warning);
+  font-size: 18px;
+  margin-top: 1px;
+  flex-shrink: 0;
+}
+
+.emailResetNote span {
+  line-height: 1.5;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .emailResetInfo {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .emailResetIcon {
+    width: 70px;
+    height: 70px;
+  }
+
+  .emailResetIcon svg {
+    font-size: 32px;
+  }
+
+  .emailResetInfo strong {
+    display: inline-block;
+    margin-top: 8px;
+  }
+
+  .secondaryBtn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 576px) {
+  .emailResetCard {
+    padding: 24px;
+  }
+
+  .emailResetIcon {
+    width: 60px;
+    height: 60px;
+  }
+
+  .emailResetIcon svg {
+    font-size: 28px;
+  }
+
+  .emailResetTips {
+    padding: 16px;
+  }
+
+  .emailResetNote {
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+  }
+}
+
+/* Optional: Reset process steps (if needed) */
+.emailResetSteps {
+  display: flex;
+  gap: 20px;
+  margin: 24px 0;
+}
+
+@media (max-width: 768px) {
+  .emailResetSteps {
+    flex-direction: column;
+    gap: 12px;
+  }
+}
+
+.step {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background-color: var(--bg-body);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.stepNumber {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: var(--primary);
+  color: var(--primary-contrast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.stepContent h5 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 4px 0;
+}
+
+.stepContent p {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Optional: Add this if you want to include steps */
+.emailResetProcess {
+  margin: 20px 0;
+}
+
+.emailResetProcess h5 {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 16px 0;
 }
