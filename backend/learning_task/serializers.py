@@ -76,23 +76,31 @@ class LearningTaskSerializer(serializers.ModelSerializer):
     def get_likes_count(self, obj):
         return obj.likes.count()
 
-    def create(self, validated_data):
-        # Pop the IDs for m2m fields
-        languages = validated_data.pop("languages", [])
-        frameworks = validated_data.pop("frameworks", [])
 
-        # Set the user from context
-        user = self.context["request"].user
-        validated_data["user"] = user
+def create(self, validated_data):
+    # Pop the IDs for m2m fields
+    languages = validated_data.pop("languages", [])
+    frameworks = validated_data.pop("frameworks", [])
 
-        # Create the LearningTask
-        task = LearningTask.objects.create(**validated_data)
+    # Set the user from context
+    user = self.context["request"].user
+    validated_data["user"] = user
 
-        # Set many-to-many relations
-        task.languages.set(languages)
-        task.frameworks.set(frameworks)
+    # Determine status based on git_link
+    git_link = validated_data.get("git_link")
+    if git_link in [None, ""]:
+        validated_data["status"] = "draft"
+    else:
+        validated_data["status"] = "under_review"
 
-        return task
+    # Create the LearningTask
+    task = LearningTask.objects.create(**validated_data)
+
+    # Set many-to-many relations
+    task.languages.set(languages)
+    task.frameworks.set(frameworks)
+
+    return task
 
 
 class LearningTaskLimitSerializer(serializers.ModelSerializer):

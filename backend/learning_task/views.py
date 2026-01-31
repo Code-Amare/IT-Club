@@ -27,7 +27,7 @@ class MyLearningTaskView(APIView):
         tasks = LearningTask.objects.filter(user=user)
         task_limit, created = LearningTaskLimit.objects.get_or_create(user=user)
         task_rated = LearningTask.objects.filter(
-            user=user, is_rated=True, status="rated"
+            user=user, status="rated"
         ).count()
         task_under_review = LearningTask.objects.filter(
             user=user, status="under_review"
@@ -97,13 +97,7 @@ class LearningTaskAPIView(APIView):
 
     def post(self, request):
         try:
-            import json
 
-            try:
-                data = json.loads(request.body)  # request.body is raw bytes
-            except json.JSONDecodeError:
-                data = {}
-            print("Request JSON:", data)
             serializer = LearningTaskSerializer(
                 data=request.data, context={"request": request}
             )
@@ -120,6 +114,7 @@ class LearningTaskAPIView(APIView):
                 task_limit.created()
                 if serializer.is_valid():
                     serializer.save(user=request.user)
+
                     return Response(serializer.data, status=status.HTTP_201_CREATED)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except LearningTaskLimit.DoesNotExist:
@@ -133,7 +128,7 @@ class LearningTaskAPIView(APIView):
     def patch(self, request, task_id):
         try:
             task = LearningTask.objects.get(id=task_id, user=request.user)
-            if task.is_rated:
+            if task.status == "rated":
                 return Response(
                     {"error": "Tasks cannot be edited after being rated."},
                     status=status.HTTP_400_BAD_REQUEST,
@@ -156,7 +151,7 @@ class LearningTaskAPIView(APIView):
             task = LearningTask.objects.get(id=task_id, user=request.user)
             task_limit = LearningTaskLimit.objects.get(user=request.user)
 
-            if task.is_rated or task.status == "rated":
+            if task.status == "rated":
                 return Response(
                     {"error": "Tasks cannot be deleted after being rated."},
                     status=status.HTTP_400_BAD_REQUEST,
@@ -191,7 +186,7 @@ class TaskReviewAPIView(APIView):
         try:
             task = LearningTask.objects.get(id=task_id)
             if request.user.is_staff:
-                task.is_rated = True
+                task.status = "rated"
                 task.save()
             serializer = TaskReviewSerializer(data=request.data)
             if serializer.is_valid():

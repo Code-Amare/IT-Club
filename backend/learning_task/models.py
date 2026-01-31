@@ -22,7 +22,6 @@ class LearningTask(models.Model):
     frameworks = models.ManyToManyField(Framework, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    is_rated = models.BooleanField(default=False)
     status = models.CharField(max_length=20, choices=STATUS_CHOICE, default="draft")
     likes = models.ManyToManyField(User, related_name="liked_tasks", blank=True)
 
