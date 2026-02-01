@@ -111,13 +111,12 @@ export default function LearningTaskDetail() {
                 }
             }
 
-        } catch (error) {
+        } catch (err) {
             console.error("Error fetching task data:", error);
-            if (error.response?.status === 404) {
-                neonToast.error("Learning Task not found", "error");
-            } else {
-                neonToast.error("Failed to load learning task", "error");
-            }
+            const error = error.data?.error || "Failed to load learning task";
+
+            neonToast.error(error, "error");
+
             navigate("/user/learning-tasks");
         } finally {
             setLoading(false);
@@ -300,7 +299,10 @@ export default function LearningTaskDetail() {
     const getUserRoleBadge = (reviewUser) => {
         if (reviewUser && task?.user && reviewUser.id === task.user.id) {
             return <span className={styles.roleBadgeOwner}>Task Owner</span>;
-        } else {
+        } else if (reviewUser.is_staff) {
+            return <span className={styles.roleBadgeAdmin}>Admin</span>;
+        }
+        else {
             return <span className={styles.roleBadgeUser}>User</span>;
         }
     };

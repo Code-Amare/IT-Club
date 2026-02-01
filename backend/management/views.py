@@ -1730,3 +1730,57 @@ class FrameworkBulkAPIView(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@method_decorator(csrf_protect, name="dispatch")
+class DeleteLearningTaskView(APIView):
+    authentication_classes = [JWTCookieAuthentication]
+    permission_classes = [RolePermissionFactory(["admin", "staff"])]
+
+    def delete(self, request, task_id):
+        try:
+            task = LearningTask.objects.get(id=task_id)
+            user = task.user
+            task_limit = LearningTaskLimit.objects.get(user=user)
+
+            with transaction.atomic():
+                task.delete()
+                task_limit.deleted()
+
+            return Response(
+                {"message": "Task deleted successfully."},
+                status=status.HTTP_204_NO_CONTENT,
+            )
+        except LearningTaskLimit.DoesNotExist:
+
+            return Response(
+                {"error": "Task not found."}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        except LearningTask.DoesNotExist:
+            
+            return Response(
+                {"error": "Task not found."}, status=status.HTTP_404_NOT_FOUND
+            )
+
+
+@method_decorator(csrf_protect, name="dispatch")
+class DeleteTaskReviewView(APIView):
+    authentication_classes = [JWTCookieAuthentication]
+    permission_classes = [RolePermissionFactory(["admin", "staff"])]
+
+    def delete(self, request, review_id):
+        try:
+            task = TaskReview.objects.get(id=review_id, user=request.user)
+
+            with transaction.atomic():
+                task.delete()
+            return Response(
+                {"message": "Task review deleted successfully."},
+                status=status.HTTP_204_NO_CONTENT,
+            )
+
+        except TaskReview.DoesNotExist:
+            return Response(
+                {"error": "Task review not found."}, status=status.HTTP_404_NOT_FOUND
+            )

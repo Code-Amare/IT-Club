@@ -6,6 +6,7 @@
   min-height: 100vh;
   background: var(--bg-body);
   font-size: 14px;
+  overflow-x: hidden;
 }
 
 /* Header */
@@ -36,7 +37,7 @@
   transition: all 0.2s ease;
   text-decoration: none;
   width: fit-content;
-  min-height: 44px; /* Better touch target */
+  min-height: 44px;
 }
 
 .backBtn:hover {
@@ -54,7 +55,7 @@
 
 .titleSection {
   flex: 1;
-  min-width: 280px; /* Prevent collapsing too much */
+  min-width: 280px;
 }
 
 .titleSection h1 {
@@ -91,7 +92,8 @@
 }
 
 .visibilityBadge,
-.ratingBadge {
+.ratingBadge,
+.adminBadge {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -127,12 +129,47 @@
   border: 1px solid rgba(245, 158, 11, 0.2);
 }
 
+.adminBadge {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
 /* Header Actions */
 .headerActions {
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
   justify-content: flex-start;
+}
+
+/* Like Button */
+.likeBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 44px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.likeBtn:hover {
+  background: var(--bg-body);
+}
+
+.likeBtn.liked {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+  border-color: rgba(59, 130, 246, 0.2);
 }
 
 .adminRateBtn,
@@ -163,11 +200,11 @@
 }
 
 .editReviewBtn {
-  background: var(--success);
+  background: var(--primary);
 }
 
 .editReviewBtn:hover {
-  background: var(--success-hover);
+  background: var(--primary-hover);
 }
 
 .cancelEditBtn {
@@ -376,14 +413,13 @@
   letter-spacing: 0.5px;
 }
 
-/* Admin Section */
-.adminSection {
+/* Admin Actions Panel */
+.adminActionsPanel {
   background: var(--bg-surface);
   border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 20px;
   margin-bottom: 20px;
-  border-top: 4px solid var(--primary);
 }
 
 .adminSectionHeader {
@@ -391,7 +427,6 @@
   align-items: center;
   gap: 12px;
   margin-bottom: 16px;
-  flex-wrap: wrap;
 }
 
 .adminSectionHeader h3 {
@@ -406,17 +441,44 @@
   color: var(--primary);
 }
 
-.adminBadge {
-  padding: 4px 10px;
-  background: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
-  border: 1px solid rgba(239, 68, 68, 0.2);
-  border-radius: 20px;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-left: auto;
+.adminActions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.viewUserBtn,
+.exportBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: var(--bg-body);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 44px;
+  white-space: nowrap;
+}
+
+.viewUserBtn:hover,
+.exportBtn:hover {
+  background: var(--bg-surface);
+  border-color: var(--primary);
+}
+
+/* Admin Section */
+.adminSection {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  border-top: 4px solid var(--primary);
 }
 
 .adminStats {
@@ -663,6 +725,10 @@
   background: rgba(79, 70, 229, 0.05);
 }
 
+.reviewItem.adminReview {
+  border-left: 4px solid var(--danger);
+}
+
 .reviewHeader {
   display: flex;
   justify-content: space-between;
@@ -690,6 +756,22 @@
   flex-wrap: wrap;
 }
 
+.adminReviewBadge {
+  padding: 2px 6px;
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .reviewerRole {
   display: flex;
   gap: 6px;
@@ -697,7 +779,8 @@
 }
 
 .roleBadgeAdmin,
-.roleBadgeYou {
+.roleBadgeYou,
+.roleBadgeUser {
   padding: 4px 8px;
   border-radius: 4px;
   font-size: 10px;
@@ -717,6 +800,12 @@
   background: rgba(79, 70, 229, 0.1);
   color: var(--primary);
   border: 1px solid rgba(79, 70, 229, 0.2);
+}
+
+.roleBadgeUser {
+  background: rgba(107, 114, 128, 0.1);
+  color: #6b7280;
+  border: 1px solid rgba(107, 114, 128, 0.2);
 }
 
 .reviewActions {
@@ -861,6 +950,31 @@
   margin: 0;
 }
 
+/* Already Rated Note */
+.alreadyRatedNote {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  border-radius: 8px;
+  color: var(--text-primary);
+  margin-top: 16px;
+}
+
+.alreadyRatedNote svg {
+  color: #f59e0b;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.alreadyRatedNote p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
 /* Metadata */
 .metadata {
   display: flex;
@@ -897,11 +1011,11 @@
   word-break: break-word;
 }
 
-.metaValue.rated {
+.status-rated {
   color: #10b981;
 }
 
-.metaValue.notRated {
+.status-not_rated {
   color: #f59e0b;
 }
 
@@ -918,6 +1032,12 @@
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
+}
+
+.userEmail {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-left: 8px;
 }
 
 /* Profile Picture Styles */
@@ -1025,162 +1145,206 @@
   }
 }
 
-/* ========== SUPER MOBILE RESPONSIVE BREAKPOINTS ========== */
+/* ========== RESPONSIVE BREAKPOINTS ========== */
 
-/* Tablet and Below (768px) */
+/* Large Tablets and Below (1024px) */
 @media (max-width: 1024px) {
   .contentGrid {
     grid-template-columns: 1fr;
     gap: 20px;
   }
-  
+
   .rightColumn {
-    order: -1; /* Move reviews above details on tablets */
+    order: -1; /* Move reviews above details on smaller screens */
+  }
+
+  .adminStats,
+  .statsGrid {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
-/* Mobile (768px and below) */
+/* Tablets and Large Mobile (768px and below) */
 @media (max-width: 768px) {
   .container {
     font-size: 13px;
   }
-  
-  .header {
-    margin-bottom: 20px;
-    padding: 12px 0;
-  }
-  
+
   .headerMain {
     flex-direction: column;
     gap: 16px;
   }
-  
-  .titleSection h1 {
-    font-size: 20px;
-  }
-  
+
   .headerActions {
     width: 100%;
-    justify-content: stretch;
+    justify-content: flex-start;
   }
-  
+
   .adminRateBtn,
   .editReviewBtn,
   .cancelEditBtn,
-  .deleteTaskBtn {
+  .deleteTaskBtn,
+  .likeBtn {
     flex: 1;
     min-width: 140px;
     justify-content: center;
+    font-size: 13px;
+    padding: 10px 12px;
   }
-  
+
+  .titleSection h1 {
+    font-size: 20px;
+  }
+
   .subtitle {
     flex-direction: column;
     align-items: flex-start;
     gap: 8px;
   }
-  
+
+  .userInfo,
+  .dateInfo,
   .visibilityBadge,
-  .ratingBadge {
+  .ratingBadge,
+  .adminBadge {
     align-self: flex-start;
   }
-  
+
   .section {
     padding: 16px;
     margin-bottom: 16px;
   }
-  
+
   .sectionHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
     margin-bottom: 12px;
   }
-  
+
   .sectionHeader h3 {
     font-size: 15px;
   }
-  
+
   .techItem {
     flex-direction: column;
     align-items: flex-start;
     gap: 8px;
   }
-  
+
   .techName,
   .techCode,
   .techLanguage {
     width: 100%;
     text-align: left;
   }
-  
-  .statsGrid,
-  .adminStats {
-    grid-template-columns: 1fr;
+
+  .adminStats,
+  .statsGrid {
+    grid-template-columns: repeat(2, 1fr);
     gap: 10px;
   }
-  
+
   .adminStatValue {
     font-size: 16px;
   }
-  
+
   .statValue {
     font-size: 18px;
   }
-  
+
   .formActions {
     flex-direction: column;
     align-items: stretch;
     gap: 16px;
   }
-  
+
   .formButtons {
     width: 100%;
+    flex-direction: column;
+    gap: 8px;
   }
-  
+
   .submitReviewBtn,
   .deleteReviewBtn,
   .cancelFormBtn {
-    flex: 1;
-    min-width: 120px;
-    padding: 12px 16px;
+    width: 100%;
+    justify-content: center;
   }
-  
+
   .reviewHeader {
     flex-direction: column;
     gap: 12px;
   }
-  
+
   .reviewActions {
     width: 100%;
     justify-content: space-between;
   }
-  
+
   .reviewOptionsMenu {
     right: auto;
     left: 0;
+    transform: translateX(-10%);
     min-width: 140px;
   }
-  
+
   .metaItem {
     flex-direction: column;
     align-items: flex-start;
     gap: 4px;
   }
-  
+
   .metaLabel,
   .metaValue {
     width: 100%;
     text-align: left;
   }
-  
+
   .ownerInfo {
     width: 100%;
     justify-content: flex-start;
   }
-  
+
   .githubLink span {
     font-size: 12px;
   }
-.reviewOptionsMenu{
-    transform: translateX(-50%);
-    width: max-content;
+
+  .adminSectionHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .adminBadge {
+    margin-left: 0;
+  }
+
+  .ratingInput {
+    justify-content: center;
+  }
+
+  .starBtn {
+    font-size: 20px;
+    padding: 6px;
+    min-width: 40px;
+    min-height: 40px;
+  }
+
+  .reviewerName {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .adminActions {
+    flex-direction: column;
+  }
+
+  .viewUserBtn,
+  .exportBtn {
+    width: 100%;
+    justify-content: center;
   }
 }
 
@@ -1189,147 +1353,109 @@
   .container {
     font-size: 12px;
   }
-  
+
   .titleSection h1 {
     font-size: 18px;
   }
-  
+
   .backBtn {
     width: 100%;
     justify-content: center;
   }
-  
+
   .headerActions {
     flex-direction: column;
     gap: 8px;
   }
-  
+
   .adminRateBtn,
   .editReviewBtn,
   .cancelEditBtn,
-  .deleteTaskBtn {
+  .deleteTaskBtn,
+  .likeBtn {
     width: 100%;
     min-width: unset;
   }
-  
-  .sectionHeader {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-  }
-  
+
   .sectionHeader h3 {
     font-size: 14px;
   }
-  
-  .adminSectionHeader {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
+
+  .adminStatValue,
+  .statValue {
+    font-size: 16px;
   }
-  
-  .adminBadge {
-    margin-left: 0;
-    align-self: flex-start;
-  }
-  
+
   .ratingInput {
-    justify-content: center;
+    justify-content: space-between;
   }
-  
+
   .starBtn {
-    font-size: 20px;
-    padding: 6px;
-    min-width: 40px;
-    min-height: 40px;
+    flex: 1;
+    max-width: 50px;
   }
-  
-  .formButtons {
-    flex-direction: column;
-    gap: 8px;
-  }
-  
-  .submitReviewBtn,
-  .deleteReviewBtn,
-  .cancelFormBtn {
-    width: 100%;
-  }
-  
-  .reviewerName {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 4px;
-  }
-  
-  .profilePicSmall {
-    width: 28px;
-    height: 28px;
-  }
-  
-  .profilePicPlaceholder.profilePicSmall {
-    width: 28px;
-    height: 28px;
-    font-size: 12px;
-  }
-  
+
   .reviewFeedback {
     font-size: 13px;
   }
-  
+
   .description {
     font-size: 13px;
   }
-  
+
   .loadingContainer,
   .errorContainer {
     min-height: 250px;
   }
 
+  .adminStats,
+  .statsGrid {
+    grid-template-columns: 1fr;
+  }
 }
-
 
 /* Extra Small Mobile (360px and below) */
 @media (max-width: 360px) {
   .section {
     padding: 12px;
   }
-  
-  
+
   .titleSection h1 {
     font-size: 16px;
   }
-  
+
   .userInfo,
   .dateInfo {
     font-size: 12px;
   }
-  
+
   .visibilityBadge,
-  .ratingBadge {
+  .ratingBadge,
+  .adminBadge {
     font-size: 11px;
     padding: 4px 8px;
   }
-  
+
   .formLabel {
     font-size: 13px;
   }
-  
+
   .feedbackInput {
     font-size: 13px;
     padding: 10px 12px;
   }
-  
+
   .reviewItem {
     padding: 12px;
   }
-  
+
   .reviewOption {
     padding: 10px 12px;
     font-size: 13px;
   }
 }
 
-/* Touch-friendly improvements */
+/* Touch-friendly improvements for mobile */
 @media (hover: none) and (pointer: coarse) {
   .backBtn,
   .adminRateBtn,
@@ -1341,29 +1467,40 @@
   .cancelFormBtn,
   .reviewOptionsToggle,
   .reviewOption,
-  .starBtn {
+  .starBtn,
+  .likeBtn,
+  .viewUserBtn,
+  .exportBtn {
     min-height: 48px;
     font-size: 15px;
   }
-  
+
   .starBtn {
     min-width: 48px;
     min-height: 48px;
   }
-  
+
   .githubLink {
     min-height: 48px;
   }
-  
+
   .techItem {
     padding: 12px;
   }
-  
+
   /* Increase touch targets for mobile */
   .visibilityBadge,
-  .ratingBadge {
+  .ratingBadge,
+  .adminBadge {
     min-height: 36px;
     padding: 8px 12px;
+  }
+
+  /* Increase spacing for touch */
+  .headerActions,
+  .formButtons,
+  .adminActions {
+    gap: 10px;
   }
 }
 
@@ -1374,7 +1511,7 @@
   .statItem:hover {
     border-color: var(--primary);
   }
-  
+
   .reviewOptionsMenu {
     background: var(--bg-body);
     border-color: var(--border-color-dark);

@@ -14,7 +14,7 @@ class LearningTask(models.Model):
         ("rated", "Rated"),
         ("redo", "Redo"),
     ]
-    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     title = models.CharField(max_length=100)
     description = models.TextField()
     git_link = models.URLField(max_length=500, blank=True, null=True)
@@ -38,7 +38,7 @@ class TaskReview(models.Model):
         LearningTask, on_delete=models.CASCADE, related_name="reviews"
     )
     user = models.ForeignKey(
-        User, on_delete=models.SET_NULL, related_name="task_reviews", null=True
+        User, on_delete=models.CASCADE, related_name="task_reviews"
     )
     rating = models.PositiveSmallIntegerField(
         validators=[MinValueValidator(0), MaxValueValidator(5)]

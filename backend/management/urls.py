@@ -19,6 +19,8 @@ from .views import (
     StudentDeleteView,
     StudentUpdateView,
     TopLearningTasks,
+    DeleteLearningTaskView,
+    DeleteTaskReviewView,
 )
 
 urlpatterns = [
@@ -27,11 +29,21 @@ urlpatterns = [
     path("students/create/", StudentCreateView.as_view(), name="student-create"),
     path("student/edit/<int:pk>/", StudentUpdateView.as_view(), name="student-edit"),
     path(
+        "task/delete/<int:task_id>/",
+        DeleteLearningTaskView.as_view(),
+        name="task-delete",
+    ),
+    path(
+        "review/delete/<int:review_id>/",
+        DeleteTaskReviewView.as_view(),
+        name="task-delete",
+    ),
+    path(
         "top-learning-tasks/<int:boundary>/",
         TopLearningTasks.as_view(),
         name="top-learning-tasks",
     ),
-    path( 
+    path(
         "student/delete/<int:pk>/", StudentDeleteView.as_view(), name="student-delete"
     ),
     path(

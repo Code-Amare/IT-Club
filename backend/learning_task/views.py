@@ -14,6 +14,8 @@ from django.views.decorators.csrf import csrf_protect
 from django.db import transaction
 from utils.auth import RolePermissionFactory
 from django.contrib.auth import get_user_model
+from django.db.models import Q
+
 
 User = get_user_model()
 
@@ -59,7 +61,8 @@ class LearningTaskAllView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        tasks = LearningTask.objects.all()
+        tasks = LearningTask.objects.filter(Q(user=request.user) | ~Q(status="draft"))
+        
         if not tasks:
             return Response({"message": "No learning yet."}, status=status.HTTP_200_OK)
         serializer = LearningTaskSerializer(tasks, many=True)
@@ -80,6 +83,17 @@ class LearningTaskAPIView(APIView):
             task = LearningTask.objects.get(id=task_id)
             user_liked = task.likes.filter(id=user.id).exists()
             serializer = LearningTaskSerializer(task)
+            is_admin = user.is_staff
+
+            if (
+                not is_admin
+                and not LearningTask.objects.filter(id=task_id, user=user).exists()
+                and task.status == "draft"
+            ):
+                return Response(
+                    {"error": "You are not allowed to view this Task."},
+                    status=status.HTTP_401_UNAUTHORIZED,
+                )
 
             return Response(
                 {"task": serializer.data, "user_liked": user_liked},
@@ -181,7 +195,14 @@ class TaskReviewAPIView(APIView):
 
     def post(self, request, task_id):
         try:
+            user = request.user
             task = LearningTask.objects.get(id=task_id)
+
+            if task.status == "rated" and user.is_staff:
+                return Response(
+                    {"error": "This task has already been rated by an admin."}
+                )
+
             if request.user.is_staff:
                 task.status = "rated"
                 task.save()
@@ -203,6 +224,25 @@ class TaskReviewAPIView(APIView):
         try:
             task = LearningTask.objects.get(id=task_id)
             review = TaskReview.objects.get(task=task, user=request.user)
+            user = request.user
+
+            rated = (
+                TaskReview.objects.filter(
+                    task=task,
+                    user__is_staff=True,
+                    task__status="rated",
+                )
+                .exclude(user=user)
+                .exists()
+            )
+
+            if rated:
+
+                return Response(
+                    {
+                        "error": "This task has already been rated by another admin and cannot be modified."
+                    }
+                )
 
             serializer = TaskReviewSerializer(review, data=request.data, partial=True)
             if serializer.is_valid():
@@ -274,7 +314,6 @@ class LearningTaskAdminView(APIView):
                 {"error": "Invalid task id."}, status=status.HTTP_404_NOT_FOUND
             )
 
-        
 
 class LearningTaskLimitView(APIView):
     authentication_classes = [JWTCookieAuthentication]

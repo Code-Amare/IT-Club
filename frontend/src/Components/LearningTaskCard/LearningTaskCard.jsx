@@ -4,9 +4,11 @@ import {
     FaTrash,
     FaClock,
     FaStar,
-    FaLock
+    FaLock,
+    FaRedo
 } from "react-icons/fa";
 import { FiGitPullRequest } from "react-icons/fi";
+import ConfirmAction from "../ConfirmAction/ConfirmAction"; // Adjust path as needed
 
 const LearningTaskCard = ({
     task,
@@ -24,7 +26,7 @@ const LearningTaskCard = ({
             },
             redo: {
                 text: "Redo",
-                icon: <FaEdit />,
+                icon: <FaRedo />,
                 className: styles.badgeRedo,
             },
             submitted: {
@@ -62,6 +64,13 @@ const LearningTaskCard = ({
         return isOwner && task.status === "draft";
     };
 
+    const handleDelete = (event, reason) => {
+        // The ConfirmAction passes (event, reason) to onConfirm
+        // We just need to call the parent's onDelete with task.id
+        // event.stopPropagation() is already handled by ConfirmAction
+        onDelete?.(task.id);
+    };
+
     return (
         <div className={styles.learningTaskCard} onClick={() => onView?.(task)}>
             <div className={styles.cardHeader}>
@@ -85,16 +94,21 @@ const LearningTaskCard = ({
                             </button>
                         )}
                         {canDeleteTask() && (
-                            <button
-                                className={styles.deleteBtn}
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    onDelete?.(task.id);
-                                }}
-                                title="Delete task"
+                            <ConfirmAction
+                                title="Delete Learning Task"
+                                message={`Are you sure you want to delete "${task.title}"? This action cannot be undone. Your task credit will be returned.`}
+                                confirmText="Delete Task"
+                                cancelText="Cancel"
+                                onConfirm={handleDelete}
+                                requireReason={false} // Set to true if you want to require a reason
                             >
-                                <FaTrash />
-                            </button>
+                                <button
+                                    className={styles.deleteBtn}
+                                    title="Delete task"
+                                >
+                                    <FaTrash />
+                                </button>
+                            </ConfirmAction>
                         )}
                     </div>
                 )}

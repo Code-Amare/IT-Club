@@ -16,6 +16,11 @@ urlpatterns = [
     path("my-task/", MyLearningTaskView.as_view(), name="my-task"),
     path("edit/<int:task_id>/", LearningTaskAPIView.as_view(), name="task-edit"),
     path("delete/<int:task_id>/", LearningTaskAPIView.as_view(), name="task-delete"),
+    path(
+        "delete/<int:task_id>/",
+        LearningTaskAPIView.as_view(),
+        name="task-delete",
+    ),
     path("limit/", LearningTaskLimitView.as_view(), name="task-limit"),
     path(
         "review/create/<int:task_id>/",

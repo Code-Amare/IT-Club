@@ -1,5 +1,6 @@
 .MyLearningTaskContainer {
   min-height: 100vh;
+  background-color: var(--bg-body);
 }
 
 .MyLearningTask {
@@ -16,7 +17,7 @@
   background: var(--bg-surface);
   border: 1px solid var(--border-color);
   border-radius: 12px;
-  padding: 24px;
+  padding: 20px;
   margin-bottom: 24px;
   box-shadow: 0 2px 8px var(--card-shadow);
 }
@@ -25,29 +26,30 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
   flex-wrap: wrap;
-  gap: 20px;
+  gap: 16px;
 }
 
 .headerText {
   flex: 1;
-  min-width: 0; /* Crucial for text truncation on small screens */
+  min-width: 0;
 }
 
 .header h1 {
   font-size: 28px;
   font-weight: 700;
   color: var(--text-primary);
-  margin-bottom: 8px;
+  margin-bottom: 4px;
   word-wrap: break-word;
   overflow-wrap: break-word;
+  line-height: 1.2;
 }
 
 .subtitle {
   font-size: 14px;
   color: var(--text-secondary);
-  line-height: 1.5;
+  line-height: 1.4;
   max-width: 600px;
   word-wrap: break-word;
 }
@@ -57,15 +59,15 @@
   background: var(--bg-surface);
   border: 1px solid var(--border-color);
   border-radius: 12px;
-  padding: 20px;
-  min-width: 200px;
+  padding: 16px;
+  min-width: 180px;
   flex-shrink: 0;
 }
 
 .limitInfo {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
 }
 
 .limitIcon {
@@ -113,7 +115,7 @@
   flex-wrap: wrap;
 }
 
-/* Create Button Container */
+/* Create Button */
 .createButtonContainer {
   display: flex;
   justify-content: flex-end;
@@ -123,8 +125,8 @@
 .createTaskBtn {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px 28px;
+  gap: 8px;
+  padding: 12px 20px;
   background: var(--primary);
   color: var(--primary-contrast);
   border: none;
@@ -133,9 +135,18 @@
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
-  white-space: nowrap;
   max-width: 100%;
   box-sizing: border-box;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.btnTextFull {
+  display: block;
+}
+
+.btnTextShort {
+  display: none;
 }
 
 .createTaskBtn:hover:not(:disabled) {
@@ -148,6 +159,12 @@
   opacity: 0.5;
   cursor: not-allowed;
   transform: none;
+}
+
+.creditCount {
+  font-size: 12px;
+  opacity: 0.9;
+  margin-left: 4px;
 }
 
 /* Loading State */
@@ -189,7 +206,7 @@
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  padding: 16px;
+  padding: 14px;
   background: rgba(245, 158, 11, 0.1);
   border: 1px solid rgba(245, 158, 11, 0.3);
   border-radius: 8px;
@@ -203,27 +220,32 @@
   margin-top: 2px;
 }
 
-.alertBox strong {
+.alertContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.alertContent strong {
   display: block;
   color: var(--text-primary);
   margin-bottom: 4px;
-  width: 100%;
+  font-size: 14px;
 }
 
-.alertBox p {
+.alertContent p {
   color: var(--text-secondary);
-  font-size: 14px;
-  line-height: 1.5;
-  width: 100%;
+  font-size: 13px;
+  line-height: 1.4;
   margin: 0;
+  word-wrap: break-word;
 }
 
 /* Stats Grid */
 .statsGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
-  margin-bottom: 32px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
 }
 
 .statCard {
@@ -234,7 +256,9 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
   min-width: 0;
 }
 
@@ -257,9 +281,22 @@
 
 .statContent {
   min-width: 0;
+  flex: 1;
 }
 
-.statContent h3 {
+.statFull {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.statShort {
+  display: none;
   font-size: 13px;
   font-weight: 500;
   color: var(--text-secondary);
@@ -282,24 +319,24 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 60px 20px;
+  padding: 40px 20px;
   text-align: center;
   background: var(--bg-surface);
   border: 2px dashed var(--border-color);
   border-radius: 16px;
-  margin-top: 32px;
+  margin-top: 24px;
   box-sizing: border-box;
 }
 
 .emptyIcon {
-  font-size: 48px;
+  font-size: 40px;
   color: var(--text-secondary);
-  margin-bottom: 20px;
+  margin-bottom: 16px;
   opacity: 0.5;
 }
 
 .emptyState h3 {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 600;
   color: var(--text-primary);
   margin-bottom: 8px;
@@ -309,8 +346,8 @@
 .emptyState p {
   color: var(--text-secondary);
   font-size: 14px;
-  margin-bottom: 24px;
-  max-width: 400px;
+  margin-bottom: 20px;
+  max-width: 300px;
   padding: 0 10px;
 }
 
@@ -319,11 +356,28 @@
   max-width: 90%;
 }
 
+.noCreditsMessage {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 12px;
+  opacity: 0.8;
+}
+
 /* Tasks Header */
 .tasksHeader {
   margin-bottom: 24px;
   padding-bottom: 16px;
   border-bottom: 2px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.tasksHeaderLeft {
+  flex: 1;
+  min-width: 0;
 }
 
 .tasksHeader h2 {
@@ -332,26 +386,77 @@
   color: var(--text-primary);
   margin-bottom: 4px;
   word-wrap: break-word;
+  line-height: 1.2;
 }
 
 .tasksSubtitle {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--text-secondary);
   word-wrap: break-word;
 }
 
-/* Tasks Grid - UPDATED FOR RESPONSIVENESS */
+.tasksHeaderRight {
+  flex-shrink: 0;
+}
+
+.creditsInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+}
+
+.creditIcon {
+  color: var(--primary);
+  font-size: 14px;
+}
+
+.creditsText {
+  font-size: 13px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+/* Tasks Grid */
 .tasksGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
   width: 100%;
+}
+
+/* Delete Button Styles */
+.deleteBtn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  font-size: 14px;
+}
+
+.deleteBtn:hover:not(:disabled) {
+  color: var(--danger);
+  background: rgba(220, 38, 38, 0.1);
+}
+
+.deleteBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* Responsive Design */
 @media (max-width: 1200px) {
   .tasksGrid {
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   }
 }
 
@@ -389,18 +494,22 @@
     font-size: 24px;
   }
 
+  .subtitle {
+    font-size: 13px;
+  }
+
   .statsGrid {
     grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
+    gap: 10px;
   }
 
   .taskLimitCard {
-    padding: 16px;
+    padding: 14px;
   }
 
   .tasksGrid {
     grid-template-columns: 1fr;
-    gap: 16px;
+    gap: 14px;
   }
 
   .statCard {
@@ -416,6 +525,27 @@
   .statValue {
     font-size: 20px;
   }
+
+  .createTaskBtn {
+    padding: 10px 16px;
+    font-size: 13px;
+  }
+
+  .btnTextFull {
+    display: none;
+  }
+
+  .btnTextShort {
+    display: block;
+  }
+
+  .statFull {
+    display: none;
+  }
+
+  .statShort {
+    display: block;
+  }
 }
 
 @media (max-width: 576px) {
@@ -424,7 +554,7 @@
   }
 
   .headerContent {
-    gap: 16px;
+    gap: 12px;
   }
 
   .createButtonContainer {
@@ -434,20 +564,50 @@
   .createTaskBtn {
     width: 100%;
     justify-content: center;
-    padding: 12px 20px;
+    padding: 12px;
     font-size: 13px;
   }
 
   .limitInfo {
-    gap: 12px;
+    gap: 10px;
   }
 
   .limitCount {
     font-size: 20px;
   }
 
+  .limitLabel {
+    font-size: 11px;
+  }
+
+  .tasksHeader {
+    flex-direction: column;
+    gap: 8px;
+  }
+
   .tasksHeader h2 {
     font-size: 18px;
+  }
+
+  .tasksSubtitle {
+    font-size: 12px;
+  }
+
+  .creditsInfo {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .emptyState {
+    padding: 32px 16px;
+  }
+
+  .emptyState h3 {
+    font-size: 16px;
+  }
+
+  .emptyState p {
+    font-size: 13px;
   }
 }
 
@@ -460,11 +620,27 @@
     padding: 12px;
   }
 
+  .header h1 {
+    font-size: 22px;
+  }
+
   .statCard {
     padding: 12px;
   }
 
   .tasksGrid {
     gap: 12px;
+  }
+
+  .alertBox {
+    padding: 12px;
+  }
+
+  .alertContent strong {
+    font-size: 13px;
+  }
+
+  .alertContent p {
+    font-size: 12px;
   }
 }

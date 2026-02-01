@@ -108,7 +108,7 @@ const MyLearningTask = () => {
                         task_limit: error.response?.data?.task_limit || 0
                     });
                 } else {
-                    neonToast.error("Failed to load learning tasks", "error");
+                    neonToast.error("Failed to load tasks", "error");
                 }
             } finally {
                 setIsLoading(false);
@@ -121,21 +121,20 @@ const MyLearningTask = () => {
     // Handle task creation
     const handleCreateTask = () => {
         if (taskStats.task_limit <= 0) {
-            neonToast.error(`You have no task credits remaining. You cannot create new tasks.`, "error");
+            neonToast.error(`No task credits remaining.`, "error");
             return;
         }
         navigate("/user/learning-task/create");
     };
 
     // Handle task deletion (only for drafts)
-    const handleDeleteTask = async (taskId) => {
+    const handleDeleteTask = async (taskId, reason) => {
+        // reason parameter comes from ConfirmAction component (if requireReason is true)
+        // We don't need to use it here, but the LearningTaskCard passes it
+
         const task = learningTasks.find(t => t.id === taskId);
         if (task?.status !== "draft") {
             neonToast.error("Only draft tasks can be deleted.", "error");
-            return;
-        }
-
-        if (!window.confirm("Are you sure you want to delete this draft task?")) {
             return;
         }
 
@@ -150,7 +149,7 @@ const MyLearningTask = () => {
                 // When deleting a draft, the task_limit should increase by 1 (return the credit)
                 task_limit: prev.task_limit + 1
             }));
-            neonToast.success("Task deleted successfully. Your task credit has been returned.", "success");
+            neonToast.success("Task deleted. Credit returned.", "success");
         } catch (error) {
             console.error("Error deleting task:", error);
             neonToast.error("Failed to delete task", "error");
@@ -164,7 +163,7 @@ const MyLearningTask = () => {
         if (task.status === "draft") {
             navigate(`/user/learning-task/edit/${task.id}`);
         } else {
-            neonToast.error("Only draft tasks can be edited", "error");
+            neonToast.error("Only drafts can be edited", "error");
         }
     };
 
@@ -182,7 +181,7 @@ const MyLearningTask = () => {
                             <div className={styles.headerText}>
                                 <h1>My Learning Tasks</h1>
                                 <p className={styles.subtitle}>
-                                    Create, manage, and track your personalized learning journey
+                                    Manage your learning journey
                                 </p>
                             </div>
 
@@ -194,7 +193,7 @@ const MyLearningTask = () => {
                                         <span className={styles.limitCount}>
                                             {taskStats.task_limit}
                                         </span>
-                                        <span className={styles.limitLabel}>Task Credits Available</span>
+                                        <span className={styles.limitLabel}>Credits Available</span>
                                     </div>
                                 </div>
                                 {taskStats.task_limit <= 0 && (
@@ -214,10 +213,11 @@ const MyLearningTask = () => {
                                 disabled={taskStats.task_limit <= 0 || isLoading}
                             >
                                 <FaPlus />
-                                <span>Create Learning Task</span>
+                                <span className={styles.btnTextFull}>Create Learning Task</span>
+                                <span className={styles.btnTextShort}>Create Task</span>
                                 {taskStats.task_limit > 0 && (
                                     <span className={styles.creditCount}>
-                                        ({taskStats.task_limit} credit{taskStats.task_limit !== 1 ? 's' : ''} remaining)
+                                        ({taskStats.task_limit} left)
                                     </span>
                                 )}
                             </button>
@@ -228,7 +228,7 @@ const MyLearningTask = () => {
                     {isLoading ? (
                         <div className={styles.loadingContainer}>
                             <div className={styles.loadingSpinner}></div>
-                            <p>Loading your learning tasks...</p>
+                            <p>Loading tasks...</p>
                         </div>
                     ) : (
                         <>
@@ -236,11 +236,10 @@ const MyLearningTask = () => {
                             {taskStats.task_limit <= 0 && learningTasks.length > 0 && (
                                 <div className={styles.alertBox}>
                                     <FaExclamationTriangle className={styles.alertIcon} />
-                                    <div>
-                                        <strong>No Task Credits Available</strong>
+                                    <div className={styles.alertContent}>
+                                        <strong>No Credits Available</strong>
                                         <p>
-                                            You have used all your task credits. You cannot create new tasks
-                                            until you receive more credits from an administrator.
+                                            No task credits left. Contact admin for more.
                                         </p>
                                     </div>
                                 </div>
@@ -254,7 +253,8 @@ const MyLearningTask = () => {
                                             <FaTasks />
                                         </div>
                                         <div className={styles.statContent}>
-                                            <h3>Total Tasks</h3>
+                                            <h3 className={styles.statFull}>Total Tasks</h3>
+                                            <h3 className={styles.statShort}>Total</h3>
                                             <p className={styles.statValue}>{taskStats.task_count}</p>
                                         </div>
                                     </div>
@@ -264,7 +264,8 @@ const MyLearningTask = () => {
                                             <FaCheckCircle />
                                         </div>
                                         <div className={styles.statContent}>
-                                            <h3>Graded</h3>
+                                            <h3 className={styles.statFull}>Graded</h3>
+                                            <h3 className={styles.statShort}>Graded</h3>
                                             <p className={styles.statValue}>
                                                 {taskStats.task_rated}
                                             </p>
@@ -276,7 +277,8 @@ const MyLearningTask = () => {
                                             <FaClock />
                                         </div>
                                         <div className={styles.statContent}>
-                                            <h3>In Review</h3>
+                                            <h3 className={styles.statFull}>In Review</h3>
+                                            <h3 className={styles.statShort}>Review</h3>
                                             <p className={styles.statValue}>
                                                 {taskStats.task_under_review}
                                             </p>
@@ -288,7 +290,8 @@ const MyLearningTask = () => {
                                             <FaEdit />
                                         </div>
                                         <div className={styles.statContent}>
-                                            <h3>Drafts</h3>
+                                            <h3 className={styles.statFull}>Drafts</h3>
+                                            <h3 className={styles.statShort}>Drafts</h3>
                                             <p className={styles.statValue}>
                                                 {taskStats.task_draft}
                                             </p>
@@ -301,24 +304,25 @@ const MyLearningTask = () => {
                             {learningTasks.length === 0 ? (
                                 <div className={styles.emptyState}>
                                     <FaTasks className={styles.emptyIcon} />
-                                    <h3>No Learning Tasks Yet</h3>
-                                    <p>Start your learning journey by creating your first personalized task.</p>
+                                    <h3>No Learning Tasks</h3>
+                                    <p>Start by creating your first task.</p>
                                     <button
                                         className={styles.createTaskBtn}
                                         onClick={handleCreateTask}
                                         disabled={taskStats.task_limit <= 0 || isLoading}
                                     >
                                         <FaPlus />
-                                        Create Your First Task
+                                        <span className={styles.btnTextFull}>Create First Task</span>
+                                        <span className={styles.btnTextShort}>Create Task</span>
                                         {taskStats.task_limit > 0 && (
                                             <span className={styles.creditCount}>
-                                                ({taskStats.task_limit} credit{taskStats.task_limit !== 1 ? 's' : ''} available)
+                                                ({taskStats.task_limit} left)
                                             </span>
                                         )}
                                     </button>
                                     {taskStats.task_limit <= 0 && (
                                         <p className={styles.noCreditsMessage}>
-                                            You need task credits to create new tasks. Please contact an administrator.
+                                            Need credits? Contact admin.
                                         </p>
                                     )}
                                 </div>
@@ -326,16 +330,16 @@ const MyLearningTask = () => {
                                 <>
                                     <div className={styles.tasksHeader}>
                                         <div className={styles.tasksHeaderLeft}>
-                                            <h2>Your Learning Tasks ({taskStats.task_count})</h2>
+                                            <h2>Your Tasks ({taskStats.task_count})</h2>
                                             <p className={styles.tasksSubtitle}>
-                                                Tasks are locked after admin review to maintain integrity
+                                                Tasks locked after admin review
                                             </p>
                                         </div>
                                         <div className={styles.tasksHeaderRight}>
                                             <div className={styles.creditsInfo}>
                                                 <FaTasks className={styles.creditIcon} />
                                                 <span className={styles.creditsText}>
-                                                    {taskStats.task_limit} task credit{taskStats.task_limit !== 1 ? 's' : ''} available
+                                                    {taskStats.task_limit} credit{taskStats.task_limit !== 1 ? 's' : ''} available
                                                 </span>
                                             </div>
                                         </div>

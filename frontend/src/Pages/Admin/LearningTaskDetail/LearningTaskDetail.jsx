@@ -19,6 +19,7 @@ import {
     FaUser,
     FaUsers,
     FaCalendar,
+    FaThumbsUp,
     FaComment,
     FaCheck,
     FaTimes,
@@ -43,6 +44,8 @@ export default function LearningTaskDetail() {
     const [loading, setLoading] = useState(true);
     const [task, setTask] = useState(null);
     const [showReviewMenu, setShowReviewMenu] = useState(null);
+    const [liked, setLiked] = useState(false);
+    const [likeCount, setLikeCount] = useState(0);
 
     // Review form state
     const [reviewForm, setReviewForm] = useState({
@@ -72,6 +75,10 @@ export default function LearningTaskDetail() {
             // Check if data is nested under 'task' property
             const taskData = responseData.task || responseData;
             setTask(taskData);
+
+            // Set like status
+            setLiked(responseData.user_liked || false);
+            setLikeCount(taskData.likes_count || 0);
 
             // Check if current admin has already reviewed this task
             if (taskData.reviews) {
@@ -106,6 +113,30 @@ export default function LearningTaskDetail() {
         }
     };
 
+    // Handle like/unlike - ADMIN CAN LIKE TOO!
+    const handleLike = async () => {
+        if (!user.isAuthenticated) {
+            neonToast.error("Please login to like learning tasks", "error");
+            return;
+        }
+
+        try {
+            const response = await api.post(`/api/learning-task/like/${id}/`);
+            setLiked(response.data.action === "liked");
+            setLikeCount(response.data.total_likes || response.data.likes_count);
+
+            neonToast.success(
+                response.data.action === "liked"
+                    ? "Learning task liked!"
+                    : "Learning task unliked!",
+                "success"
+            );
+        } catch (error) {
+            console.error("Error liking learning task:", error);
+            neonToast.error("Failed to like/unlike learning task", "error");
+        }
+    };
+
     // Handle review form changes
     const handleReviewChange = (e) => {
         const { name, value } = e.target;
@@ -136,12 +167,14 @@ export default function LearningTaskDetail() {
 
         setSubmittingReview(true);
         try {
-            // Correct endpoint based on Django URL pattern
-            const endpoint = `/api/learning-task/review/create/${id}/`;
+            // Use correct endpoints based on your Django URLs
+            const endpoint = userReview
+                ? `/api/learning-task/review/edit/${id}/`  // PATCH endpoint
+                : `/api/learning-task/review/create/${id}/`; // POST endpoint
 
             const method = userReview ? "patch" : "post";
 
-            const response = await api.post(endpoint, {
+            const response = await api[method](endpoint, {
                 rating: parseInt(reviewForm.rating),
                 feedback: reviewForm.feedback.trim()
             });
@@ -175,18 +208,15 @@ export default function LearningTaskDetail() {
     const handleDeleteReview = async () => {
         setSubmittingDelete(true);
         try {
-            // Correct endpoint based on Django URL pattern - DELETE method
-            await api.delete(`/api/learning-task/${id}/review/`);
-            neonToast.success("Review deleted successfully!", "success");
+            const res = await api.delete(`/api/management/review/delete/${id}/`);
+            console.log(res)
 
-            // Refresh data
-            await fetchTaskData();
-            setShowReviewMenu(null);
+            neonToast.success("Review deleted successfully!", "success");
 
         } catch (error) {
             console.error("Error deleting review:", error);
             neonToast.error(
-                error.response?.data?.detail || "Failed to delete review",
+                error.response?.data?.error || "Failed to delete review",
                 "error"
             );
         } finally {
@@ -234,13 +264,13 @@ export default function LearningTaskDetail() {
     // Handle delete learning task - ADMIN ONLY
     const handleDeleteTask = async () => {
         try {
-            await api.delete(`/api/learning-task/delete/${id}/`);
+            await api.delete(`/api/management/task/delete/${id}/`);
             neonToast.success("Learning task deleted successfully!", "success");
             navigate("/admin");
         } catch (error) {
             console.error("Error deleting learning task:", error);
             neonToast.error(
-                error.response?.data?.detail || "Failed to delete learning task",
+                error.response?.data?.error || "Failed to delete learning task",
                 "error"
             );
             throw error;
@@ -396,6 +426,17 @@ export default function LearningTaskDetail() {
 
                             {/* Admin Action Buttons */}
                             <div className={styles.headerActions}>
+                                {/* Like Button - ADDED FOR ADMINS */}
+                                <button
+                                    className={`${styles.likeBtn} ${liked ? styles.liked : ""}`}
+                                    onClick={handleLike}
+                                    title={liked ? "Unlike this learning task" : "Like this learning task"}
+                                    disabled={!user.isAuthenticated}
+                                >
+                                    <FaThumbsUp />
+                                    <span>{likeCount}</span>
+                                </button>
+
                                 {/* Delete Learning Task Button (admin only) */}
                                 <ConfirmAction
                                     title="Delete Learning Task"
@@ -550,7 +591,7 @@ export default function LearningTaskDetail() {
                             </div>
                             <div className={styles.statsGrid}>
                                 <div className={styles.statItem}>
-                                    <div className={styles.statValue}>{task.likes_count || 0}</div>
+                                    <div className={styles.statValue}>{likeCount}</div>
                                     <div className={styles.statLabel}>Likes</div>
                                 </div>
                                 <div className={styles.statItem}>

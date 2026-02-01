@@ -11,12 +11,12 @@ import {
     FaPlus,
     FaTimes,
     FaTasks,
-    FaSort,
-    FaSortUp,
-    FaSortDown,
+    FaCheckCircle,
+    FaClock,
+    FaEdit,
+    FaExclamationTriangle,
     FaUser,
     FaGlobe,
-    FaLock,
     FaStar,
     FaCode
 } from "react-icons/fa";
@@ -45,6 +45,12 @@ export default function LearningTasksList() {
         sortOrder: "desc"
     });
     const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+    const [stats, setStats] = useState({
+        total: 0,
+        public: 0,
+        reviewed: 0,
+        totalLikes: 0
+    });
 
     // Fetch tasks
     useEffect(() => {
@@ -56,10 +62,26 @@ export default function LearningTasksList() {
         setLoading(true);
         try {
             const response = await api.get("/api/learning-task/all/");
-            console.log(response)
-            setTasks(response.data.tasks || []);
+            const tasksData = response.data.tasks || [];
+            setTasks(tasksData);
+
+            // Calculate stats
+            const publicTasks = tasksData.filter(t => t.is_public).length;
+            const reviewedTasks = tasksData.filter(t => t.reviews && t.reviews.length > 0).length;
+            const totalLikes = tasksData.reduce((acc, task) => acc + (task.likes_count || 0), 0);
+
+            setStats({
+                total: tasksData.length,
+                public: publicTasks,
+                reviewed: reviewedTasks,
+                totalLikes: totalLikes
+            });
+
+            if (tasksData.length === 0) {
+                neonToast.info("No learning tasks available yet.", "info");
+            }
         } catch (error) {
-            console.error("Error fetching learning tasks:", error);
+            console.error("Error fetching tasks:", error);
             neonToast.error("Failed to load learning tasks", "error");
         } finally {
             setLoading(false);
@@ -82,15 +104,16 @@ export default function LearningTasksList() {
         }
     };
 
-    // Get language/framework name by ID
-    const getLanguageName = (id) => {
-        const lang = languages.find(l => l.id === id);
-        return lang ? lang.name : `Language ${id}`;
+    // Helper function to get language name
+    const getLanguageName = (languageId) => {
+        const lang = languages.find(l => l.id === languageId);
+        return lang ? lang.name : "Unknown";
     };
 
-    const getFrameworkName = (id) => {
-        const fw = frameworks.find(f => f.id === id);
-        return fw ? fw.name : `Framework ${id}`;
+    // Helper function to get framework name
+    const getFrameworkName = (frameworkId) => {
+        const fw = frameworks.find(f => f.id === frameworkId);
+        return fw ? fw.name : "Unknown";
     };
 
     // Filter and sort tasks
@@ -101,17 +124,17 @@ export default function LearningTasksList() {
         if (searchQuery.trim()) {
             const query = searchQuery.toLowerCase().trim();
             result = result.filter(task => {
-                // Get language/framework names for search
-                const languageNames = task.languages ?
-                    task.languages.map(id => getLanguageName(id).toLowerCase()).join(' ') : '';
-                const frameworkNames = task.frameworks ?
-                    task.frameworks.map(id => getFrameworkName(id).toLowerCase()).join(' ') : '';
+                const languageNames = task.languages
+                    ? task.languages.map(id => getLanguageName(id).toLowerCase()).join(' ')
+                    : '';
+                const frameworkNames = task.frameworks
+                    ? task.frameworks.map(id => getFrameworkName(id).toLowerCase()).join(' ')
+                    : '';
 
                 return (
                     (task.title?.toLowerCase().includes(query)) ||
                     (task.description?.toLowerCase().includes(query)) ||
                     (task.user?.toLowerCase().includes(query)) ||
-                    (task.git_link?.toLowerCase().includes(query)) ||
                     languageNames.includes(query) ||
                     frameworkNames.includes(query)
                 );
@@ -143,25 +166,25 @@ export default function LearningTasksList() {
 
         // Apply sorting
         result.sort((a, b) => {
-            let aValue = a[filters.sortBy];
-            let bValue = b[filters.sortBy];
+            let aValue, bValue;
 
-            // Handle dates
-            if (filters.sortBy === "created_at" || filters.sortBy === "updated_at") {
-                aValue = new Date(aValue).getTime();
-                bValue = new Date(bValue).getTime();
-            }
-
-            // Handle likes count
-            if (filters.sortBy === "likes_count") {
-                aValue = a.likes_count || 0;
-                bValue = b.likes_count || 0;
-            }
-
-            // Handle title sorting
-            if (filters.sortBy === "title") {
-                aValue = a.title?.toLowerCase() || "";
-                bValue = b.title?.toLowerCase() || "";
+            switch (filters.sortBy) {
+                case "created_at":
+                case "updated_at":
+                    aValue = new Date(a[filters.sortBy]).getTime();
+                    bValue = new Date(b[filters.sortBy]).getTime();
+                    break;
+                case "likes_count":
+                    aValue = a.likes_count || 0;
+                    bValue = b.likes_count || 0;
+                    break;
+                case "title":
+                    aValue = a.title?.toLowerCase() || "";
+                    bValue = b.title?.toLowerCase() || "";
+                    break;
+                default:
+                    aValue = a[filters.sortBy];
+                    bValue = b[filters.sortBy];
             }
 
             if (filters.sortOrder === "asc") {
@@ -174,20 +197,77 @@ export default function LearningTasksList() {
         return result;
     }, [tasks, searchQuery, filters, languages, frameworks]);
 
+    // Transform API task to card task format
+    const transformTaskForCard = (task) => {
+        // Find admin review
+        const adminReview = task.reviews?.find(review => review.user?.is_staff || review.is_admin);
+        const grade = adminReview?.rating || 0;
+
+        // Determine status
+        let status = task.status;
+        if (task.status === "rated") status = "graded";
+        if (task.status === "under_review") status = "submitted";
+        if (!status) {
+            status = task.is_public ? "submitted" : "draft";
+        }
+
+        return {
+            id: task.id,
+            title: task.title,
+            description: task.description,
+            githubLink: task.git_link || "",
+            languages: task.languages?.map(id => getLanguageName(id)) || [],
+            frameworks: task.frameworks?.map(id => getFrameworkName(id)) || [],
+            status: status,
+            grade: grade,
+            adminFeedback: adminReview?.feedback || "",
+            createdAt: new Date(task.created_at).toLocaleDateString(),
+            likes_count: task.likes_count || 0,
+            is_public: task.is_public || false,
+            user: task.user_info || task.user,
+            profile: task.profile_info || {}
+        };
+    };
+
     // Handle task actions
     const handleViewTask = (task) => {
         navigate(`/user/learning-task/${task.id}`);
     };
 
     const handleEditTask = (task) => {
-        navigate(`/user/learning-task/edit/${task.id}`);
+        if (task.status === "draft") {
+            navigate(`/user/learning-task/edit/${task.id}`);
+        } else {
+            neonToast.error("Only draft tasks can be edited", "error");
+        }
     };
 
     const handleDeleteTask = async (taskId) => {
+        const task = tasks.find(t => t.id === taskId);
+
+        // Check if task is draft and user is owner
+        const isOwner = user.username === task?.user;
+        if (!isOwner) {
+            neonToast.error("You can only delete your own tasks", "error");
+            return;
+        }
+
+        if (task?.status !== "draft") {
+            neonToast.error("Only draft tasks can be deleted", "error");
+            return;
+        }
+
+        if (!window.confirm("Are you sure you want to delete this task?")) {
+            return;
+        }
+
         try {
-            await api.delete(`/api/learning-task/delete/${taskId}/`);
+            await api.delete(`/api/learning-task/${taskId}/`);
             setTasks(prev => prev.filter(t => t.id !== taskId));
             neonToast.success("Task deleted successfully", "success");
+
+            // Refresh stats
+            fetchTasks();
         } catch (error) {
             console.error("Error deleting task:", error);
             if (error.response?.data?.error) {
@@ -221,75 +301,107 @@ export default function LearningTasksList() {
         setShowAdvancedFilters(false);
     };
 
-    // Format date for display
-    const formatDate = (dateString) => {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric'
-        });
-    };
-
-    // Get task status (derived from API data)
-    const getTaskStatus = (task) => {
-        if (task.reviews && task.reviews.length > 0) {
-            return "graded";
-        } else if (task.is_public) {
-            return "submitted";
-        } else {
-            return "draft";
-        }
+    // Toggle sort order
+    const toggleSort = (field) => {
+        setFilters(prev => ({
+            ...prev,
+            sortBy: field,
+            sortOrder: prev.sortBy === field && prev.sortOrder === "desc" ? "asc" : "desc"
+        }));
     };
 
     return (
         <div className={styles.container}>
             <SideBar>
-                {/* Header */}
-                <div className={styles.header}>
-                    <div className={styles.headerContent}>
-                        <div className={styles.titleSection}>
-                            <FaTasks className={styles.titleIcon} />
-                            <div>
+                <div className={styles.LearningTasksList}>
+                    {/* Header */}
+                    <header className={styles.header}>
+                        <div className={styles.headerContent}>
+                            <div className={styles.headerText}>
                                 <h1>Learning Tasks</h1>
-                                <p>Browse and evaluate programming tasks submitted by students</p>
+                                <p className={styles.subtitle}>
+                                    Browse and explore tasks from the community
+                                </p>
+                            </div>
+                            <div className={styles.headerActions}>
+                                {canCreateTask() && (
+                                    <Link
+                                        to="/user/learning-task/create"
+                                        className={styles.primaryBtn}
+                                    >
+                                        <FaPlus />
+                                        <span className={styles.btnTextFull}>Create Task</span>
+                                        <span className={styles.btnTextShort}>Create</span>
+                                    </Link>
+                                )}
                             </div>
                         </div>
-                        <div className={styles.headerActions}>
-                            {canCreateTask() && (
-                                <Link
-                                    to="/user/learning-task/create"
-                                    className={styles.primaryBtn}
-                                >
-                                    <FaPlus />
-                                    <span>Create Task</span>
-                                </Link>
-                            )}
+                    </header>
+
+                    {/* Stats Bar */}
+                    <div className={styles.statsGrid}>
+                        <div className={styles.statCard}>
+                            <div className={styles.statIcon} style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)' }}>
+                                <FaTasks />
+                            </div>
+                            <div className={styles.statContent}>
+                                <h3>Total Tasks</h3>
+                                <p className={styles.statValue}>{stats.total}</p>
+                            </div>
+                        </div>
+                        <div className={styles.statCard}>
+                            <div className={styles.statIcon} style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)' }}>
+                                <FaGlobe />
+                            </div>
+                            <div className={styles.statContent}>
+                                <h3>Public</h3>
+                                <p className={styles.statValue}>{stats.public}</p>
+                            </div>
+                        </div>
+                        <div className={styles.statCard}>
+                            <div className={styles.statIcon} style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)' }}>
+                                <FaCheckCircle />
+                            </div>
+                            <div className={styles.statContent}>
+                                <h3>Reviewed</h3>
+                                <p className={styles.statValue}>{stats.reviewed}</p>
+                            </div>
+                        </div>
+                        <div className={styles.statCard}>
+                            <div className={styles.statIcon} style={{ backgroundColor: 'rgba(236, 72, 153, 0.1)' }}>
+                                <FaStar />
+                            </div>
+                            <div className={styles.statContent}>
+                                <h3>Total Likes</h3>
+                                <p className={styles.statValue}>{stats.totalLikes}</p>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                {/* Search and Filters */}
-                <div className={styles.filtersCard}>
-                    <div className={styles.searchSection}>
-                        <div className={styles.searchInputWrapper}>
-                            <FaSearch className={styles.searchIcon} />
-                            <input
-                                type="text"
-                                placeholder="Search tasks by title, description, user, or technologies..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className={styles.searchInput}
-                            />
-                            {searchQuery && (
-                                <button
-                                    className={styles.clearSearch}
-                                    onClick={() => setSearchQuery("")}
-                                >
-                                    <FaTimes />
-                                </button>
-                            )}
+                    {/* Search and Filters */}
+                    <div className={styles.filtersCard}>
+                        <div className={styles.searchSection}>
+                            <div className={styles.searchInputWrapper}>
+                                <FaSearch className={styles.searchIcon} />
+                                <input
+                                    type="text"
+                                    placeholder="Search tasks..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className={styles.searchInput}
+                                />
+                                {searchQuery && (
+                                    <button
+                                        className={styles.clearSearch}
+                                        onClick={() => setSearchQuery("")}
+                                        aria-label="Clear search"
+                                    >
+                                        <FaTimes />
+                                    </button>
+                                )}
+                            </div>
                         </div>
+
                         <div className={styles.filterControls}>
                             <button
                                 className={styles.filterToggle}
@@ -297,16 +409,8 @@ export default function LearningTasksList() {
                             >
                                 <MdFilterList />
                                 <span>Filters</span>
+                                {showAdvancedFilters ? <FaTimes /> : <FaFilter />}
                             </button>
-                            {(filters.visibility || filters.language || filters.framework || searchQuery) && (
-                                <button
-                                    className={styles.clearFilters}
-                                    onClick={clearFilters}
-                                >
-                                    <FaTimes />
-                                    <span>Clear All</span>
-                                </button>
-                            )}
                             <button
                                 className={styles.refreshBtn}
                                 onClick={fetchTasks}
@@ -315,126 +419,111 @@ export default function LearningTasksList() {
                                 <MdRefresh />
                                 <span>Refresh</span>
                             </button>
+                            {(searchQuery || filters.visibility || filters.language || filters.framework) && (
+                                <button
+                                    className={styles.clearFilters}
+                                    onClick={clearFilters}
+                                >
+                                    <FaTimes />
+                                    <span>Clear All</span>
+                                </button>
+                            )}
                         </div>
-                    </div>
 
-                    {/* Advanced Filters */}
-                    {showAdvancedFilters && (
-                        <div className={styles.advancedFilters}>
-                            <div className={styles.filterGrid}>
-                                <div className={styles.filterGroup}>
-                                    <label>Visibility</label>
-                                    <select
-                                        value={filters.visibility}
-                                        onChange={(e) => setFilters(prev => ({ ...prev, visibility: e.target.value }))}
-                                    >
-                                        <option value="">All Tasks</option>
-                                        <option value="public">Public</option>
-                                        <option value="private">Private</option>
-                                    </select>
-                                </div>
+                        {/* Advanced Filters */}
+                        {showAdvancedFilters && (
+                            <div className={styles.advancedFilters}>
+                                <div className={styles.filterGrid}>
+                                    <div className={styles.filterGroup}>
+                                        <label>Visibility</label>
+                                        <select
+                                            value={filters.visibility}
+                                            onChange={(e) => setFilters(prev => ({ ...prev, visibility: e.target.value }))}
+                                        >
+                                            <option value="">All Tasks</option>
+                                            <option value="public">Public</option>
+                                            <option value="private">Private</option>
+                                        </select>
+                                    </div>
 
-                                <div className={styles.filterGroup}>
-                                    <label>Language</label>
-                                    <select
-                                        value={filters.language}
-                                        onChange={(e) => setFilters(prev => ({ ...prev, language: e.target.value }))}
-                                        disabled={loadingLanguages || languages.length === 0}
-                                    >
-                                        <option value="">All Languages</option>
-                                        {languages.map(lang => (
-                                            <option key={lang.id} value={lang.id}>
-                                                {lang.name}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
+                                    <div className={styles.filterGroup}>
+                                        <label>Language</label>
+                                        <select
+                                            value={filters.language}
+                                            onChange={(e) => setFilters(prev => ({ ...prev, language: e.target.value }))}
+                                            disabled={loadingLanguages || languages.length === 0}
+                                        >
+                                            <option value="">All Languages</option>
+                                            {languages.map(lang => (
+                                                <option key={lang.id} value={lang.id}>
+                                                    {lang.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
 
-                                <div className={styles.filterGroup}>
-                                    <label>Framework</label>
-                                    <select
-                                        value={filters.framework}
-                                        onChange={(e) => setFilters(prev => ({ ...prev, framework: e.target.value }))}
-                                        disabled={loadingLanguages || frameworks.length === 0}
-                                    >
-                                        <option value="">All Frameworks</option>
-                                        {frameworks.map(fw => (
-                                            <option key={fw.id} value={fw.id}>
-                                                {fw.name}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
+                                    <div className={styles.filterGroup}>
+                                        <label>Framework</label>
+                                        <select
+                                            value={filters.framework}
+                                            onChange={(e) => setFilters(prev => ({ ...prev, framework: e.target.value }))}
+                                            disabled={loadingLanguages || frameworks.length === 0}
+                                        >
+                                            <option value="">All Frameworks</option>
+                                            {frameworks.map(fw => (
+                                                <option key={fw.id} value={fw.id}>
+                                                    {fw.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
 
-                                <div className={styles.filterGroup}>
-                                    <label>Sort By</label>
-                                    <select
-                                        value={`${filters.sortBy}-${filters.sortOrder}`}
-                                        onChange={(e) => {
-                                            const [sortBy, sortOrder] = e.target.value.split('-');
-                                            setFilters(prev => ({ ...prev, sortBy, sortOrder }));
-                                        }}
-                                    >
-                                        <option value="created_at-desc">Newest First</option>
-                                        <option value="created_at-asc">Oldest First</option>
-                                        <option value="likes_count-desc">Most Liked</option>
-                                        <option value="likes_count-asc">Least Liked</option>
-                                        <option value="title-asc">Title A-Z</option>
-                                        <option value="title-desc">Title Z-A</option>
-                                    </select>
+                                    <div className={styles.filterGroup}>
+                                        <label>Sort By</label>
+                                        <select
+                                            value={`${filters.sortBy}-${filters.sortOrder}`}
+                                            onChange={(e) => {
+                                                const [sortBy, sortOrder] = e.target.value.split('-');
+                                                setFilters(prev => ({ ...prev, sortBy, sortOrder }));
+                                            }}
+                                        >
+                                            <option value="created_at-desc">Newest First</option>
+                                            <option value="created_at-asc">Oldest First</option>
+                                            <option value="likes_count-desc">Most Liked</option>
+                                            <option value="likes_count-asc">Least Liked</option>
+                                            <option value="title-asc">Title A-Z</option>
+                                            <option value="title-desc">Title Z-A</option>
+                                        </select>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    )}
-                </div>
+                        )}
+                    </div>
 
-                {/* Stats Bar */}
-                <div className={styles.statsBar}>
-                    <div className={styles.statItem}>
-                        <FaTasks className={styles.statIcon} />
-                        <div>
-                            <span className={styles.statNumber}>{tasks.length}</span>
-                            <span className={styles.statLabel}>Total Tasks</span>
-                        </div>
-                    </div>
-                    <div className={styles.statItem}>
-                        <FaGlobe className={styles.statIcon} />
-                        <div>
-                            <span className={styles.statNumber}>
-                                {tasks.filter(t => t.is_public).length}
-                            </span>
-                            <span className={styles.statLabel}>Public</span>
-                        </div>
-                    </div>
-                    <div className={styles.statItem}>
-                        <FaStar className={styles.statIcon} />
-                        <div>
-                            <span className={styles.statNumber}>
-                                {tasks.filter(t => t.reviews && t.reviews.length > 0).length}
-                            </span>
-                            <span className={styles.statLabel}>Reviewed</span>
-                        </div>
-                    </div>
-                    <div className={styles.statItem}>
-                        <FaCode className={styles.statIcon} />
-                        <div>
-                            <span className={styles.statNumber}>
-                                {tasks.reduce((acc, task) => acc + (task.likes_count || 0), 0)}
-                            </span>
-                            <span className={styles.statLabel}>Total Likes</span>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Tasks Grid */}
-                <div className={styles.tasksCard}>
-                    <div className={styles.tasksHeader}>
-                        <h3>Learning Tasks ({filteredTasks.length})</h3>
+                    {/* Results Header */}
+                    <div className={styles.resultsHeader}>
                         <div className={styles.resultsInfo}>
-                            Showing {filteredTasks.length} of {tasks.length} tasks
+                            <h3>Learning Tasks ({filteredTasks.length})</h3>
+                            <p>Showing {filteredTasks.length} of {tasks.length} tasks</p>
+                        </div>
+                        <div className={styles.sortControls}>
+                            <span>Sorted by: </span>
+                            <button
+                                className={`${styles.sortBtn} ${filters.sortBy === 'created_at' ? styles.active : ''}`}
+                                onClick={() => toggleSort('created_at')}
+                            >
+                                Date {filters.sortBy === 'created_at' && (filters.sortOrder === 'desc' ? '↓' : '↑')}
+                            </button>
+                            <button
+                                className={`${styles.sortBtn} ${filters.sortBy === 'likes_count' ? styles.active : ''}`}
+                                onClick={() => toggleSort('likes_count')}
+                            >
+                                Likes {filters.sortBy === 'likes_count' && (filters.sortOrder === 'desc' ? '↓' : '↑')}
+                            </button>
                         </div>
                     </div>
 
+                    {/* Loading State */}
                     {loading ? (
                         <div className={styles.loadingContainer}>
                             <div className={styles.loadingSpinner}></div>
@@ -442,7 +531,7 @@ export default function LearningTasksList() {
                         </div>
                     ) : filteredTasks.length === 0 ? (
                         <div className={styles.emptyState}>
-                            <FaTasks size={48} />
+                            <FaTasks className={styles.emptyIcon} />
                             <h3>No tasks found</h3>
                             <p>
                                 {tasks.length === 0
@@ -452,56 +541,34 @@ export default function LearningTasksList() {
                             {canCreateTask() && tasks.length === 0 && (
                                 <Link
                                     to="/user/learning-task/create"
-                                    className={styles.emptyActionBtn}
+                                    className={styles.createTaskBtn}
                                 >
                                     <FaPlus />
-                                    <span>Create First Task</span>
+                                    Create First Task
                                 </Link>
                             )}
                         </div>
                     ) : (
                         <div className={styles.tasksGrid}>
                             {filteredTasks.map((task) => {
-                                // Transform API data to match card component expectations
-                                const cardTask = {
-                                    id: task.id,
-                                    title: task.title,
-                                    description: task.description,
-                                    githubLink: task.git_link,
-                                    languages: task.languages ?
-                                        task.languages.map(id => getLanguageName(id)) : [],
-                                    frameworks: task.frameworks ?
-                                        task.frameworks.map(id => getFrameworkName(id)) : [],
-                                    status: getTaskStatus(task),
-                                    // For graded tasks, use average rating from reviews
-                                    grade: task.reviews && task.reviews.length > 0
-                                        ? (task.reviews.reduce((acc, review) => acc + review.rating, 0) / task.reviews.length).toFixed(1)
-                                        : null,
-                                    adminFeedback: task.reviews && task.reviews.length > 0
-                                        ? task.reviews[0].feedback
-                                        : null,
-                                    createdAt: formatDate(task.created_at),
-                                    likes: task.likes_count || 0,
-                                    reviews: task.reviews || [],
-                                    is_public: task.is_public,
-                                    is_rated: task.reviews && task.reviews.length > 0
-                                };
+                                const cardTask = transformTaskForCard(task);
+                                const owner = isOwner(task);
 
                                 return (
                                     <LearningTaskCard
                                         key={task.id}
                                         task={cardTask}
-                                        isOwner={isOwner(task)}
+                                        isOwner={owner}
                                         onView={() => handleViewTask(task)}
-                                        onEdit={() => handleEditTask(task)}
-                                        onDelete={() => handleDeleteTask(task.id)}
+                                        onEdit={owner ? () => handleEditTask(task) : undefined}
+                                        onDelete={owner ? () => handleDeleteTask(task.id) : undefined}
+                                        loadingDelete={false}
                                     />
                                 );
                             })}
                         </div>
                     )}
                 </div>
-
             </SideBar>
         </div>
     );
