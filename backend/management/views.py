@@ -1754,11 +1754,11 @@ class DeleteLearningTaskView(APIView):
         except LearningTaskLimit.DoesNotExist:
 
             return Response(
-                {"error": "Task not found."}, status=status.HTTP_404_NOT_FOUND
+                {"error": "Learning task limit has not been set yet."}, status=status.HTTP_404_NOT_FOUND
             )
 
         except LearningTask.DoesNotExist:
-            
+
             return Response(
                 {"error": "Task not found."}, status=status.HTTP_404_NOT_FOUND
             )

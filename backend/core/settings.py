@@ -310,19 +310,19 @@ REST_FRAMEWORK = {
 
 # SIMPLE JWT
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(days=1),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=5),
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
     "ROTATE_REFRESH_TOKENS": False,
     "BLACKLIST_AFTER_ROTATION": False,
     "AUTH_HEADER_TYPES": ("Bearer",),
     # Cookie mode
-    "AUTH_COOKIE": "access_token",
+    "AUTH_COOKIE": "access",
     "AUTH_COOKIE_SECURE": True,  # HTTPS only
     "AUTH_COOKIE_HTTP_ONLY": True,  # JS cannot access it
     "AUTH_COOKIE_SAMESITE": "None",  # Required for cross-origin React
     "AUTH_COOKIE_PATH": "/",  # Global cookie
     "AUTH_COOKIE_DOMAIN": None,  # Set domain in production
-    "AUTH_COOKIE_REFRESH": "refresh_token",
+    "AUTH_COOKIE_REFRESH": "refresh",
     "AUTH_COOKIE_REFRESH_SECURE": True,
     "AUTH_COOKIE_REFRESH_HTTP_ONLY": True,
     "AUTH_COOKIE_REFRESH_SAMESITE": "None",

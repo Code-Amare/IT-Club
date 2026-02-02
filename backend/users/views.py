@@ -19,7 +19,6 @@ from django.core import signing
 from axes.utils import reset as axes_reset
 
 
-
 IS_TWOFA_MANDATORY = settings.IS_TWOFA_MANDATORY
 BASE_URL = settings.BASE_URL
 
@@ -243,6 +242,7 @@ class VerifyCodeView(APIView):
                 httponly=True,
                 secure=True,
                 samesite="Lax",
+                max_age=60 * 15,
             )
             response.set_cookie(
                 "refresh",
@@ -250,6 +250,7 @@ class VerifyCodeView(APIView):
                 httponly=True,
                 secure=True,
                 samesite="Lax",
+                max_age=60 * 60 * 24 * 7,
             )
 
             csrf_token = get_token(request)
@@ -473,8 +474,6 @@ class LoginView(APIView):
             status=status.HTTP_200_OK,
         )
 
-
-
     def _generate_auth_response(self, user, request):
         """Generate JWT tokens and set cookies"""
         refresh = RefreshToken.for_user(user)
@@ -491,7 +490,7 @@ class LoginView(APIView):
             httponly=True,
             secure=True,
             samesite="Lax",
-            max_age=60 * 15,  # 15 minutes
+            max_age=60 * 15,  # 15 mintues
         )
 
         # Set refresh token cookie
@@ -543,12 +542,28 @@ class RefreshTokenView(APIView):
 
         try:
             token = RefreshToken(refresh_token)
-            new_access = str(token.access_token)
-            new_refresh = str(token)
+ 
 
             response = Response({"success": True}, status=status.HTTP_200_OK)
-            response.set_cookie("access", new_access, httponly=True)
-            response.set_cookie("refresh", new_refresh, httponly=True)
+            response.set_cookie(
+                "access",
+                str(token.access_token),
+                httponly=True,
+                secure=True,
+                samesite="None",
+                max_age=60 * 15,
+                path="/",
+            )
+
+            response.set_cookie(
+                "refresh",
+                str(token),
+                httponly=True,
+                secure=True,
+                samesite="None",
+                max_age=60 * 60 * 24 * 7,
+                path="/",
+            )
             return response
         except TokenError:
             return Response(
