@@ -117,7 +117,7 @@ export default function LearningTaskDetail() {
 
             neonToast.error(error, "error");
 
-            navigate("/user/learning-tasks");
+            navigate(-1);
         } finally {
             setLoading(false);
         }
@@ -201,13 +201,12 @@ export default function LearningTaskDetail() {
             // Use the same endpoint for users
             const endpoint = `/api/learning-task/review/edit/${id}/`;
 
-            const method = userReview ? "patch" : "post";
 
-            const response = await api[method](endpoint, {
+            const response = await api.patch(endpoint, {
                 rating: parseInt(reviewForm.rating),
                 feedback: reviewForm.feedback.trim()
             });
-
+ 
             neonToast.success(
                 userReview ? "Review updated successfully!" : "Review submitted successfully!",
                 "success"
@@ -316,7 +315,7 @@ export default function LearningTaskDetail() {
         try {
             await api.delete(`/api/learning-task/delete/${id}/`);
             neonToast.success("Task deleted successfully", "success");
-            navigate("/user/learning-tasks");
+            navigate(-1);
         } catch (error) {
             console.error("Error deleting task:", error);
             neonToast.error(error.response?.data?.error || "Failed to delete task", "error");
@@ -346,9 +345,9 @@ export default function LearningTaskDetail() {
                         <p>The requested learning task could not be found.</p>
                         <button
                             className={styles.primaryBtn}
-                            onClick={() => navigate("/user/learning-tasks")}
+                            onClick={() => navigate(-1)}
                         >
-                            Back to Learning Tasks
+                            Go Back
                         </button>
                     </div>
                 </SideBar>
@@ -368,9 +367,9 @@ export default function LearningTaskDetail() {
                     <div className={styles.headerContent}>
                         <button
                             className={styles.backBtn}
-                            onClick={() => navigate("/user/learning-tasks")}
+                            onClick={() => navigate(-1)}
                         >
-                            <FaArrowLeft /> Back to Learning Tasks
+                            <FaArrowLeft /> Go Back
                         </button>
                         <div className={styles.headerMain}>
                             <div className={styles.titleSection}>

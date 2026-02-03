@@ -5,6 +5,7 @@ import App from "./App.jsx";
 import { BrowserRouter } from "react-router-dom";
 import { UserProvider } from "./Context/UserContext.jsx";
 import { LoadingProvider, LoadingContext } from "./Context/LoaderContext.jsx";
+import { NotifProvider } from "./Context/NotifContext.jsx"
 import { setupAxiosInterceptors } from "./Utils/api.js";
 import SiteProvider from "./Context/SiteContext.jsx";
 
@@ -21,14 +22,16 @@ const AppWithAxios = () => {
 
 createRoot(document.getElementById("root")).render(
   // <StrictMode>
-    <BrowserRouter>
-      <UserProvider>
+  <BrowserRouter>
+    <UserProvider>
+      <NotifProvider>
         <SiteProvider >
           <LoadingProvider>
             <AppWithAxios />
           </LoadingProvider>
         </SiteProvider>
-      </UserProvider>
-    </BrowserRouter>
+      </NotifProvider>
+    </UserProvider>
+  </BrowserRouter>
   // </StrictMode>
 );

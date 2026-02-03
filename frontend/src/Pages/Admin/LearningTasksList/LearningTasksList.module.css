@@ -467,3 +467,18 @@
     transform: rotate(360deg);
   }
 }
+.headerActions > button {
+  color: var(--white);
+  border-radius: 0.5em;
+  border: none;
+  background: var(--primary);
+  padding: 0.6em;
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+}
+
+.headerActions > button:hover {
+  cursor: pointer;
+  background-color: var(--primary-hover);
+}

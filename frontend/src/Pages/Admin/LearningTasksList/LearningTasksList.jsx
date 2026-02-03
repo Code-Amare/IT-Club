@@ -12,11 +12,14 @@ import {
     FaTasks,
     FaGlobe,
     FaStar,
-    FaCode
+    FaCode,
+    FaCogs,
+    FaUserCog
 } from "react-icons/fa";
 import {
     MdRefresh,
-    MdFilterList
+    MdFilterList,
+    MdSettings
 } from "react-icons/md";
 import styles from "./LearningTasksList.module.css";
 
@@ -50,7 +53,6 @@ export default function LearningTasksList() {
         setLoading(true);
         try {
             const response = await api.get("/api/learning-task/all/");
-            console.log(response.data);  // Fixed typo: consooe -> console
             setTasks(response.data.tasks || []);
         } catch (error) {
             console.error("Error fetching learning tasks:", error);
@@ -84,7 +86,6 @@ export default function LearningTasksList() {
         if (searchQuery.trim()) {
             const query = searchQuery.toLowerCase().trim();
             result = result.filter(task => {
-                // Get language/framework names for search
                 const languageNames = task.languages ?
                     task.languages.map(lang => lang.name.toLowerCase()).join(' ') : '';
                 const frameworkNames = task.frameworks ?
@@ -132,19 +133,16 @@ export default function LearningTasksList() {
             let aValue = a[filters.sortBy];
             let bValue = b[filters.sortBy];
 
-            // Handle dates
             if (filters.sortBy === "created_at" || filters.sortBy === "updated_at") {
                 aValue = new Date(aValue).getTime();
                 bValue = new Date(bValue).getTime();
             }
 
-            // Handle likes count
             if (filters.sortBy === "likes_count") {
                 aValue = a.likes_count || 0;
                 bValue = b.likes_count || 0;
             }
 
-            // Handle title sorting
             if (filters.sortBy === "title") {
                 aValue = a.title?.toLowerCase() || "";
                 bValue = b.title?.toLowerCase() || "";
@@ -180,6 +178,11 @@ export default function LearningTasksList() {
         }
     };
 
+    // Navigation to Task Limit Bulk Management
+    const handleNavigateToTaskLimitBulk = () => {
+        navigate("/admin/task-limit");
+    };
+
     // Check if user owns the task
     const isOwner = (task) => {
         return user.id === task.user?.id;
@@ -208,7 +211,7 @@ export default function LearningTasksList() {
         });
     };
 
-    // Get task status (derived from API data)
+    // Get task status
     const getTaskStatus = (task) => {
         if (task.is_rated || task.status === "rated") {
             return "graded";
@@ -264,7 +267,16 @@ export default function LearningTasksList() {
                                 <p>Browse and evaluate programming tasks submitted by students</p>
                             </div>
                         </div>
-                        {/* REMOVED CREATE BUTTON - Admins can only view and evaluate */}
+                        <div className={styles.headerActions}>
+                            <button
+                                className={styles.managementBtn}
+                                onClick={handleNavigateToTaskLimitBulk}
+                                title="Manage Task Limits"
+                            >
+                                <MdSettings />
+                                <span>Manage Task Limits</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -452,7 +464,6 @@ export default function LearningTasksList() {
                     ) : (
                         <div className={styles.tasksGrid}>
                             {filteredTasks.map((task) => {
-                                // Transform API data to match card component expectations
                                 const adminReview = getAdminReview(task);
                                 const cardTask = {
                                     id: task.id,

@@ -173,7 +173,8 @@ export default function StudentEdit() {
                 (name === "account_status" && value !== originalData.account_status) ||
                 (name === "task_limit" && parseInt(value) !== originalTaskLimit);
 
-            setHasChanges(isChanged || hasChanges);
+            setHasChanges(prev => isChanged || prev);
+
         }
 
         if (errors[name]) setErrors(prev => ({ ...prev, [name]: "" }));
@@ -246,7 +247,8 @@ export default function StudentEdit() {
             formDataToSend.append("phone_number", formData.phone_number.trim());
             formDataToSend.append("account", formData.account.trim() || "N/A");
             formDataToSend.append("account_status", formData.account_status);
-            formDataToSend.append("task_limit", parseInt(formData.task_limit) || 0);
+            formDataToSend.append("task_limit", Number(formData.task_limit));
+
 
             // Append profile picture if selected
             if (profilePicFile) {
@@ -634,10 +636,17 @@ export default function StudentEdit() {
                                         id="task_limit"
                                         name="task_limit"
                                         value={formData.task_limit}
-                                        onChange={handleChange}
+                                        onChange={(e) => {
+                                            handleChange({
+                                                target: {
+                                                    name: "task_limit",
+                                                    value: e.target.valueAsNumber,
+                                                },
+                                            })
+                                        }}
                                         placeholder="0"
                                         min="0"
-                                        max="100"
+                                        max="300"
                                         className={errors.task_limit ? styles.errorInput : ""}
                                     />
                                 </div>

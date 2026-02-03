@@ -12,7 +12,7 @@ html.no-transition * {
 
 /* Light Mode - default */
 :root {
-  --bg-body: #f9fafb;
+  --bg-body: #efeff0;
   --bg-surface: #ffffff;
   --text-primary: #1f2937;
   --text-secondary: #4b5563;

@@ -17,7 +17,6 @@ from django.views.decorators.csrf import csrf_protect
 from utils.axes import get_lockout_message, is_user_locked
 from django.core import signing
 from axes.utils import reset as axes_reset
-from realtime.models import Notification
 
 
 IS_TWOFA_MANDATORY = settings.IS_TWOFA_MANDATORY

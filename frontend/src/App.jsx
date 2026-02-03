@@ -38,6 +38,9 @@ import AdminLearningTaskDetail from "./Pages/Admin/LearningTaskDetail/LearningTa
 import StudentEdit from './Pages/Admin/StudentEdit/StudentEdit'
 import ResetPassword from './Pages/ResetPassword/ResetPassword'
 import ResetPasswordViaCode from './Pages/ResetPasswordviaCode/ResetPasswordViaCode'
+import TaskLimitBulk from "./Pages/Admin/TaskLimitBulk/TaskLimitBulk"
+import NotificationsList from './Pages/NotificationList/NotificationsList'
+import NotificationDetail from './Pages/NotificationDetail/NotificationDetail'
 
 function App() {
   return (
@@ -60,8 +63,10 @@ function App() {
           <Route path="/profile/edit" element={<ProfileEdit />} />
           <Route path="/security" element={<Security />} />
           <Route path="/settings" element={<Settings />} />
-          <Route path="/password/reset/code/" element={<ResetPasswordViaCode />} />
-          <Route path="/password/reset/:signed_inst/" element={<ResetPassword />} />
+          <Route path="/password/reset/code" element={<ResetPasswordViaCode />} />
+          <Route path="/password/reset/:signed_inst" element={<ResetPassword />} />
+          <Route path="/notifications" element={<NotificationsList />} />
+          <Route path="/notification/:notif_id/" element={<NotificationDetail />} />
         </Route>
         <Route element={<ProtectedRoute requiredRole={["admin", "staff"]} />}>
           <Route path="/admin" element={<AdminDashboard />} />
@@ -78,6 +83,7 @@ function App() {
           <Route path="/admin/frameworks/edit/:id" element={<FrameworksEdit />} />
           <Route path="/admin/learning-tasks" element={<AdminLearningTasksList />} />
           <Route path="/admin/learning-task/:id" element={<AdminLearningTaskDetail />} />
+          <Route path="/admin/task-limit" element={<TaskLimitBulk />} />
         </Route>
         <Route element={<ProtectedRoute requiredRole={["user"]} />}>
           <Route path='/user' element={<UserDashboard />} />

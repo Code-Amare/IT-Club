@@ -345,6 +345,7 @@ class LikeLearningTaskAPIView(APIView):
             )
 
         except Exception as e:
+            print(str(e))
             return Response(
                 {"error": "Unable to like or unlike."},
                 status=status.HTTP_400_BAD_REQUEST,
