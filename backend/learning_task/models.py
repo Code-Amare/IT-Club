@@ -59,7 +59,7 @@ class TaskReview(models.Model):
 
 
 class LearningTaskLimit(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="task_limit")
     limit = models.PositiveIntegerField(default=0)
 
     def created(self):

@@ -79,4 +79,9 @@ urlpatterns = [
         name="framework-delete",
     ),
     path("frameworks/bulk/", FrameworkBulkAPIView.as_view(), name="frameworks-bulk"),
+    path(
+        "task-limits/bulk-update/",
+        FrameworkBulkAPIView.as_view(),
+        name="frameworks-bulk",
+    ),
 ]

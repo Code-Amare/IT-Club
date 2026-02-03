@@ -17,6 +17,7 @@ from django.views.decorators.csrf import csrf_protect
 from utils.axes import get_lockout_message, is_user_locked
 from django.core import signing
 from axes.utils import reset as axes_reset
+from realtime.models import Notification
 
 
 IS_TWOFA_MANDATORY = settings.IS_TWOFA_MANDATORY
@@ -270,52 +271,52 @@ class VerifyCodeView(APIView):
             )
 
 
-class RegisterView(APIView):
-    def post(self, request):
-        serializer = UserSerializer(data=request.data)
-        email = request.data.get("email", "")
-        if not email:
-            return Response(
-                {"error": "Email is required."}, status=status.HTTP_400_BAD_REQUEST
-            )
-        if User.objects.filter(email=email).exists():
-            return Response(
-                {"error": "User with this email already exists."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+# class RegisterView(APIView):
+#     def post(self, request):
+#         serializer = UserSerializer(data=request.data)
+#         email = request.data.get("email", "")
+#         if not email:
+#             return Response(
+#                 {"error": "Email is required."}, status=status.HTTP_400_BAD_REQUEST
+#             )
+#         if User.objects.filter(email=email).exists():
+#             return Response(
+#                 {"error": "User with this email already exists."},
+#                 status=status.HTTP_400_BAD_REQUEST,
+#             )
 
-        if serializer.is_valid():
-            with transaction.atomic():
-                user = serializer.save()
-                if IS_TWOFA_MANDATORY:
-                    user.is_active = False
-                    user.twofa_enabled = True
-                user.save()
-                email_ver = VerifyEmail.objects.create(user=user)
+#         if serializer.is_valid():
+#             with transaction.atomic():
+#                 user = serializer.save()
+#                 if IS_TWOFA_MANDATORY:
+#                     user.is_active = False
+#                     user.twofa_enabled = True
+#                 user.save()
+#                 email_ver = VerifyEmail.objects.create(user=user)
 
-            try:
-                send_mail(
-                    subject="Verify your email",
-                    message=f"Your verification code is {email_ver.code}",
-                    from_email=settings.EMAIL,
-                    recipient_list=[user.email],
-                )
-            except Exception as e:
-                return Response(
-                    {
-                        "error": "Unable to send verification email.",
-                        "email_sent": False,
-                    },
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
+#             try:
+#                 send_mail(
+#                     subject="Verify your email",
+#                     message=f"Your verification code is {email_ver.code}",
+#                     from_email=settings.EMAIL,
+#                     recipient_list=[user.email],
+#                 )
+#             except Exception as e:
+#                 return Response(
+#                     {
+#                         "error": "Unable to send verification email.",
+#                         "email_sent": False,
+#                     },
+#                     status=status.HTTP_400_BAD_REQUEST,
+#                 )
 
-            return Response(
-                {"detail": "User created successfully.", "user": serializer.data},
-                status=status.HTTP_201_CREATED,
-            )
-        return Response(
-            {"error": "Invalid user credintals."}, status=status.HTTP_400_BAD_REQUEST
-        )
+#             return Response(
+#                 {"detail": "User created successfully.", "user": serializer.data},
+#                 status=status.HTTP_201_CREATED,
+#             )
+#         return Response(
+#             {"error": "Invalid user credintals."}, status=status.HTTP_400_BAD_REQUEST
+#         )
 
 
 class LoginView(APIView):

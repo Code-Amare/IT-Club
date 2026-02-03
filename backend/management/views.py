@@ -49,7 +49,8 @@ import environ
 import cloudinary
 import cloudinary.utils
 from pathlib import Path
-import time
+from asgiref.sync import async_to_sync
+from utils.notif import notify_user
 
 
 env = environ.Env()
@@ -954,6 +955,8 @@ class StudentCreateView(APIView):
                     phone_number=phone_number if phone_number else None,
                 )
 
+                LearningTaskLimit.objects.create(user=user)
+
             response_data = {
                 "id": user.id,  # Changed from nested "student" to match frontend expectation
                 "full_name": user.full_name,
@@ -997,7 +1000,7 @@ class StudentsBulkUploadView(APIView):
     permission_classes = [IsAuthenticated, RolePermissionFactory(["admin", "staff"])]
 
     # Constants
-    LEARNING_TASK_LIMIT_DEFAULT = 20  # Global constant for task limit
+    LEARNING_TASK_LIMIT_DEFAULT = 20
     FIELD_LIST = ["ai", "other", "backend", "frontend", "embedded"]
 
     def post(self, request):
@@ -1179,16 +1182,9 @@ class StudentsBulkUploadView(APIView):
                         )
                         continue
 
-                    # Generate random password
-                    temp_password = "".join(
-                        random.choices(string.ascii_letters + string.digits, k=12)
-                    )
-
-                    # Create user instance (but don't save yet)
                     user = User(
                         email=email, full_name=full_name, is_active=True, role="user"
                     )
-                    user.set_password(temp_password)  # Hash the password
                     users_to_create.append(user)
 
                 # Bulk create users
@@ -1246,13 +1242,6 @@ class StudentsBulkUploadView(APIView):
                                 profile = p
                                 break
 
-                        # Find the corresponding temp password (we need to track this)
-                        temp_password = "".join(
-                            random.choices(string.ascii_letters + string.digits, k=12)
-                        )  # Note: This re-generates, but we should track from earlier
-
-                        # For simplicity, we'll use a placeholder
-                        # In production, you might want to store temp passwords in a dict
                         created_students.append(
                             {
                                 "id": user.id,
@@ -1267,7 +1256,6 @@ class StudentsBulkUploadView(APIView):
                                 "phone_number": (
                                     profile.phone_number if profile else None
                                 ),
-                                "temporary_password": temp_password,  # Note: This is not the actual password
                                 "learning_task_limit": self.LEARNING_TASK_LIMIT_DEFAULT,
                                 "message": "Please change your password on first login",
                             }
@@ -1744,6 +1732,14 @@ class DeleteLearningTaskView(APIView):
             task_limit = LearningTaskLimit.objects.get(user=user)
 
             with transaction.atomic():
+                async_to_sync(notify_user)(
+                    recipient=task.user,
+                    actor=user,
+                    title=f"Your learning task deletion.",
+                    description=f"Your learning task '{task.title}' has been deleted by admin.",
+                    code="info",
+                    is_push_notif=True,
+                )
                 task.delete()
                 task_limit.deleted()
 
@@ -1754,7 +1750,8 @@ class DeleteLearningTaskView(APIView):
         except LearningTaskLimit.DoesNotExist:
 
             return Response(
-                {"error": "Learning task limit has not been set yet."}, status=status.HTTP_404_NOT_FOUND
+                {"error": "Learning task limit has not been set yet."},
+                status=status.HTTP_404_NOT_FOUND,
             )
 
         except LearningTask.DoesNotExist:
@@ -1771,10 +1768,10 @@ class DeleteTaskReviewView(APIView):
 
     def delete(self, request, review_id):
         try:
-            task = TaskReview.objects.get(id=review_id, user=request.user)
+            task_review = TaskReview.objects.get(id=review_id, user=request.user)
 
             with transaction.atomic():
-                task.delete()
+                task_review.delete()
             return Response(
                 {"message": "Task review deleted successfully."},
                 status=status.HTTP_204_NO_CONTENT,
@@ -1784,3 +1781,75 @@ class DeleteTaskReviewView(APIView):
             return Response(
                 {"error": "Task review not found."}, status=status.HTTP_404_NOT_FOUND
             )
+
+
+@method_decorator(csrf_protect, name="dispatch")
+class TaskLimitView(APIView):
+    authentication_classes = [JWTCookieAuthentication]
+    permission_classes = [RolePermissionFactory(["admin", "staff"])]
+
+    def post(self, request):
+        data = request.data
+
+        value = data.get("value")
+        scope = data.get("scope")
+        operation = data.get("operation")
+        grade = data.get("grade")
+        section = data.get("section")
+        field = data.get("field")
+
+        errors = {}
+
+        valid_scopes = ["all", "active", "inactive", "by_grade", "by_field"]
+        if scope not in valid_scopes:
+            errors["scope"] = "Invalid scope."
+
+        valid_ops = ["set", "increment", "decrement"]
+        if operation not in valid_ops:
+            errors["operation"] = "Invalid operation."
+
+        if value is None or str(value).strip() == "":
+            errors["value"] = "Value is required."
+        else:
+            try:
+                value = int(value)
+            except ValueError:
+                errors["value"] = "Value must be an integer."
+            else:
+                if value < 0:
+                    errors["value"] = "Value cannot be negative."
+                if value > 300:
+                    errors["value"] = "Value cannot exceed 300."
+
+                if operation in ["increment", "decrement"] and value == 0:
+                    errors["value"] = "Value must be greater than zero."
+
+        if scope == "by_grade" and not grade:
+            errors["grade"] = "Grade is required for scope 'by_grade'."
+
+        if scope == "by_field" and not field:
+            errors["field"] = "Field is required for scope 'by_field'."
+
+        if errors:
+            return Response(errors, status=status.HTTP_400_BAD_REQUEST)
+
+        users = User.objects.filter(role="user")
+        filtered_users = users
+        if not scope == "all":
+            if scope in ["active", "inactive"]:
+                filtered_users.filter(is_active=(scope == "active"))
+            else:
+                if scope == "by_grade":
+                    filtered_users.filter(
+                        profile__grade=grade, profile__section=section
+                    )
+                if scope == "by_field":
+                    filtered_users.filter(profile__field=field)
+
+        if not filtered_users:
+            return Response(
+                {"error": "No user found with this filters."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        return Response({"message": ""}, status=status.HTTP_200_OK)

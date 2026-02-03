@@ -12,9 +12,10 @@ from .serializers import (
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_protect
 from django.db import transaction
-from utils.auth import RolePermissionFactory
 from django.contrib.auth import get_user_model
 from django.db.models import Q
+from asgiref.sync import async_to_sync
+from utils.notif import notify_user
 
 
 User = get_user_model()
@@ -62,7 +63,7 @@ class LearningTaskAllView(APIView):
 
     def get(self, request):
         tasks = LearningTask.objects.filter(Q(user=request.user) | ~Q(status="draft"))
-        
+
         if not tasks:
             return Response({"message": "No learning yet."}, status=status.HTTP_200_OK)
         serializer = LearningTaskSerializer(tasks, many=True)
@@ -197,21 +198,38 @@ class TaskReviewAPIView(APIView):
         try:
             user = request.user
             task = LearningTask.objects.get(id=task_id)
+            task_owner = task.user
 
             if task.status == "rated" and user.is_staff:
                 return Response(
                     {"error": "This task has already been rated by an admin."}
                 )
 
-            if request.user.is_staff:
-                task.status = "rated"
-                task.save()
-            serializer = TaskReviewSerializer(data=request.data)
-            if serializer.is_valid():
-                serializer.save(
-                    user=request.user, task=task, is_admin=request.user.is_staff
+            with transaction.atomic():
+                async_to_sync(notify_user)(
+                    recipient=task_owner,
+                    actor=user,
+                    title=f"Learning task {"rated" if user.is_staff else "review"}",
+                    description=(
+                        "Your learning task has been rated."
+                        if user.is_staff
+                        else "Your got a review on your learning task."
+                    ),
+                    code="info",
+                    url=f"/user/learning-task/{task.id}",
+                    is_push_notif=True,
                 )
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
+                if request.user.is_staff:
+
+                    task.status = "rated"
+                    task.save()
+
+                serializer = TaskReviewSerializer(data=request.data)
+                if serializer.is_valid():
+                    serializer.save(
+                        user=request.user, task=task, is_admin=request.user.is_staff
+                    )
+                    return Response(serializer.data, status=status.HTTP_201_CREATED)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except LearningTask.DoesNotExist:
             return Response(
@@ -224,6 +242,7 @@ class TaskReviewAPIView(APIView):
         try:
             task = LearningTask.objects.get(id=task_id)
             review = TaskReview.objects.get(task=task, user=request.user)
+            task_owner = task.user
             user = request.user
 
             rated = (
@@ -236,18 +255,28 @@ class TaskReviewAPIView(APIView):
                 .exists()
             )
 
-            if rated:
+            if rated and user.is_staff and review.user is not user:
 
                 return Response(
                     {
                         "error": "This task has already been rated by another admin and cannot be modified."
-                    }
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
 
             serializer = TaskReviewSerializer(review, data=request.data, partial=True)
             if serializer.is_valid():
+                async_to_sync(notify_user)(
+                    recipient=task_owner,
+                    actor=user,
+                    title="Learning task review updated",
+                    description="Your learning task review has been updated.",
+                    code="info",
+                    url=f"/user/learning-task/{task.id}",
+                    is_push_notif=True,
+                )
                 serializer.save()
-                return Response(serializer.data)
+                return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         except LearningTask.DoesNotExist:
@@ -272,13 +301,34 @@ class LikeLearningTaskAPIView(APIView):
         user = request.user
         try:
             task = LearningTask.objects.get(id=task_id)
+            task_owner = task.user
 
-            if user in task.likes.all():
-                task.likes.remove(user)
-                action = "unliked"
-            else:
-                task.likes.add(user)
-                action = "liked"
+            with transaction.atomic():
+                if user in task.likes.all():
+                    task.likes.remove(user)
+                    action = "unliked"
+                    async_to_sync(notify_user)(
+                        recipient=task_owner,
+                        actor=user,
+                        title="You got a dislike",
+                        description=f"{user.full_name} disliked your learning task.",
+                        code="info",
+                        url=f"/user/learning-task/{task.id}",
+                        is_push_notif=False,
+                    )
+
+                else:
+                    task.likes.add(user)
+                    action = "liked"
+                    async_to_sync(notify_user)(
+                        recipient=task_owner,
+                        actor=user,
+                        title="You got a like",
+                        description=f"{user.full_name} liked your learning task.",
+                        code="info",
+                        url=f"/user/learning-task/{task.id}",
+                        is_push_notif=False,
+                    )
 
             return Response(
                 {
@@ -298,20 +348,6 @@ class LikeLearningTaskAPIView(APIView):
             return Response(
                 {"error": "Unable to like or unlike."},
                 status=status.HTTP_400_BAD_REQUEST,
-            )
-
-
-@method_decorator(csrf_protect, name="dispatch")
-class LearningTaskAdminView(APIView):
-    authentication_classes = [JWTCookieAuthentication]
-    permission_classes = [IsAuthenticated]
-
-    def delete(self, request, task_id):
-        try:
-            task = LearningTask.objects.get(id=task_id)
-        except LearningTask.DoesNotExist:
-            return Response(
-                {"error": "Invalid task id."}, status=status.HTTP_404_NOT_FOUND
             )
 
 

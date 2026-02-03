@@ -131,7 +131,56 @@ class LearningTaskSerializer(serializers.ModelSerializer):
 
 class LearningTaskLimitSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
+    value = serializers.IntegerField(write_only=True)
+    operation = serializers.ChoiceField(
+        choices=["set", "increment", "decrement"], write_only=True
+    )
 
     class Meta:
         model = LearningTaskLimit
-        fields = ["id", "user", "limit"]
+        fields = [
+            "id",
+            "user",
+            "limit",
+            "value",
+            "operation",
+        ]
+
+    def create(self, validated_data):
+        task_limit = LearningTaskLimit(**validated_data)
+        value = validated_data.get("value", 0)
+        operation = validated_data.get("operation")
+
+        if operation == "set":
+            if value < 0:
+                raise serializers.ValidationError("Value can't be less than zero.")
+            task_limit.limit = value
+
+        elif operation == "increment":
+            task_limit.limit += value
+
+        elif operation == "decrement":
+            task_limit.limit = (
+                0 if (0 < task_limit.limit - value) else task_limit.limit - value
+            )
+
+        task_limit.save()
+        return task_limit
+
+    def update(self, instance, validated_data):
+        value = validated_data.get("value", 0)
+        operation = validated_data.get("operation")
+
+        if operation == "set":
+            if value < 0:
+                raise serializers.ValidationError("Value can't be less than zero.")
+            instance.limit = value
+
+        elif operation == "increment":
+            instance.limit += value
+
+        elif operation == "decrement":
+            instance.limit = max(instance.limit - value, 0)
+
+        instance.save()
+        return instance

@@ -6,6 +6,13 @@ User = get_user_model()
 
 class Notification(models.Model):
 
+    CODE_CHOICE = [
+        ("success", "Success"),
+        ("warning", "Warning"),
+        ("error", "Error"),
+        ("info", "Info"),
+    ]
+
     recipient = models.ForeignKey(
         User, related_name="received_notifications", on_delete=models.CASCADE
     )
@@ -19,12 +26,13 @@ class Notification(models.Model):
     is_read = models.BooleanField(default=False)
     title = models.CharField(max_length=50)
     description = models.TextField()
+    code = models.CharField(max_length=10, choices=CODE_CHOICE, default="info")
     url = models.URLField(blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+    sent_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ["-created_at"]
+        ordering = ["-sent_at"]
         indexes = [
             models.Index(fields=["recipient", "is_read"]),
-            models.Index(fields=["recipient", "created_at"]),
+            models.Index(fields=["recipient", "sent_at"]),
         ]
