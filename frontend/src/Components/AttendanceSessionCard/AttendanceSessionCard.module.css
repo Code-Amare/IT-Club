@@ -1,0 +1,185 @@
+.sessionCard {
+  display: block;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 20px;
+  text-decoration: none;
+  color: var(--text-primary);
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.sessionCard::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.sessionCard.open::before {
+  background: var(--success, #10b981);
+}
+
+.sessionCard.closed::before {
+  background: var(--error, #ef4444);
+}
+
+.sessionCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  border-color: var(--primary-light);
+}
+
+.sessionCard:hover::before {
+  width: 6px;
+}
+
+/* Header */
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.statusIndicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 20px;
+  background: var(--bg-subtle);
+}
+
+.sessionCard.open .statusIndicator {
+  color: var(--success, #10b981);
+}
+
+.sessionCard.closed .statusIndicator {
+  color: var(--error, #ef4444);
+}
+
+.statusIndicator svg {
+  font-size: 12px;
+}
+
+.arrowIcon {
+  color: var(--text-tertiary);
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+}
+
+.sessionCard:hover .arrowIcon {
+  opacity: 1;
+  color: var(--primary);
+}
+
+/* Body */
+.cardBody {
+  margin-bottom: 20px;
+}
+
+.sessionTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 12px 0;
+  line-height: 1.4;
+}
+
+.sessionMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.metaItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.metaItem svg {
+  font-size: 14px;
+  opacity: 0.7;
+}
+
+.lastUpdated {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  font-style: italic;
+}
+
+/* Footer */
+.cardFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-light);
+}
+
+.sessionId {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  font-family: monospace;
+  background: var(--bg-subtle);
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.openBadge,
+.closedBadge {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.openBadge {
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--success, #10b981);
+}
+
+.closedBadge {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--error, #ef4444);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .sessionCard {
+    padding: 16px;
+  }
+
+  .sessionTitle {
+    font-size: 16px;
+  }
+
+  .cardFooter {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .sessionId {
+    order: 2;
+  }
+
+  .openBadge,
+  .closedBadge {
+    order: 1;
+  }
+}

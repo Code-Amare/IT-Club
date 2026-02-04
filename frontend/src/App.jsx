@@ -41,6 +41,8 @@ import ResetPasswordViaCode from './Pages/ResetPasswordviaCode/ResetPasswordViaC
 import TaskLimitBulk from "./Pages/Admin/TaskLimitBulk/TaskLimitBulk"
 import NotificationsList from './Pages/NotificationList/NotificationsList'
 import NotificationDetail from './Pages/NotificationDetail/NotificationDetail'
+import AttendanceList from './Pages/Admin/AttendanceList/AttendanceList'
+import CreateAttendanceSession from './Pages/Admin/CreateAttendanceSession/CreateAttendanceSession'
 
 function App() {
   return (
@@ -84,6 +86,8 @@ function App() {
           <Route path="/admin/learning-tasks" element={<AdminLearningTasksList />} />
           <Route path="/admin/learning-task/:id" element={<AdminLearningTaskDetail />} />
           <Route path="/admin/task-limit" element={<TaskLimitBulk />} />
+          <Route path="/admin/attendance/" element={<AttendanceList />} />
+          <Route path="/admin/attendance/create/" element={<CreateAttendanceSession />} />
         </Route>
         <Route element={<ProtectedRoute requiredRole={["user"]} />}>
           <Route path='/user' element={<UserDashboard />} />

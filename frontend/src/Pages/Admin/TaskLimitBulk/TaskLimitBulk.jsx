@@ -10,8 +10,6 @@ import {
     FaArrowLeft,
     FaSave,
     FaTasks,
-    FaPlus,
-    FaMinus,
     FaUsers,
     FaExclamationTriangle
 } from "react-icons/fa";
@@ -27,9 +25,9 @@ export default function TaskLimitBulk() {
     const { user } = useUser();
 
     const [formData, setFormData] = useState({
-        operation: "set", // "set", "increment", "decrement"
+        operation: "set",
         value: "",
-        scope: "all", // "all", "active", "inactive", "by_grade", "by_field"
+        scope: "all",
         grade: "",
         section: "",
         field: "",
@@ -38,7 +36,6 @@ export default function TaskLimitBulk() {
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState({});
     const [stats, setStats] = useState(null);
-    const [previewData, setPreviewData] = useState(null);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -74,47 +71,10 @@ export default function TaskLimitBulk() {
         return Object.keys(newErrors).length === 0;
     };
 
-    const fetchPreview = async () => {
-        if (!validateForm()) {
-            neonToast.error("Please fix the errors in the form", "error");
-            return;
-        }
-
-        setLoading(true);
-        try {
-            const payload = {
-                operation: formData.operation,
-                value: parseInt(formData.value),
-                scope: formData.scope,
-                ...(formData.scope === "by_grade" && { grade: formData.grade }),
-                ...(formData.scope === "by_field" && { field: formData.field }),
-                ...(formData.section && { section: formData.section }),
-            };
-
-            const response = await api.post("/api/management/task-limits/preview/", payload);
-            setPreviewData(response.data);
-            neonToast.success("Preview generated successfully", "success");
-        } catch (error) {
-            console.error("Error fetching preview:", error);
-            if (error.response?.data?.detail) {
-                neonToast.error(error.response.data.detail, "error");
-            } else {
-                neonToast.error("Failed to generate preview", "error");
-            }
-        } finally {
-            setLoading(false);
-        }
-    };
-
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!validateForm()) {
             neonToast.error("Please fix the errors in the form", "error");
-            return;
-        }
-
-        if (!previewData) {
-            neonToast.error("Please generate preview first", "error");
             return;
         }
 
@@ -131,13 +91,13 @@ export default function TaskLimitBulk() {
 
             const response = await api.post("/api/management/task-limits/bulk-update/", payload);
 
+
             neonToast.success(
                 `Successfully updated ${response.data.updated_count} users' task limits`,
                 "success"
             );
 
             setStats(response.data);
-            setPreviewData(null);
 
             // Reset form
             setFormData({
@@ -149,7 +109,10 @@ export default function TaskLimitBulk() {
                 field: "",
             });
         } catch (error) {
-            console.error("Error updating task limits:", error);
+            if (error.response.data?.no_user) {
+                neonToast.warning("No users found with the selected filters.")
+                return
+            }
             if (error.response?.data?.detail) {
                 neonToast.error(error.response.data.detail, "error");
             } else {
@@ -202,7 +165,6 @@ export default function TaskLimitBulk() {
             section: "",
             field: "",
         });
-        setPreviewData(null);
         setStats(null);
         setErrors({});
     };
@@ -214,7 +176,7 @@ export default function TaskLimitBulk() {
                     <div className={styles.headerTop}>
                         <button
                             className={styles.backBtn}
-                            onClick={() => navigate("/admin/dashboard")}
+                            onClick={() => navigate(-1)}
                         >
                             <FaArrowLeft /> Back to Dashboard
                         </button>
@@ -237,7 +199,7 @@ export default function TaskLimitBulk() {
                                 <FaTasks /> Bulk Task Limit Management
                             </h1>
                             <div className={styles.pageDescription}>
-                                Update task limits for multiple users at once. Generate a preview before applying changes.
+                                Update task limits for multiple users at once.
                             </div>
                         </div>
                     </div>
@@ -441,13 +403,6 @@ export default function TaskLimitBulk() {
                                 <div className={styles.summaryCard}>
                                     <h4><FaExclamationTriangle /> Operation Summary</h4>
                                     <p>{getOperationDescription()}</p>
-                                    {previewData && (
-                                        <div className={styles.previewInfo}>
-                                            <p><strong>Users affected:</strong> {previewData.user_count}</p>
-                                            <p><strong>Current average limit:</strong> {previewData.current_avg?.toFixed(1) || 0}</p>
-                                            <p><strong>New average limit:</strong> {previewData.new_avg?.toFixed(1) || 0}</p>
-                                        </div>
-                                    )}
                                 </div>
                             </div>
 
@@ -462,29 +417,18 @@ export default function TaskLimitBulk() {
                                 </button>
 
                                 <div className={styles.primaryActions}>
-                                    <AsyncButton
-                                        type="button"
-                                        className={styles.previewBtn}
-                                        onClick={fetchPreview}
-                                        loading={loading}
-                                        disabled={loading || !formData.value}
-                                    >
-                                        Generate Preview
-                                    </AsyncButton>
-
                                     <ConfirmAction
                                         title="Confirm Bulk Update"
-                                        message={`You are about to ${formData.operation} task limits by ${formData.value} for ${getScopeText()}. This will affect ${previewData?.user_count || 0} users. This action cannot be undone.`}
+                                        message={`You are about to ${formData.operation} task limits by ${formData.value} for ${getScopeText()}. This action cannot be undone.`}
                                         confirmText="Apply Changes"
                                         cancelText="Cancel"
                                         onConfirm={handleSubmit}
-                                        disabled={!previewData}
                                     >
                                         <AsyncButton
-                                            type="button"
+                                            type="submit"
                                             className={styles.primaryBtn}
                                             loading={loading}
-                                            disabled={loading || !previewData}
+                                            disabled={loading || !formData.value || Object.keys(errors).length > 0}
                                         >
                                             <FaSave /> Apply Changes
                                         </AsyncButton>

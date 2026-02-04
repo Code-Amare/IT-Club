@@ -104,16 +104,48 @@ export default function LearningTasksList() {
         }
     };
 
-    // Helper function to get language name
-    const getLanguageName = (languageId) => {
-        const lang = languages.find(l => l.id === languageId);
-        return lang ? lang.name : "Unknown";
-    };
+    // Transform API task to card task format
+    const transformTaskForCard = (task) => {
+        // Find admin review
+        const adminReview = task.reviews?.find(review => review.user?.is_staff || review.is_admin);
 
-    // Helper function to get framework name
-    const getFrameworkName = (frameworkId) => {
-        const fw = frameworks.find(f => f.id === frameworkId);
-        return fw ? fw.name : "Unknown";
+        // Determine status for component
+        let componentStatus = task.status;
+        if (task.status === "rated") componentStatus = "graded";
+        if (task.status === "under_review") componentStatus = "submitted";
+        if (!componentStatus) {
+            componentStatus = task.is_public ? "submitted" : "draft";
+        }
+
+        // Get language and framework names from the arrays or IDs
+        const languageNames = task.languages?.map(lang =>
+            typeof lang === 'object' ? lang.name :
+                languages.find(l => l.id === lang)?.name || "Unknown"
+        ) || [];
+
+        const frameworkNames = task.frameworks?.map(fw =>
+            typeof fw === 'object' ? fw.name :
+                frameworks.find(f => f.id === fw)?.name || "Unknown"
+        ) || [];
+
+        return {
+            id: task.id,
+            title: task.title,
+            description: task.description,
+            githubLink: task.git_link || "",
+            languages: languageNames.filter(Boolean),
+            frameworks: frameworkNames.filter(Boolean),
+            status: componentStatus,
+            grade: adminReview?.rating || 0,
+            adminFeedback: adminReview?.feedback || "",
+            createdAt: new Date(task.created_at).toLocaleDateString(),
+            adminEditable: task.status === "draft",
+            likes_count: task.likes_count || 0,
+            is_public: task.is_public || false,
+            user: task.user_info || task.user,
+            profile: task.profile_info || task.profile || {},
+            reviews: task.reviews || []
+        };
     };
 
     // Filter and sort tasks
@@ -124,20 +156,16 @@ export default function LearningTasksList() {
         if (searchQuery.trim()) {
             const query = searchQuery.toLowerCase().trim();
             result = result.filter(task => {
-                const languageNames = task.languages
-                    ? task.languages.map(id => getLanguageName(id).toLowerCase()).join(' ')
-                    : '';
-                const frameworkNames = task.frameworks
-                    ? task.frameworks.map(id => getFrameworkName(id).toLowerCase()).join(' ')
-                    : '';
+                const taskForCard = transformTaskForCard(task);
+                const searchableText = [
+                    task.title?.toLowerCase() || '',
+                    task.description?.toLowerCase() || '',
+                    task.user?.toLowerCase() || '',
+                    ...taskForCard.languages.map(lang => lang.toLowerCase()),
+                    ...taskForCard.frameworks.map(fw => fw.toLowerCase())
+                ].join(' ');
 
-                return (
-                    (task.title?.toLowerCase().includes(query)) ||
-                    (task.description?.toLowerCase().includes(query)) ||
-                    (task.user?.toLowerCase().includes(query)) ||
-                    languageNames.includes(query) ||
-                    frameworkNames.includes(query)
-                );
+                return searchableText.includes(query);
             });
         }
 
@@ -153,14 +181,18 @@ export default function LearningTasksList() {
         if (filters.language) {
             const languageId = parseInt(filters.language);
             result = result.filter(task =>
-                task.languages && task.languages.includes(languageId)
+                task.languages?.some(lang =>
+                    (typeof lang === 'object' ? lang.id : lang) === languageId
+                )
             );
         }
 
         if (filters.framework) {
             const frameworkId = parseInt(filters.framework);
             result = result.filter(task =>
-                task.frameworks && task.frameworks.includes(frameworkId)
+                task.frameworks?.some(fw =>
+                    (typeof fw === 'object' ? fw.id : fw) === frameworkId
+                )
             );
         }
 
@@ -197,62 +229,35 @@ export default function LearningTasksList() {
         return result;
     }, [tasks, searchQuery, filters, languages, frameworks]);
 
-    // Transform API task to card task format
-    const transformTaskForCard = (task) => {
-        // Find admin review
-        const adminReview = task.reviews?.find(review => review.user?.is_staff || review.is_admin);
-        const grade = adminReview?.rating || 0;
-
-        // Determine status
-        let status = task.status;
-        if (task.status === "rated") status = "graded";
-        if (task.status === "under_review") status = "submitted";
-        if (!status) {
-            status = task.is_public ? "submitted" : "draft";
-        }
-
-        return {
-            id: task.id,
-            title: task.title,
-            description: task.description,
-            githubLink: task.git_link || "",
-            languages: task.languages?.map(id => getLanguageName(id)) || [],
-            frameworks: task.frameworks?.map(id => getFrameworkName(id)) || [],
-            status: status,
-            grade: grade,
-            adminFeedback: adminReview?.feedback || "",
-            createdAt: new Date(task.created_at).toLocaleDateString(),
-            likes_count: task.likes_count || 0,
-            is_public: task.is_public || false,
-            user: task.user_info || task.user,
-            profile: task.profile_info || {}
-        };
-    };
-
     // Handle task actions
     const handleViewTask = (task) => {
         navigate(`/user/learning-task/${task.id}`);
     };
 
     const handleEditTask = (task) => {
-        if (task.status === "draft") {
+        // First transform to get the card format status
+        const cardTask = transformTaskForCard(task);
+        if (cardTask.status === "draft") {
             navigate(`/user/learning-task/edit/${task.id}`);
         } else {
             neonToast.error("Only draft tasks can be edited", "error");
         }
     };
 
-    const handleDeleteTask = async (taskId) => {
+    const handleDeleteTask = async (taskId, reason) => {
+        // Find the task from the original tasks array
         const task = tasks.find(t => t.id === taskId);
+        const cardTask = task ? transformTaskForCard(task) : null;
 
-        // Check if task is draft and user is owner
+        // Check if user is owner
         const isOwner = user.username === task?.user;
         if (!isOwner) {
             neonToast.error("You can only delete your own tasks", "error");
             return;
         }
 
-        if (task?.status !== "draft") {
+        // Check if task is draft
+        if (cardTask?.status !== "draft") {
             neonToast.error("Only draft tasks can be deleted", "error");
             return;
         }
@@ -267,7 +272,17 @@ export default function LearningTasksList() {
             neonToast.success("Task deleted successfully", "success");
 
             // Refresh stats
-            fetchTasks();
+            const newTasks = tasks.filter(t => t.id !== taskId);
+            const publicTasks = newTasks.filter(t => t.is_public).length;
+            const reviewedTasks = newTasks.filter(t => t.reviews && t.reviews.length > 0).length;
+            const totalLikes = newTasks.reduce((acc, task) => acc + (task.likes_count || 0), 0);
+
+            setStats({
+                total: newTasks.length,
+                public: publicTasks,
+                reviewed: reviewedTasks,
+                totalLikes: totalLikes
+            });
         } catch (error) {
             console.error("Error deleting task:", error);
             if (error.response?.data?.error) {
@@ -561,7 +576,7 @@ export default function LearningTasksList() {
                                         isOwner={owner}
                                         onView={() => handleViewTask(task)}
                                         onEdit={owner ? () => handleEditTask(task) : undefined}
-                                        onDelete={owner ? () => handleDeleteTask(task.id) : undefined}
+                                        onDelete={owner ? handleDeleteTask : undefined}
                                         loadingDelete={false}
                                     />
                                 );

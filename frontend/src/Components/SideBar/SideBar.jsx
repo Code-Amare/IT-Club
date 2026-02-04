@@ -19,7 +19,8 @@ import {
     MdSchool,
     MdWork,
     MdCode,
-    MdAccountTree
+    MdAccountTree,
+    MdChecklist
 } from "react-icons/md";
 import { useUser } from "../../Context/UserContext";
 import { useNotifContext } from "../../Context/NotifContext";
@@ -48,6 +49,7 @@ export default function SideBar({ children }) {
         { icon: <MdAccountTree />, text: "Frameworks", to: "/admin/frameworks" },
         { icon: <MdAssignment />, text: "Projects", to: "/admin/projects" },
         { icon: <MdAnalytics />, text: "Analytics", to: "/admin/analytics" },
+        { icon: <MdChecklist />, text: "Analytics", to: "/admin/attendance" },
     ];
 
     const userMenuItems = [
