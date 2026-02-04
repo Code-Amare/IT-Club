@@ -363,3 +363,4 @@ class LearningTaskLimitView(APIView):
         serializer = LearningTaskLimitSerializer(task_limit)
 
         return Response({"task_limit": serializer.data}, status=status.HTTP_200_OK)
+ 

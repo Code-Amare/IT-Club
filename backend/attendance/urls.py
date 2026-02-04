@@ -12,7 +12,7 @@ urlpatterns = [
     path(
         "sessions/<int:session_id>/",
         AttendanceSessionVeiw.as_view(),
-        name="attendance_session_detail",
+        name="attendance_session",
     ),
     # Mark attendance for users (bulk or single)
     path(

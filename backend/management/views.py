@@ -1808,48 +1808,77 @@ class TaskLimitView(APIView):
         if operation not in valid_ops:
             errors["operation"] = "Invalid operation."
 
-        if value is None or str(value).strip() == "":
-            errors["value"] = "Value is required."
-        else:
-            try:
-                value = int(value)
-            except ValueError:
-                errors["value"] = "Value must be an integer."
-            else:
-                if value < 0:
-                    errors["value"] = "Value cannot be negative."
-                if value > 300:
-                    errors["value"] = "Value cannot exceed 300."
-
-                if operation in ["increment", "decrement"] and value == 0:
-                    errors["value"] = "Value must be greater than zero."
+        try:
+            value = int(value)
+            if value < 0 or value > 300:
+                errors["value"] = "Value must be between 0 and 300."
+            if operation in ["increment", "decrement"] and value == 0:
+                errors["value"] = "Value must be greater than zero."
+        except (TypeError, ValueError):
+            errors["value"] = "Value must be an integer."
 
         if scope == "by_grade" and not grade:
-            errors["grade"] = "Grade is required for scope 'by_grade'."
-
+            errors["grade"] = "Grade is required."
         if scope == "by_field" and not field:
-            errors["field"] = "Field is required for scope 'by_field'."
+            errors["field"] = "Field is required."
 
         if errors:
             return Response(errors, status=status.HTTP_400_BAD_REQUEST)
 
         users = User.objects.filter(role="user")
-        filtered_users = users
-        if not scope == "all":
-            if scope in ["active", "inactive"]:
-                filtered_users.filter(is_active=(scope == "active"))
-            else:
-                if scope == "by_grade":
-                    filtered_users.filter(
-                        profile__grade=grade, profile__section=section
-                    )
-                if scope == "by_field":
-                    filtered_users.filter(profile__field=field)
 
-        if not filtered_users:
+        if scope == "active":
+            users = users.filter(is_active=True)
+        elif scope == "inactive":
+            users = users.filter(is_active=False)
+        elif scope == "by_grade":
+            users = users.filter(profile__grade=grade, profile__section=section)
+        elif scope == "by_field":
+            users = users.filter(profile__field=field)
+
+        if not users.exists():
             return Response(
-                {"error": "No user found with this filters."},
+                {
+                    "error": "No users found with the selected filters.",
+                    "no_user": True,
+                },
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        return Response({"message": ""}, status=status.HTTP_200_OK)
+        user_ids = list(users.values_list("id", flat=True))
+
+        limits = LearningTaskLimit.objects.filter(user_id__in=user_ids)
+
+        for limit_obj in limits:
+            if operation == "set":
+                limit_obj.limit = value
+            elif operation == "increment":
+                limit_obj.limit += value
+            elif operation == "decrement":
+                limit_obj.limit = max(limit_obj.limit - value, 0)
+
+        with transaction.atomic():
+            LearningTaskLimit.objects.bulk_update(limits, ["limit"])
+
+        return Response(
+            {
+                "message": "Task limits updated successfully.",
+                "affected_users": user_ids,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class GetAllUsersView(APIView):
+    authentication_classes = [JWTCookieAuthentication]
+    permission_classes = [RolePermissionFactory(["admin", "staff"])]
+
+    def get(self, request):
+        users = Profile.objects.filter(user__role="user")
+        if not users.exists():
+            return Response(
+                {"warning": "No user found."}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        serializer = ProfileSerializer(users, many=True)
+        return Response({"users": serializer.data}, status=status.HTTP_200_OK)

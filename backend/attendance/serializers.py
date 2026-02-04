@@ -1,16 +1,21 @@
 from rest_framework import serializers
 from .models import AttendanceSession
+from users.serializers import UserSerializer
 
 
 class AttendanceSessionSerializer(serializers.ModelSerializer):
-    users = serializers.SerializerMethodField()
+    users = UserSerializer(many=True, read_only=True, source="targets")
 
     class Meta:
         model = AttendanceSession
-        fields = ("id", "title", "users", "created_at", "is_ended")
-
-    def get_users(self, obj):
-        return list(obj.targets.values_list("id", flat=True))
+        fields = (
+            "id",
+            "title",
+            "created_at",
+            "is_ended",
+            "targets",
+            "users",
+        )
 
 
 class UpdateSessionSerializer(serializers.Serializer):

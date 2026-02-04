@@ -14,10 +14,15 @@ class AttendanceSessionVeiw(APIView):
     authentication_classes = [JWTCookieAuthentication]
     permission_classes = [IsAdminUser]
 
-    def get(self, request):
-        sessions = AttendanceSession.objects.prefetch_related("targets")
-        serializer = AttendanceSessionSerializer(sessions, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+    def get(self, request, session_id):
+        try:
+            session = AttendanceSession.objects.get(id=session_id)
+            serializer = AttendanceSessionSerializer(session)
+            return Response({"session": serializer.data}, status=status.HTTP_200_OK)
+        except AttendanceSession.DoesNotExist:
+            return Response(
+                {"error": "Session doesn't exist."}, status=status.HTTP_404_NOT_FOUND
+            )
 
     def post(self, request):
         users = request.data.get("users", [])
@@ -120,7 +125,6 @@ class AttendanceAPIView(APIView):
     permission_classes = [IsAdminUser]
 
     def post(self, request, session_id):
-
         try:
             session = AttendanceSession.objects.prefetch_related("targets").get(
                 id=session_id
@@ -142,13 +146,16 @@ class AttendanceAPIView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        # Determine valid users for this session
         session_target_ids = set(session.targets.values_list("id", flat=True))
         user_ids = [item.get("user") for item in attendances if "user" in item]
-        valid_users = User.objects.filter(id__in=user_ids, id__in=session_target_ids)
-        valid_user_ids = set(valid_users.values_list("id", flat=True))
+        valid_user_ids = set(user_ids) & session_target_ids
+        valid_users = User.objects.filter(id__in=valid_user_ids)
 
+        # Prepare for bulk create/update
         errors = []
         attendances_to_create = []
+
         existing_attendances = Attendance.objects.filter(
             session=session, user_id__in=valid_user_ids
         )

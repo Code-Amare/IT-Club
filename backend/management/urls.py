@@ -21,9 +21,12 @@ from .views import (
     TopLearningTasks,
     DeleteLearningTaskView,
     DeleteTaskReviewView,
+    TaskLimitView,
+    GetAllUsersView,
 )
 
 urlpatterns = [
+    path("users/", GetAllUsersView.as_view(), name="get-users"),
     path("students/", StudentsView.as_view(), name="students-list"),
     path("students/stats/", StudentsStatsView.as_view(), name="students-stats"),
     path("students/create/", StudentCreateView.as_view(), name="student-create"),
@@ -81,7 +84,7 @@ urlpatterns = [
     path("frameworks/bulk/", FrameworkBulkAPIView.as_view(), name="frameworks-bulk"),
     path(
         "task-limits/bulk-update/",
-        FrameworkBulkAPIView.as_view(),
-        name="frameworks-bulk",
+        TaskLimitView.as_view(),
+        name="task-limit",
     ),
 ]
