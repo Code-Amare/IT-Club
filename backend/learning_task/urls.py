@@ -6,6 +6,7 @@ from .views import (
     LearningTaskLimitView,
     MyLearningTaskView,
     LearningTaskAllView,
+    TaskBonusAPIView,
 )
 
 urlpatterns = [
@@ -33,4 +34,5 @@ urlpatterns = [
         name="task-review-edit",
     ),
     path("like/<int:task_id>/", LikeLearningTaskAPIView.as_view(), name="task-like"),
+    path("bonus/<int:task_id>/", TaskBonusAPIView.as_view(), name="task-bonus"),
 ]

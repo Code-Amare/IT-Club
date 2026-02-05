@@ -1,9 +1,8 @@
 from rest_framework import serializers
-from .models import LearningTask, TaskReview, LearningTaskLimit
+from .models import LearningTask, TaskReview, LearningTaskLimit, TaskBonus
 from management.models import Language, Framework
 from django.contrib.auth import get_user_model
-from users.serializers import UserSerializer, ProfileSerializer
-from users.models import Profile
+from users.serializers import UserSerializer, ProfileSerializer, UserInverseSerializer
 from management.serializers import LanguageSerializer, FrameworkSerializer
 
 
@@ -184,3 +183,25 @@ class LearningTaskLimitSerializer(serializers.ModelSerializer):
 
         instance.save()
         return instance
+
+
+class TaskBonusSerializer(serializers.ModelSerializer):
+    admin = UserInverseSerializer(read_only=True)
+    task = LearningTaskSerializer(read_only=True)
+
+    class Meta:
+        model = TaskBonus
+        fields = [
+            "id",
+            "task",
+            "admin",
+            "score",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["id", "task", "admin", "created_at", "updated_at"]
+
+    def validate_score(self, value):
+        if value < 0 or value > 30:
+            raise serializers.ValidationError("Bonus score must be between 0 and 20.")
+        return value

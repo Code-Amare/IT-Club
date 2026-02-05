@@ -1,13 +1,14 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from utils.auth import JWTCookieAuthentication
-from .models import LearningTask, TaskReview, LearningTaskLimit
+from .models import LearningTask, TaskReview, LearningTaskLimit, TaskBonus
 from .serializers import (
     LearningTaskSerializer,
     TaskReviewSerializer,
     LearningTaskLimitSerializer,
+    TaskBonusSerializer,
 )
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_protect
@@ -363,4 +364,116 @@ class LearningTaskLimitView(APIView):
         serializer = LearningTaskLimitSerializer(task_limit)
 
         return Response({"task_limit": serializer.data}, status=status.HTTP_200_OK)
- 
+
+
+@method_decorator(csrf_protect, name="dispatch")
+class TaskBonusAPIView(APIView):
+    authentication_classes = [JWTCookieAuthentication]
+    permission_classes = [IsAuthenticated, IsAdminUser]
+
+    def post(self, request, task_id):
+        try:
+            user = request.user
+            task = LearningTask.objects.get(id=task_id)
+            task_owner = task.user
+
+            if TaskBonus.objects.filter(task=task, admin=user).exists():
+                return Response(
+                    {"error": "You have already given a bonus for this task."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            serializer = TaskBonusSerializer(data=request.data)
+            if serializer.is_valid():
+                with transaction.atomic():
+                    bonus = serializer.save(task=task, admin=user)
+
+                    async_to_sync(notify_user)(
+                        recipient=task_owner,
+                        actor=user,
+                        title="Bonus score added",
+                        description=f"An admin added a bonus score (+{bonus.score}) to your learning task.",
+                        code="info",
+                        url=f"/user/learning-task/{task.id}",
+                        is_push_notif=True,
+                    )
+
+                    return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        except LearningTask.DoesNotExist:
+            return Response(
+                {"error": "Task not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    def patch(self, request, task_id):
+        try:
+            task = LearningTask.objects.get(id=task_id)
+            bonus = TaskBonus.objects.get(task=task, admin=request.user)
+            task_owner = task.user
+
+            serializer = TaskBonusSerializer(bonus, data=request.data, partial=True)
+            if serializer.is_valid():
+                with transaction.atomic():
+                    bonus = serializer.save()
+
+                    async_to_sync(notify_user)(
+                        recipient=task_owner,
+                        actor=request.user,
+                        title="Bonus score updated",
+                        description=f"Your bonus score was updated to +{bonus.score}.",
+                        code="info",
+                        url=f"/user/learning-task/{task.id}",
+                        is_push_notif=True,
+                    )
+
+                    return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
+
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        except LearningTask.DoesNotExist:
+            return Response(
+                {"error": "Task not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+        except TaskBonus.DoesNotExist:
+            return Response(
+                {"error": "Bonus not found. You can create one with POST."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, task_id):
+        try:
+            task = LearningTask.objects.get(id=task_id)
+            bonus = TaskBonus.objects.get(task=task, admin=request.user)
+            task_owner = task.user
+
+            with transaction.atomic():
+                bonus.delete()
+
+                async_to_sync(notify_user)(
+                    recipient=task_owner,
+                    actor=request.user,
+                    title="Bonus score removed",
+                    description="An admin removed the bonus score from your learning task.",
+                    code="warning",
+                    url=f"/user/learning-task/{task.id}",
+                    is_push_notif=True,
+                )
+
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        except LearningTask.DoesNotExist:
+            return Response(
+                {"error": "Task not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+        except TaskBonus.DoesNotExist:
+            return Response(
+                {"error": "Bonus not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)

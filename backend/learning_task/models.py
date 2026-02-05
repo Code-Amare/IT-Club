@@ -78,12 +78,12 @@ class LearningTaskLimit(models.Model):
 
 
 class TaskBonus(models.Model):
-    task = models.ForeignKey(
+    task = models.OneToOneField(
         LearningTask, on_delete=models.CASCADE, related_name="bonuses"
     )
     admin = models.ForeignKey(User, on_delete=models.CASCADE)
     score = models.PositiveSmallIntegerField(
-        validators=[MinValueValidator(0), MaxValueValidator(20)]
+        validators=[MinValueValidator(0), MaxValueValidator(30)]
     )
     reason = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
