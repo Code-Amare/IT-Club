@@ -59,7 +59,9 @@ class TaskReview(models.Model):
 
 
 class LearningTaskLimit(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="task_limit")
+    user = models.OneToOneField(
+        User, on_delete=models.CASCADE, related_name="task_limit"
+    )
     limit = models.PositiveIntegerField(default=0)
 
     def created(self):
@@ -73,3 +75,25 @@ class LearningTaskLimit(models.Model):
 
     def is_valid(self):
         return self.limit > 0
+
+
+class TaskBonus(models.Model):
+    task = models.ForeignKey(
+        LearningTask, on_delete=models.CASCADE, related_name="bonuses"
+    )
+    admin = models.ForeignKey(User, on_delete=models.CASCADE)
+    score = models.PositiveSmallIntegerField(
+        validators=[MinValueValidator(0), MaxValueValidator(20)]
+    )
+    reason = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["task", "admin"], name="unique_bonus_per_admin_per_task"
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.task.title} +{self.score}"

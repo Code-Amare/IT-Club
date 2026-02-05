@@ -385,9 +385,9 @@ export default function LearningTaskDetail() {
                     <div className={styles.headerContent}>
                         <button
                             className={styles.backBtn}
-                            onClick={() => navigate("/admin")}
+                            onClick={() => navigate(-1)}
                         >
-                            <FaArrowLeft /> Back to Admin Dashboard
+                            <FaArrowLeft /> Go Back
                         </button>
                         <div className={styles.headerMain}>
                             <div className={styles.titleSection}>
@@ -626,7 +626,7 @@ export default function LearningTaskDetail() {
                                     className={styles.viewUserBtn}
                                     onClick={() => {
                                         if (task.user?.id) {
-                                            navigate(`/admin/user/${task.user.id}`);
+                                            navigate(`/admin/student/${task.user.id}`);
                                         } else {
                                             neonToast.error("User information not available", "error");
                                         }

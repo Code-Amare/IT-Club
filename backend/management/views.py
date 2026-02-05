@@ -33,6 +33,7 @@ from django.db.models import (
     Count,
     Q,
     F,
+    Sum,
     When,
     Case,
     Value,
@@ -69,23 +70,19 @@ User = get_user_model()
 
 class StudentsView(APIView):
     authentication_classes = [JWTCookieAuthentication]
-    permission_classes = [IsAuthenticated, RolePermissionFactory(["admin", "staff"])]
+    permission_classes = [RolePermissionFactory(["admin", "staff"])]
 
     def get(self, request):
         try:
-            # Get query parameters from the frontend
             search = request.query_params.get("search", "").strip()
             grade = request.query_params.get("grade", "").strip()
             section = request.query_params.get("section", "").strip()
             account_status = request.query_params.get("accountStatus", "").strip()
             sort_by = request.query_params.get("sort_by", "-user__date_joined")
             sort_order = request.query_params.get("sort_order", "desc")
-
-            # Page and page_size should match the frontend pagination
             page = int(request.query_params.get("page", 1))
             page_size = int(request.query_params.get("page_size", 10))
 
-            # Build base queryset with attendance annotations
             profiles = (
                 Profile.objects.select_related("user")
                 .filter(user__role="user")
@@ -102,36 +99,44 @@ class StudentsView(APIView):
                         "user__attendances",
                         filter=Q(user__attendances__status="absent"),
                     ),
-                    attendance_percentage=Case(
-                        When(total_sessions_attended=0, then=Value(0.0)),
-                        default=(
-                            100.0
-                            * Count(
-                                "user__attendances",
-                                filter=Q(user__attendances__status="present"),
-                            )
-                            / F("total_sessions_attended")
-                        ),
-                        output_field=FloatField(),
+                    special_case_count=Count(
+                        "user__attendances",
+                        filter=Q(user__attendances__status="special_case"),
                     ),
                 )
             )
 
-            # Apply text search across multiple fields
+            # Attendance percentage
+            profiles = profiles.annotate(
+                attendance_percentage=Case(
+                    When(total_sessions_attended=0, then=Value(0.0)),
+                    default=(
+                        100.0
+                        * (F("present_count") + F("late_count"))
+                        / (
+                            F("present_count")
+                            + F("late_count")
+                            + F("absent_count")
+                            + F("special_case_count")
+                        )
+                    ),
+                    output_field=FloatField(),
+                )
+            )
+
+            # Filters
             if search:
-                search_filter = Q(user__full_name__icontains=search)
-                search_filter |= Q(user__email__icontains=search)
-                search_filter |= Q(grade__icontains=search)
-                search_filter |= Q(section__icontains=search)
-                search_filter |= Q(account__icontains=search)
-                search_filter |= Q(phone_number__icontains=search)
+                search_filter = (
+                    Q(user__full_name__icontains=search)
+                    | Q(user__email__icontains=search)
+                    | Q(grade__icontains=search)
+                    | Q(section__icontains=search)
+                )
                 profiles = profiles.filter(search_filter)
 
-            # Apply filters - match frontend filter names
             if grade:
                 try:
-                    grade_int = int(grade)
-                    profiles = profiles.filter(grade=grade_int)
+                    profiles = profiles.filter(grade=int(grade))
                 except ValueError:
                     pass
 
@@ -144,51 +149,42 @@ class StudentsView(APIView):
                 elif account_status.lower() == "inactive":
                     profiles = profiles.filter(user__is_active=False)
 
-            # Apply sorting
-            # Map frontend sort keys to database fields
+            # Sorting
             sort_mapping = {
                 "full_name": "user__full_name",
                 "email": "user__email",
                 "grade": "grade",
                 "section": "section",
                 "account_status": "user__is_active",
-                "created_at": "created_at",
                 "attendance_percentage": "attendance_percentage",
                 "total_sessions": "total_sessions_attended",
             }
 
-            # Determine the actual sort field
-            if sort_by.startswith("-"):
-                sort_field = sort_by[1:]
-                if sort_field in sort_mapping:
-                    db_sort_field = sort_mapping[sort_field]
-                    if sort_order == "desc":
-                        profiles = profiles.order_by(f"-{db_sort_field}")
-                    else:
-                        profiles = profiles.order_by(db_sort_field)
-                else:
-                    # Default sorting by date joined
-                    profiles = profiles.order_by("-user__date_joined")
-            else:
-                if sort_by in sort_mapping:
-                    db_sort_field = sort_mapping[sort_by]
-                    if sort_order == "desc":
-                        profiles = profiles.order_by(f"-{db_sort_field}")
-                    else:
-                        profiles = profiles.order_by(db_sort_field)
-                else:
-                    profiles = profiles.order_by("-user__date_joined")
+            sort_field = sort_by.lstrip("-")
+            db_sort_field = sort_mapping.get(sort_field, "user__date_joined")
+            profiles = profiles.order_by(
+                f"-{db_sort_field}" if sort_by.startswith("-") else db_sort_field
+            )
 
-            # Calculate pagination
+            # Pagination
             total_count = profiles.count()
             total_pages = math.ceil(total_count / page_size) if page_size > 0 else 1
-
-            # Apply pagination
             start_index = (page - 1) * page_size
             end_index = start_index + page_size
             paginated_profiles = profiles[start_index:end_index]
 
-            # Prepare student data with attendance statistics
+            # Helper: calculate rating from percentage
+            def get_attendance_rating(percentage):
+                if percentage >= 90:
+                    return "excellent"
+                if percentage >= 75:
+                    return "good"
+                if percentage >= 50:
+                    return "average"
+                if percentage >= 0:
+                    return "poor"
+                return "No data"
+
             students_data = []
             for profile in paginated_profiles:
                 user = profile.user
@@ -199,250 +195,110 @@ class StudentsView(APIView):
                     sign_url=True,
                     secure=True,
                 )
-                # Get recent attendance (last 30 days)
-                thirty_days_ago = timezone.now() - timedelta(days=30)
-                recent_attendance = profile.user.attendances.filter(
-                    attended_at__gte=thirty_days_ago
+
+                last_attendance = user.attendances.order_by("-attended_at").first()
+                recent_attendance_30d = user.attendances.filter(
+                    attended_at__gte=timezone.now() - timedelta(days=30)
                 )
-                recent_total = recent_attendance.count()
-                recent_present = recent_attendance.filter(status="present").count()
+                recent_total = recent_attendance_30d.filter(
+                    status__in=["present", "late", "absent", "special_case"]
+                ).count()
+                recent_present_late = recent_attendance_30d.filter(
+                    status__in=["present", "late"]
+                ).count()
+                recent_percentage = (
+                    (recent_present_late / recent_total * 100)
+                    if recent_total > 0
+                    else 0
+                )
 
-                # Get last attendance record
-                last_attendance = profile.user.attendances.order_by(
-                    "-attended_at"
-                ).first()
+                attendance_percentage = round(profile.attendance_percentage or 0, 2)
+                attendance_rating = get_attendance_rating(attendance_percentage)
 
-                # Format attendance data
-                attendance_percentage = profile.attendance_percentage or 0
-                total_sessions = profile.total_sessions_attended or 0
-
-                student_data = {
-                    "id": profile.user.id,
-                    "full_name": profile.user.full_name or "",
-                    "email": profile.user.email or "",
-                    "grade": profile.grade or "",
-                    "section": profile.section or "",
-                    "field": profile.field or "",
-                    "account": profile.account or "",
-                    "profile_pic_url": profile_pic_url or "",
-                    "phone_number": profile.phone_number or "",
-                    "account_status": (
-                        "active" if profile.user.is_active else "inactive"
-                    ),
-                    "created_at": (
-                        profile.created_at.isoformat() if profile.created_at else None
-                    ),
-                    "updated_at": (
-                        profile.updated_at.isoformat() if profile.updated_at else None
-                    ),
-                    "date_joined": (
-                        profile.user.date_joined.isoformat()
-                        if profile.user.date_joined
-                        else None
-                    ),
-                    # Add attendance statistics
-                    "attendance": {
-                        "total_sessions": total_sessions,
-                        "present": profile.present_count or 0,
-                        "late": profile.late_count or 0,
-                        "absent": profile.absent_count or 0,
-                        "attendance_percentage": round(attendance_percentage, 2),
-                        "attendance_rating": self._get_attendance_rating(
-                            attendance_percentage
-                        ),
-                        "recent_attendance": {
-                            "total": recent_total,
-                            "present": recent_present,
-                            "recent_percentage": (
-                                round((recent_present / recent_total * 100), 2)
-                                if recent_total > 0
-                                else 0
+                students_data.append(
+                    {
+                        "id": user.id,
+                        "full_name": user.full_name or "",
+                        "email": user.email or "",
+                        "grade": profile.grade or "",
+                        "section": profile.section or "",
+                        "profile_pic_url": profile_pic_url or "",
+                        "account_status": "active" if user.is_active else "inactive",
+                        "attendance": {
+                            "total_sessions": profile.total_sessions_attended or 0,
+                            "present": profile.present_count or 0,
+                            "late": profile.late_count or 0,
+                            "absent": profile.absent_count or 0,
+                            "special_case": profile.special_case_count or 0,
+                            "attendance_percentage": attendance_percentage,
+                            "attendance_rating": attendance_rating,
+                            "recent_percentage": round(recent_percentage, 2),
+                            "last_attendance_date": (
+                                last_attendance.attended_at.isoformat()
+                                if last_attendance
+                                else None
+                            ),
+                            "last_attendance_status": (
+                                last_attendance.status if last_attendance else None
                             ),
                         },
-                        "last_attendance_date": (
-                            last_attendance.attended_at.isoformat()
-                            if last_attendance
-                            else None
-                        ),
-                        "last_attendance_status": (
-                            last_attendance.status if last_attendance else None
-                        ),
-                    },
-                }
-                students_data.append(student_data)
+                    }
+                )
 
-            # Calculate overall statistics
-            total_students = Profile.objects.count()
+            attendance_counts = Attendance.objects.aggregate(
+                total_present=Count("id", filter=Q(status="present")),
+                total_late=Count("id", filter=Q(status="late")),
+                total_absent=Count("id", filter=Q(status="absent")),
+                total_special_case=Count("id", filter=Q(status="special_case")),
+            )
+
+            total_records = (
+                attendance_counts["total_present"]
+                + attendance_counts["total_late"]
+                + attendance_counts["total_absent"]
+                + attendance_counts["total_special_case"]
+            )
+
+            average_attendance = (
+                (attendance_counts["total_present"] + attendance_counts["total_late"])
+                / total_records
+                * 100
+                if total_records > 0
+                else 0
+            )
+
             active_students = Profile.objects.filter(user__is_active=True).count()
             inactive_students = Profile.objects.filter(user__is_active=False).count()
+            total_students = User.objects.filter(role="user").count()
 
-            # Get grade distribution
-            grade_distribution = {}
-            grade_counts = (
-                Profile.objects.values("grade")
-                .annotate(count=Count("grade"))
-                .order_by("grade")
-            )
-            for item in grade_counts:
-                if item["grade"]:
-                    grade_distribution[str(item["grade"])] = item["count"]
-
-            # Get section distribution
-            section_distribution = {}
-            section_counts = (
-                Profile.objects.values("section")
-                .annotate(count=Count("section"))
-                .order_by("section")
-            )
-            for item in section_counts:
-                if item["section"]:
-                    section_distribution[item["section"]] = item["count"]
-
-            # Calculate overall attendance statistics
-            overall_attendance_stats = self._get_overall_attendance_stats()
-
-            # Get unique values for filter dropdowns
-            available_grades = list(
-                Profile.objects.exclude(grade=None)
-                .values_list("grade", flat=True)
-                .distinct()
-                .order_by("grade")
-            )
-            available_sections = list(
-                Profile.objects.exclude(section=None)
-                .values_list("section", flat=True)
-                .distinct()
-                .order_by("section")
-            )
-
-            # Build the complete response
-            response_data = {
-                "students": students_data,
-                "pagination": {
-                    "current_page": page,
-                    "page_size": page_size,
-                    "total_count": total_count,
-                    "total_pages": total_pages,
+            return Response(
+                {
+                    "students": students_data,
+                    "pagination": {
+                        "current_page": page,
+                        "page_size": page_size,
+                        "total_count": total_count,
+                        "total_pages": total_pages,
+                    },
+                    "stats": {
+                        "attendance_avg": average_attendance,
+                        "total": total_students,
+                        "active": active_students,
+                        "inactive": inactive_students,
+                    },
                 },
-                "stats": {
-                    "total": total_students,
-                    "active": active_students,
-                    "inactive": inactive_students,
-                    "by_grade": grade_distribution,
-                    "by_section": section_distribution,
-                    "attendance": overall_attendance_stats,
-                },
-                "filters": {
-                    "available_grades": [str(g) for g in available_grades],
-                    "available_sections": available_sections,
-                },
-            }
-
-            return Response(response_data, status=status.HTTP_200_OK)
+                status=status.HTTP_200_OK,
+            )
 
         except Exception as e:
             import traceback
 
-            print(f"Error in StudentsView: {str(e)}")
+            print(f"Error in StudentsView: {e}")
             print(traceback.format_exc())
             return Response(
                 {"error": str(e), "detail": "Failed to fetch students"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
-
-    def _get_attendance_rating(self, percentage):
-        """Determine attendance rating based on percentage"""
-        if percentage >= 90:
-            return "excellent"
-        elif percentage >= 75:
-            return "good"
-        elif percentage >= 60:
-            return "average"
-        elif percentage > 0:
-            return "poor"
-        else:
-            return "no_data"
-
-    def _get_overall_attendance_stats(self):
-        """Calculate overall attendance statistics for all students"""
-        try:
-            # Get all attendance records
-            total_attendance = Attendance.objects.count()
-
-            if total_attendance == 0:
-                return {
-                    "total_sessions": 0,
-                    "total_attendance_records": 0,
-                    "present_percentage": 0,
-                    "late_percentage": 0,
-                    "absent_percentage": 0,
-                    "average_attendance_percentage": 0,
-                    "total_present": 0,
-                    "total_late": 0,
-                    "total_absent": 0,
-                }
-
-            # Get counts by status
-            present_count = Attendance.objects.filter(status="present").count()
-            late_count = Attendance.objects.filter(status="late").count()
-            absent_count = Attendance.objects.filter(status="absent").count()
-
-            # Calculate percentages
-            present_percentage = (present_count / total_attendance) * 100
-            late_percentage = (late_count / total_attendance) * 100
-            absent_percentage = (absent_count / total_attendance) * 100
-
-            # Get unique attendance sessions
-            total_sessions = AttendanceSession.objects.filter(is_ended=True).count()
-
-            # Calculate average attendance percentage across all students
-            profiles_with_attendance = Profile.objects.annotate(
-                total_sessions=Count("user__attendances"),
-                present_sessions=Count(
-                    "user__attendances", filter=Q(user__attendances__status="present")
-                ),
-            ).filter(total_sessions__gt=0)
-
-            total_percentage = 0
-            count = 0
-
-            for profile in profiles_with_attendance:
-                if profile.total_sessions > 0:
-                    percentage = (
-                        profile.present_sessions / profile.total_sessions
-                    ) * 100
-                    total_percentage += percentage
-                    count += 1
-
-            average_attendance_percentage = total_percentage / count if count > 0 else 0
-
-            return {
-                "total_sessions": total_sessions,
-                "total_attendance_records": total_attendance,
-                "total_present": present_count,
-                "total_late": late_count,
-                "total_absent": absent_count,
-                "present_percentage": round(present_percentage, 2),
-                "late_percentage": round(late_percentage, 2),
-                "absent_percentage": round(absent_percentage, 2),
-                "average_attendance_percentage": round(
-                    average_attendance_percentage, 2
-                ),
-            }
-
-        except Exception as e:
-            print(f"Error calculating attendance stats: {e}")
-            return {
-                "total_sessions": 0,
-                "total_attendance_records": 0,
-                "present_percentage": 0,
-                "late_percentage": 0,
-                "absent_percentage": 0,
-                "average_attendance_percentage": 0,
-                "total_present": 0,
-                "total_late": 0,
-                "total_absent": 0,
-            }
 
 
 class TopLearningTasks(APIView):
@@ -456,159 +312,6 @@ class TopLearningTasks(APIView):
         ).order_by("-admin_rating", "-likes_count")[:boundary]
         top_learning_tasks = LearningTaskSerializer(top_tasks, many=True)
         return Response({"top_learning_tasks": top_learning_tasks.data})
-
-
-class StudentStatsView(APIView):
-    """Separate endpoint for just statistics (if your frontend calls it separately)"""
-
-    authentication_classes = [JWTCookieAuthentication]
-    permission_classes = [IsAuthenticated, RolePermissionFactory(["admin", "staff"])]
-
-    def get(self, request):
-        try:
-            # Get basic stats
-            total_students = Profile.objects.count()
-            active_students = Profile.objects.filter(user__is_active=True).count()
-            inactive_students = Profile.objects.filter(user__is_active=False).count()
-
-            # Calculate grade distribution
-            grade_distribution = {}
-            grade_counts = (
-                Profile.objects.values("grade")
-                .annotate(count=Count("grade"))
-                .order_by("grade")
-            )
-            for item in grade_counts:
-                if item["grade"]:
-                    grade_distribution[str(item["grade"])] = item["count"]
-
-            # Calculate section distribution
-            section_distribution = {}
-            section_counts = (
-                Profile.objects.values("section")
-                .annotate(count=Count("section"))
-                .order_by("section")
-            )
-            for item in section_counts:
-                if item["section"]:
-                    section_distribution[item["section"]] = item["count"]
-
-            # Calculate attendance stats
-            attendance_stats = self._get_overall_attendance_stats()
-
-            response_data = {
-                "overall": {
-                    "total": total_students,
-                    "active": active_students,
-                    "inactive": inactive_students,
-                    "by_grade": grade_distribution,
-                    "by_section": section_distribution,
-                    "attendance": attendance_stats,
-                }
-            }
-
-            return Response(response_data, status=status.HTTP_200_OK)
-
-        except Exception as e:
-            return Response(
-                {"error": str(e), "detail": "Failed to fetch student statistics"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
-
-    def _get_overall_attendance_stats(self):
-        """Calculate attendance statistics based on the provided models"""
-        try:
-            # Get all ended sessions
-            ended_sessions = AttendanceSession.objects.filter(is_ended=True)
-            total_sessions = ended_sessions.count()
-
-            if total_sessions == 0:
-                return {
-                    "total_sessions": 0,
-                    "total_attendance_records": 0,
-                    "present_percentage": 0,
-                    "late_percentage": 0,
-                    "absent_percentage": 0,
-                    "average_attendance_percentage": 0,
-                }
-
-            # Get all attendance records for ended sessions
-            attendance_records = Attendance.objects.filter(session__is_ended=True)
-            total_attendance_records = attendance_records.count()
-
-            # Count statuses
-            present_count = attendance_records.filter(status="present").count()
-            late_count = attendance_records.filter(status="late").count()
-            absent_count = attendance_records.filter(status="absent").count()
-
-            # Calculate percentages
-            present_percentage = (
-                (present_count / total_attendance_records) * 100
-                if total_attendance_records > 0
-                else 0
-            )
-            late_percentage = (
-                (late_count / total_attendance_records) * 100
-                if total_attendance_records > 0
-                else 0
-            )
-            absent_percentage = (
-                (absent_count / total_attendance_records) * 100
-                if total_attendance_records > 0
-                else 0
-            )
-
-            # Calculate average attendance per student
-            # Get all users who have at least one attendance record
-            users_with_attendance = User.objects.filter(
-                attendances__session__is_ended=True
-            ).distinct()
-
-            total_percentage = 0
-            user_count = 0
-
-            for user in users_with_attendance:
-                # Get user's attendance records for ended sessions
-                user_attendance = Attendance.objects.filter(
-                    user=user, session__is_ended=True
-                )
-
-                total_user_sessions = user_attendance.count()
-                if total_user_sessions > 0:
-                    user_present_count = user_attendance.filter(
-                        status="present"
-                    ).count()
-                    user_attendance_percentage = (
-                        user_present_count / total_user_sessions
-                    ) * 100
-                    total_percentage += user_attendance_percentage
-                    user_count += 1
-
-            average_attendance_percentage = (
-                total_percentage / user_count if user_count > 0 else 0
-            )
-
-            return {
-                "total_sessions": total_sessions,
-                "total_attendance_records": total_attendance_records,
-                "present_percentage": round(present_percentage, 2),
-                "late_percentage": round(late_percentage, 2),
-                "absent_percentage": round(absent_percentage, 2),
-                "average_attendance_percentage": round(
-                    average_attendance_percentage, 2
-                ),
-            }
-
-        except Exception as e:
-            print(f"Error calculating attendance stats: {e}")
-            return {
-                "total_sessions": 0,
-                "total_attendance_records": 0,
-                "present_percentage": 0,
-                "late_percentage": 0,
-                "absent_percentage": 0,
-                "average_attendance_percentage": 0,
-            }
 
 
 class StudentUpdateView(APIView):
@@ -1874,7 +1577,7 @@ class TaskLimitView(APIView):
             {
                 "message": "Task limits updated successfully.",
                 "affected_users": user_ids,
-                "total_users": len(users_list)
+                "total_users": len(users_list),
             },
             status=status.HTTP_200_OK,
         )
@@ -1893,3 +1596,61 @@ class GetAllUsersView(APIView):
 
         serializer = ProfileSerializer(users, many=True)
         return Response({"users": serializer.data}, status=status.HTTP_200_OK)
+
+
+class DashboardView(APIView):
+    authentication_classes = [JWTCookieAuthentication]
+    permission_classes = [RolePermissionFactory(["admin", "staff"])]
+
+    def get(self, request):
+        students = User.objects.filter(role="user", is_deleted=False)
+        gender_counts_query = students.values("gender").annotate(count=Count("id"))
+        gender_counts = {item["gender"]: item["count"] for item in gender_counts_query}
+        for g in ["male", "female"]:
+            gender_counts.setdefault(g, 0)
+
+        sessions_query = AttendanceSession.objects.all()
+        total_sessions = sessions_query.count()
+
+        status_counts_query = Attendance.objects.values("status").annotate(
+            count=Count("id")
+        )
+        status_counts = {
+            status: 0 for status in ["present", "late", "absent", "special_case"]
+        }
+        for item in status_counts_query:
+            status_counts[item["status"]] = item["count"]
+
+        total_attendance = sum(status_counts.values()) or 1
+        status_percentages = {
+            k: round(v / total_attendance * 100, 2) for k, v in status_counts.items()
+        }
+
+        grade_distribution_query = (
+            Profile.objects.values("grade")
+            .annotate(count=Count("id"))
+            .order_by("grade")
+        )
+        grade_distribution = {
+            item["grade"]: item["count"] for item in grade_distribution_query
+        }
+
+        boundary = int(request.query_params.get("boundary", 10))
+        top_tasks = LearningTask.objects.annotate(
+            admin_rating=Avg("reviews__rating", filter=Q(reviews__is_admin=True)),
+            likes_count=Count("likes", distinct=True),
+        ).order_by("-admin_rating", "-likes_count")[:boundary]
+        top_learning_tasks = LearningTaskSerializer(top_tasks, many=True).data
+
+        response_data = {
+            "gender_counts": gender_counts,
+            "attendance_summary": {
+                "total_sessions": total_sessions,
+                "status_counts": status_counts,
+                "status_percentages": status_percentages,
+            },
+            "grade_distribution": grade_distribution,
+            "top_learning_tasks": top_learning_tasks,
+        }
+
+        return Response(response_data)

@@ -1,8 +1,15 @@
-/* Add these CSS variables if they don't exist in your theme */
+/* AdminDashboard.module.css */
+
+/* CSS Variables */
 :root {
   --bg-hover: rgba(79, 70, 229, 0.05);
   --bg-active: rgba(79, 70, 229, 0.1);
   --primary-light: rgba(79, 70, 229, 0.3);
+}
+
+/* Dashboard Container */
+.AdminDashboardContainer {
+  min-height: 100vh;
 }
 
 .dashboard {
@@ -10,6 +17,7 @@
   min-height: 100vh;
 }
 
+/* Header */
 .header {
   margin-bottom: 32px;
 }
@@ -145,14 +153,6 @@
   position: relative;
 }
 
-.recharts-wrapper {
-  margin: 0 auto;
-}
-
-.recharts-surface {
-  overflow: visible;
-}
-
 .genderLegend {
   display: flex;
   justify-content: center;
@@ -186,6 +186,12 @@
   color: var(--text-primary);
 }
 
+.genderCount {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+/* Tooltip */
 .tooltip {
   background: var(--bg-surface);
   border: 1px solid var(--border-color);
@@ -206,18 +212,12 @@
   font-size: 14px;
 }
 
-/* Tables Section */
+/* Tables Section - Single column layout */
 .tablesSection {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  display: flex;
+  flex-direction: column;
   gap: 24px;
   margin-bottom: 32px;
-}
-
-@media (max-width: 992px) {
-  .tablesSection {
-    grid-template-columns: 1fr;
-  }
 }
 
 .tableCard {
@@ -226,6 +226,10 @@
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 1px 3px var(--card-shadow);
+}
+
+.tableCard.fullWidth {
+  width: 100%;
 }
 
 .tableHeader {
@@ -310,6 +314,24 @@
   background: var(--bg-body);
 }
 
+/* Clickable row styles */
+.clickableRow {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.clickableRow:hover {
+  background-color: var(--bg-hover) !important;
+  transform: translateY(-1px);
+  box-shadow: inset 0 0 0 1px var(--primary-light);
+}
+
+.clickableRow:active {
+  transform: translateY(0);
+  background-color: var(--bg-active) !important;
+}
+
 /* Table Cell Styles */
 .taskCell {
   display: flex;
@@ -353,24 +375,6 @@
   display: none;
 }
 
-.studentInfo {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.studentName {
-  font-weight: 500;
-  color: var(--text-primary);
-}
-
-.mobileEmail {
-  display: none;
-  font-size: 12px;
-  color: var(--text-secondary);
-  margin-top: 2px;
-}
-
 .gradeBadge {
   background: var(--badge-bg);
   color: var(--badge-text);
@@ -386,21 +390,6 @@
 
 .gradeIcon {
   font-size: 10px;
-}
-
-.mobileGradeBadge {
-  background: var(--badge-bg);
-  color: var(--badge-text);
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 10px;
-  font-weight: 600;
-  margin-top: 2px;
-}
-
-.projectName {
-  font-weight: 500;
-  color: var(--text-primary);
 }
 
 .rating {
@@ -429,65 +418,105 @@
   color: #fbbf24;
 }
 
-/* =============================================== */
-/* NEW STYLES FOR CLICKABLE ROWS & MOBILE RESPONSIVENESS */
-/* =============================================== */
-
-/* Clickable row styles */
-.clickableRow {
-  cursor: pointer;
-  transition: all 0.2s ease;
-  position: relative;
-}
-
-.clickableRow:hover {
-  background-color: var(--bg-hover) !important;
-  transform: translateY(-1px);
-  box-shadow: inset 0 0 0 1px var(--primary-light);
-}
-
-.clickableRow:active {
-  transform: translateY(0);
-  background-color: var(--bg-active) !important;
-}
-
-/* Make student info more prominent in clickable rows */
-.clickableRow .studentCell {
+.likesCount {
+  display: flex;
   align-items: center;
 }
 
-.clickableRow .profileImage,
-.clickableRow .avatarPlaceholder {
-  border: 2px solid transparent;
-  transition: border-color 0.2s ease;
+.likesBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
 }
 
-.clickableRow:hover .profileImage,
-.clickableRow:hover .avatarPlaceholder {
-  border-color: var(--primary);
+.heartIcon {
+  font-size: 10px;
 }
 
-/* Ensure smooth transitions */
-* {
-  -webkit-tap-highlight-color: transparent;
+/* Status Badges */
+.statusBadge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
 }
 
-/* Improve focus states for accessibility */
-.clickableRow:focus {
-  outline: 2px solid var(--primary);
-  outline-offset: -2px;
+/* No Data Message */
+.noDataMessage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-secondary);
+  gap: 12px;
 }
 
-/* Loading state for clickable rows */
-.clickableRow:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+/* Empty State */
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  gap: 16px;
+  color: var(--text-secondary);
+  text-align: center;
 }
 
-/* Add active state for mobile touch */
-@media (hover: none) {
-  .clickableRow:active {
-    background-color: var(--bg-active) !important;
+.emptyState p {
+  font-size: 16px;
+  color: var(--text-secondary);
+}
+
+.retryButton {
+  padding: 8px 16px;
+  background-color: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.retryButton:hover {
+  background-color: var(--primary-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Loading States */
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 50vh;
+  gap: 16px;
+  color: var(--text-secondary);
+}
+
+.loadingSpinner {
+  animation: spin 1s linear infinite;
+  font-size: 32px;
+  color: var(--primary);
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
   }
 }
 
@@ -565,14 +594,6 @@
     display: none;
   }
 
-  .showOnMobile {
-    display: block;
-  }
-
-  .mobileEmail {
-    display: block;
-  }
-
   .dataTable th,
   .dataTable td {
     padding: 12px 16px;
@@ -587,26 +608,6 @@
     width: 28px;
     height: 28px;
     font-size: 12px;
-  }
-
-  /* Enhanced mobile responsiveness for tables */
-  .dataTable {
-    display: block;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .tableWrapper {
-    border-radius: 8px;
-    overflow: hidden;
-  }
-
-  .dataTable th,
-  .dataTable td {
-    padding: 12px 8px;
-    font-size: 13px;
-    white-space: nowrap;
-    min-width: 100px;
   }
 
   /* Make table cells more touch-friendly on mobile */
@@ -657,11 +658,6 @@
     font-size: 11px;
   }
 
-  .projectName {
-    word-break: break-word;
-    max-width: 120px;
-  }
-
   .genderItem {
     font-size: 12px;
     padding: 3px 8px;
@@ -679,586 +675,13 @@
     font-size: 12px;
   }
 
-  .taskName,
-  .projectName {
+  .taskName {
     max-width: 100px;
     word-break: break-word;
   }
 }
 
-/* =============================================== */
-/* NEW STYLES FOR STUDENT MANAGEMENT SECTION */
-/* =============================================== */
-
-.studentManagementSection {
-  margin-top: 32px;
-}
-
-/* Table Actions */
-.tableActions {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-}
-
-.filterButton {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  background-color: var(--primary);
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: all 0.2s ease;
-}
-
-.filterButton:hover {
-  background-color: var(--primary-dark);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.clearButton {
-  padding: 8px 16px;
-  background-color: var(--bg-body);
-  color: var(--text-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: all 0.2s ease;
-}
-
-.clearButton:hover {
-  background-color: var(--border-color);
-  color: var(--text-primary);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.applyButton {
-  padding: 8px 24px;
-  background-color: var(--primary);
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  height: 40px;
-}
-
-.applyButton:hover:not(:disabled) {
-  background-color: var(--primary-dark);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.applyButton:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.spinner {
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-/* Filters Section */
-.filtersSection {
-  background-color: var(--bg-body);
-  border-bottom: 1px solid var(--border-color);
-  padding: 20px;
-}
-
-.filterRow {
-  display: flex;
-  gap: 20px;
-  align-items: flex-end;
-}
-
-.filterGroup {
-  flex: 1;
-}
-
-.filterGroup label {
-  display: block;
-  margin-bottom: 8px;
-  font-size: 14px;
-  color: var(--text-secondary);
-  font-weight: 500;
-}
-
-.filterGroup input,
-.filterGroup select {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  font-size: 14px;
-  background-color: var(--bg-surface);
-  transition: border-color 0.2s;
-  color: var(--text-primary);
-}
-
-.filterGroup input:focus,
-.filterGroup select:focus {
-  outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
-}
-
-.searchInput {
-  position: relative;
-}
-
-.searchIcon {
-  position: absolute;
-  left: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--text-tertiary);
-}
-
-.searchInput input {
-  padding-left: 40px !important;
-}
-
-/* Sorting */
-.sortable {
-  cursor: pointer;
-  user-select: none;
-  position: relative;
-  padding-right: 24px !important;
-}
-
-.sortIcon {
-  position: absolute;
-  right: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 12px;
-  opacity: 0.5;
-}
-
-.sortAsc {
-  transform: translateY(-50%) rotate(180deg);
-}
-
-.sortable:hover .sortIcon {
-  opacity: 1;
-}
-
-/* Attendance Cell */
-.attendanceCell {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.attendanceProgress {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.progressBar {
-  flex: 1;
-  height: 6px;
-  background-color: var(--bg-body);
-  border-radius: 3px;
-  overflow: hidden;
-}
-
-.progressFill {
-  height: 100%;
-  border-radius: 3px;
-  transition: width 0.3s ease;
-}
-
-.attendancePercentage {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-primary);
-  min-width: 45px;
-}
-
-.attendanceRating {
-  display: flex;
-  justify-content: flex-start;
-}
-
-.ratingBadge {
-  font-size: 12px;
-  padding: 2px 8px;
-  border-radius: 12px;
-  font-weight: 500;
-}
-
-/* Status Badges */
-.activeBadge {
-  background-color: rgba(16, 185, 129, 0.1) !important;
-  color: #10b981 !important;
-}
-
-.inactiveBadge {
-  background-color: rgba(239, 68, 68, 0.1) !important;
-  color: #ef4444 !important;
-}
-
-/* Pagination */
-.pagination {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 20px;
-  border-top: 1px solid var(--border-color);
-  background-color: var(--bg-body);
-}
-
-.paginationInfo {
-  font-size: 14px;
-  color: var(--text-secondary);
-  text-align: center;
-}
-
-.paginationControls {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-}
-
-.paginationButton {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  background-color: var(--bg-surface);
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  color: var(--text-secondary);
-  cursor: pointer;
-  font-size: 14px;
-  transition: all 0.2s ease;
-}
-
-.paginationButton:hover:not(:disabled) {
-  background-color: var(--bg-body);
-  border-color: var(--border-color-dark);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.paginationButton:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.pageNumbers {
-  display: flex;
-  gap: 8px;
-}
-
-.pageButton {
-  min-width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: var(--bg-surface);
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  color: var(--text-secondary);
-  cursor: pointer;
-  font-size: 14px;
-  transition: all 0.2s ease;
-}
-
-.pageButton:hover:not(.activePage):not(:disabled) {
-  background-color: var(--bg-body);
-  border-color: var(--border-color-dark);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.pageButton.activePage {
-  background-color: var(--primary);
-  border-color: var(--primary);
-  color: white;
-}
-
-.pageButton:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.pageSizeSelector {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  font-size: 14px;
-  color: var(--text-secondary);
-}
-
-.pageSizeSelect {
-  padding: 6px 12px;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  background-color: var(--bg-surface);
-  font-size: 14px;
-  color: var(--text-primary);
-}
-
-.pageSizeSelect:focus {
-  outline: none;
-  border-color: var(--primary);
-}
-
-/* Loading States */
-.loadingOverlay {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 60px 20px;
-  gap: 16px;
-  color: var(--text-secondary);
-}
-
-.loadingSpinner {
-  animation: spin 1s linear infinite;
-  font-size: 24px;
-  color: var(--primary);
-}
-
-/* Empty State */
-.emptyState {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 60px 20px;
-  gap: 16px;
-  color: var(--text-secondary);
-  text-align: center;
-}
-
-.emptyState p {
-  font-size: 16px;
-  color: var(--text-secondary);
-}
-
-.retryButton {
-  padding: 8px 16px;
-  background-color: var(--primary);
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: all 0.2s ease;
-}
-
-.retryButton:hover {
-  background-color: var(--primary-dark);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.noDataMessage {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  color: var(--text-secondary);
-  gap: 12px;
-}
-
-.loadingContainer {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 50vh;
-  gap: 16px;
-  color: var(--text-secondary);
-}
-
-/* Responsive Design for Student Management */
-@media (max-width: 1024px) {
-  .filterRow {
-    flex-direction: column;
-    gap: 16px;
-  }
-
-  .filterGroup {
-    width: 100%;
-  }
-
-  .applyButton {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .paginationControls {
-    flex-wrap: wrap;
-  }
-
-  .pageNumbers {
-    order: 3;
-    width: 100%;
-    justify-content: center;
-    margin-top: 8px;
-  }
-}
-
-@media (max-width: 768px) {
-  .tableActions {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
-  }
-
-  .filterButton,
-  .clearButton {
-    width: 100%;
-    justify-content: center;
-    min-height: 44px;
-    padding: 12px 16px;
-  }
-
-  .paginationInfo,
-  .pageSizeSelector {
-    text-align: center;
-  }
-
-  .pagination {
-    gap: 12px;
-    padding: 16px;
-  }
-
-  .attendanceCell {
-    min-width: 150px;
-  }
-
-  .attendanceProgress {
-    flex-direction: column;
-    gap: 6px;
-    align-items: flex-start;
-  }
-
-  .progressBar {
-    width: 100%;
-  }
-
-  /* Better touch targets for pagination */
-  .paginationButton,
-  .pageButton {
-    min-height: 44px;
-    min-width: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .applyButton {
-    min-height: 44px;
-    padding: 12px 16px;
-  }
-}
-
-/* Extra small screens */
-@media (max-width: 480px) {
-  .statsGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .dashboard {
-    padding: 12px;
-  }
-
-  .studentManagementSection {
-    margin-top: 24px;
-  }
-
-  .tableHeader {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-  }
-
-  .tableActions {
-    width: 100%;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .filterButton,
-  .clearButton {
-    width: 100%;
-    justify-content: center;
-  }
-
-  /* Reduce padding in table cells */
-  .dataTable th,
-  .dataTable td {
-    padding: 10px 6px;
-    font-size: 12px;
-  }
-
-  /* Hide some columns on very small screens */
-  .dataTable th:nth-child(2), /* Email */
-  .dataTable td:nth-child(2) {
-    display: none;
-  }
-
-  /* Make important info more visible */
-  .dataTable th:nth-child(1), /* Name */
-  .dataTable td:nth-child(1) {
-    min-width: 120px;
-  }
-
-  .attendanceCell {
-    min-width: 140px;
-  }
-
-  /* Stack pagination controls on very small screens */
-  .paginationControls {
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .pageNumbers {
-    order: -1;
-    width: 100%;
-    justify-content: center;
-  }
-
-  .paginationButton {
-    width: 100%;
-    justify-content: center;
-  }
-}
-
-/* Ensure table is properly scrollable on mobile */
+/* Table Scrollbar */
 .tableWrapper {
   position: relative;
   overflow-x: auto;
@@ -1277,18 +700,18 @@
 }
 
 .tableWrapper::-webkit-scrollbar-thumb {
-  background: var(--primary);
+  background: var(--border-color-dark);
   border-radius: 4px;
 }
 
 .tableWrapper::-webkit-scrollbar-thumb:hover {
-  background: var(--primary-dark);
+  background: var(--border-color);
 }
 
 /* Touch-friendly status badges */
 .statusBadge,
 .gradeBadge,
-.ratingBadge {
+.likesBadge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1301,14 +724,60 @@
   min-width: 32px;
 }
 
-/* Add active state for mobile touch on buttons */
+/* Accessibility improvements */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Improve focus states for accessibility */
+.clickableRow:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+
+/* Add active state for mobile touch */
 @media (hover: none) {
-  .filterButton:active,
-  .clearButton:active,
-  .applyButton:active:not(:disabled),
-  .paginationButton:active:not(:disabled),
-  .pageButton:active:not(:disabled):not(.activePage),
+  .clickableRow:active {
+    background-color: var(--bg-active) !important;
+  }
+
   .retryButton:active {
     transform: scale(0.98);
   }
+}
+
+/* Language badges */
+.languagesContainer {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.languageBadge {
+  color: white;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: 600;
+  min-width: 24px;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.moreLanguages {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-left: 4px;
+}
+
+/* Status badges with icons */
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
 }

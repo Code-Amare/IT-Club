@@ -23,10 +23,12 @@ from .views import (
     DeleteTaskReviewView,
     TaskLimitView,
     GetAllUsersView,
+    DashboardView,
 )
 
 urlpatterns = [
     path("users/", GetAllUsersView.as_view(), name="get-users"),
+    path("dashboard/", DashboardView.as_view(), name="dashboard"),
     path("students/", StudentsView.as_view(), name="students-list"),
     path("students/stats/", StudentsStatsView.as_view(), name="students-stats"),
     path("students/create/", StudentCreateView.as_view(), name="student-create"),
