@@ -50,7 +50,7 @@ import cloudinary
 import cloudinary.utils
 from pathlib import Path
 from asgiref.sync import async_to_sync
-from utils.notif import notify_user
+from utils.notif import notify_user, notify_users_bulk
 
 
 env = environ.Env()
@@ -1856,14 +1856,25 @@ class TaskLimitView(APIView):
                 limit_obj.limit += value
             elif operation == "decrement":
                 limit_obj.limit = max(limit_obj.limit - value, 0)
+        users_list = list(users)
 
         with transaction.atomic():
+            async_to_sync(notify_users_bulk)(
+                recipients=users_list,
+                actor=request.user,
+                title="Task limit updated",
+                description="Your task limit has been updated.",
+                code="info",
+                is_push_notif=True,
+            )
+
             LearningTaskLimit.objects.bulk_update(limits, ["limit"])
 
         return Response(
             {
                 "message": "Task limits updated successfully.",
                 "affected_users": user_ids,
+                "total_users": len(users_list)
             },
             status=status.HTTP_200_OK,
         )

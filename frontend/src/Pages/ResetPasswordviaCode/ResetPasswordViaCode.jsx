@@ -110,11 +110,6 @@ export default function ResetPasswordViaCode() {
                 type: "success"
             });
 
-            neonToast.success("Password reset successful!", "success");
-
-            setTimeout(() => {
-                navigate("/security");
-            }, 3000);
 
         } catch (err) {
             const errorMessage = err.response?.data?.error ||

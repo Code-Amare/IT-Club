@@ -15,6 +15,7 @@ import {
     FaCheckCircle
 } from "react-icons/fa";
 import styles from "./CreateAttendanceSession.module.css";
+import { neonToast } from "../../../Components/NeonToast/NeonToast";
 
 export default function CreateAttendanceSession() {
     const { user } = useUser();
@@ -188,12 +189,15 @@ export default function CreateAttendanceSession() {
             };
 
             const response = await api.post("/api/attendance/sessions/", payload);
+            const sessionId = response.data?.session_id
             console.log(payload)
             setSuccess(`Session created successfully! Redirecting...`);
+            if (sessionId) {
+                navigate(`/admin/session/${sessionId}`)
+                neonToast.success(response.data?.message)
+            }
 
-            setTimeout(() => {
-                navigate("/admin/attendance/sessions");
-            }, 1500);
+
 
         } catch (error) {
             console.error("Error creating session:", error);

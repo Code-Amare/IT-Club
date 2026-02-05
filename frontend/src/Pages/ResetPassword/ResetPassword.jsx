@@ -121,7 +121,6 @@ export default function ResetPassword() {
                 type: "success"
             });
 
-            neonToast.success("Password reset successful!", "success");
 
             navigate("/security");
 

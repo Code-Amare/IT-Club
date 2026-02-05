@@ -1,50 +1,29 @@
 .sessionCard {
   display: block;
-  background: var(--bg-surface);
   border: 1px solid var(--border-color);
   border-radius: 12px;
-  padding: 20px;
-  text-decoration: none;
+  background: var(--bg-surface);
   color: var(--text-primary);
+  text-decoration: none;
   transition: all 0.2s ease;
-  position: relative;
   overflow: hidden;
 }
 
-.sessionCard::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 4px;
-  height: 100%;
-  transition: width 0.3s ease;
-}
-
-.sessionCard.open::before {
-  background: var(--success, #10b981);
-}
-
-.sessionCard.closed::before {
-  background: var(--error, #ef4444);
-}
-
 .sessionCard:hover {
+  border-color: var(--primary);
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-  border-color: var(--primary-light);
+  box-shadow: 0 4px 12px var(--card-shadow);
 }
 
-.sessionCard:hover::before {
-  width: 6px;
-}
+/* REMOVED ALL LEFT BORDER STYLES - NO border-left anywhere */
 
-/* Header */
+/* Card Header */
 .cardHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .statusIndicator {
@@ -52,53 +31,46 @@
   align-items: center;
   gap: 8px;
   font-size: 14px;
-  font-weight: 600;
-  padding: 6px 12px;
-  border-radius: 20px;
-  background: var(--bg-subtle);
+  font-weight: 500;
 }
 
 .sessionCard.open .statusIndicator {
-  color: var(--success, #10b981);
+  color: var(--toast-success);
 }
 
 .sessionCard.closed .statusIndicator {
-  color: var(--error, #ef4444);
-}
-
-.statusIndicator svg {
-  font-size: 12px;
+  color: var(--toast-error);
 }
 
 .arrowIcon {
-  color: var(--text-tertiary);
-  opacity: 0.6;
-  transition: opacity 0.2s ease;
+  color: var(--text-secondary);
+  font-size: 14px;
+  transition: all 0.2s ease;
 }
 
 .sessionCard:hover .arrowIcon {
-  opacity: 1;
   color: var(--primary);
+  transform: translateX(2px);
 }
 
-/* Body */
+/* Card Body */
 .cardBody {
-  margin-bottom: 20px;
+  padding: 20px;
 }
 
 .sessionTitle {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--text-primary);
-  margin: 0 0 12px 0;
+  margin: 0 0 16px 0;
   line-height: 1.4;
 }
 
 .sessionMeta {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: 12px;
+  margin-bottom: 16px;
 }
 
 .metaItem {
@@ -110,76 +82,70 @@
 }
 
 .metaItem svg {
-  font-size: 14px;
-  opacity: 0.7;
+  color: var(--text-secondary);
+  width: 14px;
+  opacity: 0.8;
 }
 
 .lastUpdated {
-  font-size: 12px;
-  color: var(--text-tertiary);
+  font-size: 13px;
+  color: var(--text-secondary);
   font-style: italic;
 }
 
-/* Footer */
+/* Card Footer */
 .cardFooter {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-top: 16px;
-  border-top: 1px solid var(--border-light);
+  padding: 16px 20px;
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-body);
 }
 
 .sessionId {
-  font-size: 12px;
-  color: var(--text-tertiary);
+  font-size: 13px;
+  color: var(--text-secondary);
   font-family: monospace;
-  background: var(--bg-subtle);
-  padding: 4px 8px;
-  border-radius: 4px;
 }
 
 .openBadge,
 .closedBadge {
+  padding: 6px 12px;
+  border-radius: 20px;
   font-size: 12px;
   font-weight: 600;
-  padding: 4px 10px;
-  border-radius: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
 }
 
 .openBadge {
-  background: rgba(16, 185, 129, 0.1);
-  color: var(--success, #10b981);
+  background: var(--toast-bg-success);
+  color: var(--toast-success);
+  border: 1px solid var(--toast-success);
 }
 
 .closedBadge {
-  background: rgba(239, 68, 68, 0.1);
-  color: var(--error, #ef4444);
+  background: var(--toast-bg-error);
+  color: var(--toast-error);
+  border: 1px solid var(--toast-error);
 }
 
 /* Responsive */
-@media (max-width: 768px) {
-  .sessionCard {
-    padding: 16px;
+@media (max-width: 576px) {
+  .cardHeader,
+  .cardBody,
+  .cardFooter {
+    padding: 12px 16px;
   }
 
   .sessionTitle {
-    font-size: 16px;
+    font-size: 15px;
   }
 
-  .cardFooter {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
+  .metaItem {
+    font-size: 13px;
   }
 
   .sessionId {
-    order: 2;
-  }
-
-  .openBadge,
-  .closedBadge {
-    order: 1;
+    font-size: 12px;
   }
 }

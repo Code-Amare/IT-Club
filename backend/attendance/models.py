@@ -21,6 +21,7 @@ class Attendance(models.Model):
         ("present", "Present"),
         ("late", "Late"),
         ("absent", "Absent"),
+        ("special_case", "Speical Case"),
     ]
     session = models.ForeignKey(
         AttendanceSession, on_delete=models.CASCADE, related_name="attendances"
@@ -28,6 +29,7 @@ class Attendance(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="attendances")
     attended_at = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="absent")
+    note = models.CharField(max_length=100, blank=True, null=True)
 
     class Meta:
         constraints = [

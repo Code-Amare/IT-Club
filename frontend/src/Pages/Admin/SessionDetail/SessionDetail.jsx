@@ -1,26 +1,24 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useUser } from "../../../Context/UserContext";
 import api from "../../../Utils/api";
 import SideBar from "../../../Components/SideBar/SideBar";
+import ConfirmAction from "../../../Components/ConfirmAction/ConfirmAction";
 import {
     FaArrowLeft,
-    FaCalendarAlt,
-    FaUsers,
     FaUser,
     FaEnvelope,
-    FaCalendarCheck,
-    FaCalendarTimes,
-    FaClock,
-    FaIdBadge,
-    FaFilter,
     FaCheckCircle,
     FaTimesCircle,
-    FaHourglassHalf,
+    FaClock,
+    FaExclamationCircle,
+    FaFilter,
+    FaSearch,
+    FaLock,
+    FaUnlock,
     FaEdit,
     FaTrash,
-    FaLock,
-    FaUnlock
+    FaChartBar
 } from "react-icons/fa";
 import styles from "./SessionDetail.module.css";
 
@@ -30,18 +28,17 @@ export default function SessionDetail() {
     const { sessionId } = useParams();
 
     const [session, setSession] = useState(null);
+    const [attendances, setAttendances] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
-    const [filter, setFilter] = useState("all"); // 'all', 'present', 'absent'
-    const [searchTerm, setSearchTerm] = useState("");
 
-    // Stats
-    const [stats, setStats] = useState({
-        total: 0,
-        present: 0,
-        absent: 0,
-        pending: 0
+    // Filter states
+    const [filters, setFilters] = useState({
+        field: "",
+        grade: "",
+        section: ""
     });
+    const [searchTerm, setSearchTerm] = useState("");
 
     useEffect(() => {
         if (user.isAuthenticated === null) return;
@@ -57,27 +54,19 @@ export default function SessionDetail() {
             setLoading(true);
             const res = await api.get(`/api/attendance/sessions/${sessionId}/`);
             const sessionData = res.data.session || res.data;
-            console.log("Session data:", sessionData);
-            setSession(sessionData);
+            const attendancesData = res.data.attendances || [];
 
-            // Calculate initial stats (you might need to fetch attendance data separately)
-            updateStats(sessionData.users || []);
+            console.log("Session data:", sessionData);
+            console.log("Attendances data:", attendancesData);
+
+            setSession(sessionData);
+            setAttendances(attendancesData);
         } catch (error) {
             console.error("Error fetching session:", error);
-            setError("Failed to load session details. Please try again.");
+            setError("Failed to load session details.");
         } finally {
             setLoading(false);
         }
-    };
-
-    const updateStats = (users) => {
-        // This is a placeholder - you'll need to integrate with actual attendance data
-        const total = users.length;
-        const present = 0; // Get from attendance data
-        const absent = 0; // Get from attendance data
-        const pending = total - present - absent;
-
-        setStats({ total, present, absent, pending });
     };
 
     const formatDate = (dateString) => {
@@ -93,81 +82,170 @@ export default function SessionDetail() {
     };
 
     const handleCloseSession = async () => {
-        if (!window.confirm("Are you sure you want to close this session? This will mark all unmarked users as absent.")) {
-            return;
-        }
-
         try {
-            const res = await api.post(`/api/attendance/sessions/close/${sessionId}/`);
-            if (res.status === 200) {
-                setSession({ ...session, is_ended: true });
-                // Refresh session data
-                fetchSessionDetail();
-            }
+            await api.post(`/api/attendance/sessions/close/${sessionId}/`);
+            setSession({ ...session, is_ended: true });
         } catch (error) {
             console.error("Error closing session:", error);
-            setError("Failed to close session. Please try again.");
+            setError("Failed to close session.");
         }
     };
 
     const handleOpenSession = async () => {
         try {
-            const res = await api.post(`/api/attendance/sessions/open/${sessionId}/`);
-            if (res.status === 200) {
-                setSession({ ...session, is_ended: false });
-                // Refresh session data
-                fetchSessionDetail();
-            }
+            await api.post(`/api/attendance/sessions/open/${sessionId}/`);
+            setSession({ ...session, is_ended: false });
         } catch (error) {
             console.error("Error opening session:", error);
-            setError("Failed to open session. Please try again.");
+            setError("Failed to open session.");
         }
     };
 
     const handleDeleteSession = async () => {
-        if (!window.confirm("Are you sure you want to delete this session? This action cannot be undone.")) {
-            return;
-        }
-
         try {
             await api.delete(`/api/attendance/sessions/${sessionId}/`);
-            navigate("/admin/attendance/sessions");
+            navigate("/admin/attendance");
         } catch (error) {
             console.error("Error deleting session:", error);
-            setError("Failed to delete session. Please try again.");
+            setError("Failed to delete session.");
         }
     };
 
-    const filteredUsers = (session?.users || []).filter(user => {
-        if (searchTerm) {
-            const searchLower = searchTerm.toLowerCase();
-            return (
-                user.full_name?.toLowerCase().includes(searchLower) ||
-                user.email?.toLowerCase().includes(searchLower) ||
-                user.id?.toString().includes(searchTerm)
-            );
+    // Create attendance map for quick lookup
+    const attendanceMap = useMemo(() => {
+        const map = {};
+        attendances.forEach(attendance => {
+            if (attendance.user && attendance.user.id) {
+                map[attendance.user.id] = {
+                    status: attendance.status,
+                    note: attendance.note || "",
+                    attended_at: attendance.attended_at,
+                    id: attendance.id
+                };
+            }
+        });
+        return map;
+    }, [attendances]);
+
+    // Get attendance stats
+    const attendanceStats = useMemo(() => {
+        const stats = {
+            total: session?.users?.length || 0,
+            marked: attendances.length || 0,
+            present: 0,
+            absent: 0,
+            late: 0,
+            special_case: 0,
+            not_marked: 0
+        };
+
+        if (session?.users) {
+            session.users.forEach(user => {
+                const attendance = attendanceMap[user.id];
+                if (attendance) {
+                    stats[attendance.status]++;
+                } else {
+                    stats.not_marked++;
+                }
+            });
         }
-        return true;
-    });
 
-    const getStatusIcon = (user) => {
-        // This is a placeholder - you'll need to integrate with actual attendance data
-        const attendanceStatus = "pending"; // Get from attendance data
+        return stats;
+    }, [session, attendances, attendanceMap]);
 
-        switch (attendanceStatus) {
+    // Extract filter options from users
+    const filterOptions = useMemo(() => {
+        if (!session?.users) return { fields: [], grades: [], sections: [] };
+
+        const fields = new Set();
+        const grades = new Set();
+        const sections = new Set();
+
+        session.users.forEach(user => {
+            const profile = user.profile || {};
+            if (profile.field) fields.add(profile.field);
+            if (profile.grade) grades.add(profile.grade);
+            if (profile.section) sections.add(profile.section);
+        });
+
+        return {
+            fields: Array.from(fields).sort(),
+            grades: Array.from(grades).sort((a, b) => a - b),
+            sections: Array.from(sections).sort()
+        };
+    }, [session]);
+
+    // Filter users with attendance status
+    const filteredUsers = useMemo(() => {
+        if (!session?.users) return [];
+
+        return session.users.filter(userData => {
+            const profile = userData.profile || {};
+
+            // Apply search filter
+            if (searchTerm.trim()) {
+                const searchLower = searchTerm.toLowerCase();
+                const matchesSearch =
+                    userData.full_name?.toLowerCase().includes(searchLower) ||
+                    userData.email?.toLowerCase().includes(searchLower) ||
+                    profile.account?.toLowerCase().includes(searchLower);
+                if (!matchesSearch) return false;
+            }
+
+            // Apply field filter
+            if (filters.field && profile.field !== filters.field) return false;
+
+            // Apply grade filter
+            if (filters.grade && profile.grade != filters.grade) return false;
+
+            // Apply section filter
+            if (filters.section && profile.section !== filters.section) return false;
+
+            return true;
+        });
+    }, [session, searchTerm, filters]);
+
+    const handleFilterChange = (filterType, value) => {
+        setFilters(prev => ({
+            ...prev,
+            [filterType]: value
+        }));
+    };
+
+    const clearFilters = () => {
+        setFilters({
+            field: "",
+            grade: "",
+            section: ""
+        });
+        setSearchTerm("");
+    };
+
+    // Get attendance status icon
+    const getStatusIcon = (status) => {
+        switch (status) {
             case "present":
-                return <FaCheckCircle className={styles.statusPresent} />;
+                return <FaCheckCircle />;
             case "absent":
-                return <FaTimesCircle className={styles.statusAbsent} />;
+                return <FaTimesCircle />;
+            case "late":
+                return <FaClock />;
+            case "special_case":
+                return <FaExclamationCircle />;
             default:
-                return <FaHourglassHalf className={styles.statusPending} />;
+                return null;
         }
     };
 
-    const getStatusText = (user) => {
-        // This is a placeholder - you'll need to integrate with actual attendance data
-        const attendanceStatus = "pending"; // Get from attendance data
-        return attendanceStatus.charAt(0).toUpperCase() + attendanceStatus.slice(1);
+    // Get attendance status label
+    const getStatusLabel = (status) => {
+        switch (status) {
+            case "present": return "Present";
+            case "absent": return "Absent";
+            case "late": return "Late";
+            case "special_case": return "Special Case";
+            default: return "Not Marked";
+        }
     };
 
     if (loading) {
@@ -176,7 +254,7 @@ export default function SessionDetail() {
                 <SideBar>
                     <div className={styles.loadingContainer}>
                         <div className={styles.spinner}></div>
-                        <p>Loading session details...</p>
+                        <p>Loading session...</p>
                     </div>
                 </SideBar>
             </div>
@@ -188,12 +266,11 @@ export default function SessionDetail() {
             <div className={styles.container}>
                 <SideBar>
                     <div className={styles.errorContainer}>
-                        <h2>Session not found</h2>
-                        <p>The requested session could not be found.</p>
-                        <Link to="/admin/attendance/sessions" className={styles.backButton}>
+                        <h3>Session not found</h3>
+                        <span onClick={() => { navigate("/admin/attendance") }} className={styles.backButton}>
                             <FaArrowLeft />
                             <span>Back to Sessions</span>
-                        </Link>
+                        </span>
                     </div>
                 </SideBar>
             </div>
@@ -207,54 +284,70 @@ export default function SessionDetail() {
                 <div className={styles.header}>
                     <div className={styles.headerContent}>
                         <div className={styles.titleSection}>
-                            <Link to="/admin/attendance/sessions" className={styles.backButton}>
+                            <span onClick={() => { navigate("/admin/attendance") }} className={styles.backButton}>
                                 <FaArrowLeft />
-                            </Link>
+                            </span>
                             <div>
                                 <h1>{session.title}</h1>
-                                <p>Session ID: {session.id}</p>
+                                <p className={styles.sessionMeta}>
+                                    <span>ID: {session.id}</span>
+                                    <span>•</span>
+                                    <span>Created: {formatDate(session.created_at)}</span>
+                                    <span>•</span>
+                                    <span className={session.is_ended ? styles.statusClosed : styles.statusOpen}>
+                                        {session.is_ended ? "Closed" : "Open"}
+                                    </span>
+                                </p>
                             </div>
                         </div>
 
                         <div className={styles.headerActions}>
                             {!session.is_ended ? (
-                                <button
-                                    onClick={handleCloseSession}
-                                    className={styles.closeBtn}
+                                <ConfirmAction
+                                    title="Close Session"
+                                    message="Are you sure you want to close this session? Unmarked users will be marked absent."
+                                    confirmText="Close Session"
+                                    onConfirm={handleCloseSession}
                                 >
-                                    <FaLock />
-                                    <span>Close Session</span>
-                                </button>
+                                    <button className={styles.closeBtn}>
+                                        <FaLock />
+                                        <span>Close</span>
+                                    </button>
+                                </ConfirmAction>
                             ) : (
-                                <button
-                                    onClick={handleOpenSession}
-                                    className={styles.openBtn}
+                                <ConfirmAction
+                                    title="Reopen Session"
+                                    message="Are you sure you want to reopen this session?"
+                                    confirmText="Reopen Session"
+                                    onConfirm={handleOpenSession}
                                 >
-                                    <FaUnlock />
-                                    <span>Open Session</span>
-                                </button>
+                                    <button className={styles.openBtn}>
+                                        <FaUnlock />
+                                        <span>Open</span>
+                                    </button>
+                                </ConfirmAction>
                             )}
-
-                            <Link
-                                to={`/admin/attendance/sessions/${sessionId}/edit`}
-                                className={styles.editBtn}
-                            >
+                            <Link to={`/admin/session/edit/${sessionId}`} className={styles.editBtn}>
                                 <FaEdit />
                                 <span>Edit</span>
                             </Link>
 
-                            <button
-                                onClick={handleDeleteSession}
-                                className={styles.deleteBtn}
+                            <ConfirmAction
+                                title="Delete Session"
+                                message="Are you sure you want to delete this session? This action cannot be undone."
+                                confirmText="Delete Session"
+                                onConfirm={handleDeleteSession}
                             >
-                                <FaTrash />
-                                <span>Delete</span>
-                            </button>
+                                <button className={styles.deleteBtn}>
+                                    <FaTrash />
+                                    <span>Delete</span>
+                                </button>
+                            </ConfirmAction>
                         </div>
                     </div>
                 </div>
 
-                {/* Error Message */}
+                {/* Error */}
                 {error && (
                     <div className={styles.errorAlert}>
                         <span>{error}</span>
@@ -262,135 +355,107 @@ export default function SessionDetail() {
                     </div>
                 )}
 
-                {/* Session Info Cards */}
-                <div className={styles.infoCards}>
-                    <div className={styles.infoCard}>
-                        <div className={styles.cardIcon}>
-                            <FaCalendarAlt />
-                        </div>
-                        <div>
-                            <h3>Created</h3>
-                            <p>{formatDate(session.created_at)}</p>
-                        </div>
+                {/* Attendance Stats Summary */}
+                <div className={styles.statsSummary}>
+                    <div className={styles.statItem}>
+                        <span className={styles.statLabel}>Total Participants</span>
+                        <span className={styles.statValue}>{attendanceStats.total}</span>
+                    </div>
+                    <div className={styles.statItem}>
+                        <span className={styles.statLabel}>Already Marked</span>
+                        <span className={styles.statValueMarked}>{attendanceStats.marked}</span>
+                    </div>
+                    <div className={styles.statItem}>
+                        <span className={styles.statLabel}>Not Marked</span>
+                        <span className={styles.statValue}>{attendanceStats.not_marked}</span>
+                    </div>
+                    <div className={styles.statItem}>
+                        <span className={styles.statLabel}>Present</span>
+                        <span className={styles.statValuePresent}>{attendanceStats.present}</span>
+                    </div>
+                    <div className={styles.statItem}>
+                        <span className={styles.statLabel}>Absent</span>
+                        <span className={styles.statValueAbsent}>{attendanceStats.absent}</span>
+                    </div>
+                    <div className={styles.statItem}>
+                        <span className={styles.statLabel}>Late</span>
+                        <span className={styles.statValueLate}>{attendanceStats.late}</span>
+                    </div>
+                    <div className={styles.statItem}>
+                        <span className={styles.statLabel}>Special Case</span>
+                        <span className={styles.statValueSpecial}>{attendanceStats.special_case}</span>
+                    </div>
+                </div>
+
+                {/* Filters */}
+                <div className={styles.filterSection}>
+                    <div className={styles.filterHeader}>
+                        <FaFilter />
+                        <h3>Filter Participants</h3>
+                        {(filters.field || filters.grade || filters.section || searchTerm) && (
+                            <button onClick={clearFilters} className={styles.clearFiltersBtn}>
+                                Clear All
+                            </button>
+                        )}
                     </div>
 
-                    <div className={styles.infoCard}>
-                        <div className={styles.cardIcon}>
-                            {session.is_ended ? <FaCalendarTimes /> : <FaCalendarCheck />}
+                    <div className={styles.filterControls}>
+                        <div className={styles.filterGroup}>
+                            <select
+                                value={filters.field}
+                                onChange={(e) => handleFilterChange('field', e.target.value)}
+                                className={styles.filterSelect}
+                            >
+                                <option value="">All Fields</option>
+                                {filterOptions.fields.map(field => (
+                                    <option key={field} value={field}>{field}</option>
+                                ))}
+                            </select>
                         </div>
-                        <div>
-                            <h3>Status</h3>
-                            <p className={session.is_ended ? styles.closed : styles.open}>
-                                {session.is_ended ? "Closed" : "Open"}
-                            </p>
-                        </div>
-                    </div>
 
-                    <div className={styles.infoCard}>
-                        <div className={styles.cardIcon}>
-                            <FaUsers />
+                        <div className={styles.filterGroup}>
+                            <select
+                                value={filters.grade}
+                                onChange={(e) => handleFilterChange('grade', e.target.value)}
+                                className={styles.filterSelect}
+                            >
+                                <option value="">All Grades</option>
+                                {filterOptions.grades.map(grade => (
+                                    <option key={grade} value={grade}>Grade {grade}</option>
+                                ))}
+                            </select>
                         </div>
-                        <div>
-                            <h3>Participants</h3>
-                            <p>{session.users?.length || 0} users</p>
-                        </div>
-                    </div>
 
-                    <div className={styles.infoCard}>
-                        <div className={styles.cardIcon}>
-                            <FaClock />
+                        <div className={styles.filterGroup}>
+                            <select
+                                value={filters.section}
+                                onChange={(e) => handleFilterChange('section', e.target.value)}
+                                className={styles.filterSelect}
+                            >
+                                <option value="">All Sections</option>
+                                {filterOptions.sections.map(section => (
+                                    <option key={section} value={section}>Section {section}</option>
+                                ))}
+                            </select>
                         </div>
-                        <div>
-                            <h3>Session ID</h3>
-                            <p className={styles.sessionId}>{session.id}</p>
+
+                        <div className={styles.searchGroup}>
+                            <FaSearch />
+                            <input
+                                type="text"
+                                placeholder="Search by name or email..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className={styles.searchInput}
+                            />
                         </div>
                     </div>
                 </div>
 
-                {/* Stats */}
-                <div className={styles.statsSection}>
-                    <h3>Attendance Statistics</h3>
-                    <div className={styles.statsGrid}>
-                        <div className={styles.statCard}>
-                            <div className={`${styles.statIcon} ${styles.statTotal}`}>
-                                <FaUsers />
-                            </div>
-                            <div>
-                                <h4>Total</h4>
-                                <p>{stats.total}</p>
-                            </div>
-                        </div>
-
-                        <div className={styles.statCard}>
-                            <div className={`${styles.statIcon} ${styles.statPresent}`}>
-                                <FaCheckCircle />
-                            </div>
-                            <div>
-                                <h4>Present</h4>
-                                <p>{stats.present}</p>
-                            </div>
-                        </div>
-
-                        <div className={styles.statCard}>
-                            <div className={`${styles.statIcon} ${styles.statAbsent}`}>
-                                <FaTimesCircle />
-                            </div>
-                            <div>
-                                <h4>Absent</h4>
-                                <p>{stats.absent}</p>
-                            </div>
-                        </div>
-
-                        <div className={styles.statCard}>
-                            <div className={`${styles.statIcon} ${styles.statPending}`}>
-                                <FaHourglassHalf />
-                            </div>
-                            <div>
-                                <h4>Pending</h4>
-                                <p>{stats.pending}</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Participants Section */}
+                {/* Participants */}
                 <div className={styles.participantsSection}>
                     <div className={styles.sectionHeader}>
-                        <h2>Participants ({session.users?.length || 0})</h2>
-
-                        <div className={styles.controls}>
-                            <div className={styles.searchBox}>
-                                <FaFilter />
-                                <input
-                                    type="text"
-                                    placeholder="Search participants..."
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                    className={styles.searchInput}
-                                />
-                            </div>
-
-                            <div className={styles.filterTabs}>
-                                <button
-                                    className={`${styles.filterTab} ${filter === "all" ? styles.active : ""}`}
-                                    onClick={() => setFilter("all")}
-                                >
-                                    All ({session.users?.length || 0})
-                                </button>
-                                <button
-                                    className={`${styles.filterTab} ${filter === "present" ? styles.active : ""}`}
-                                    onClick={() => setFilter("present")}
-                                >
-                                    Present ({stats.present})
-                                </button>
-                                <button
-                                    className={`${styles.filterTab} ${filter === "absent" ? styles.active : ""}`}
-                                    onClick={() => setFilter("absent")}
-                                >
-                                    Absent ({stats.absent})
-                                </button>
-                            </div>
-                        </div>
+                        <h3>Participants ({filteredUsers.length})</h3>
                     </div>
 
                     {filteredUsers.length === 0 ? (
@@ -400,60 +465,91 @@ export default function SessionDetail() {
                         </div>
                     ) : (
                         <div className={styles.participantsGrid}>
-                            {filteredUsers.map((participant) => (
-                                <div key={participant.id} className={styles.participantCard}>
-                                    <div className={styles.participantHeader}>
+                            {filteredUsers.map((participant) => {
+                                const profile = participant.profile || {};
+                                const attendance = attendanceMap[participant.id];
+                                const status = attendance?.status || "not_marked";
+
+                                return (
+                                    <div key={participant.id} className={styles.participantCard}>
                                         <div className={styles.participantAvatar}>
                                             {participant.profile_pic_url ? (
                                                 <img
                                                     src={participant.profile_pic_url}
                                                     alt={participant.full_name}
+                                                    className={styles.avatarImage}
                                                 />
                                             ) : (
-                                                <FaUser />
+                                                <div className={styles.avatarPlaceholder}>
+                                                    <FaUser />
+                                                </div>
                                             )}
                                         </div>
-                                        <div className={styles.participantName}>
-                                            <h4>{participant.full_name}</h4>
-                                            <p className={styles.participantEmail}>
+
+                                        <div className={styles.participantInfo}>
+                                            <div className={styles.participantName}>
+                                                {participant.full_name}
+                                            </div>
+                                            <div className={styles.participantEmail}>
                                                 <FaEnvelope />
                                                 <span>{participant.email}</span>
-                                            </p>
-                                        </div>
-                                        <div className={styles.participantStatus}>
-                                            {getStatusIcon(participant)}
-                                            <span>{getStatusText(participant)}</span>
-                                        </div>
-                                    </div>
+                                            </div>
 
-                                    <div className={styles.participantDetails}>
-                                        <div className={styles.detailItem}>
-                                            <FaIdBadge />
-                                            <span>ID: {participant.id}</span>
-                                        </div>
-                                        <div className={styles.detailItem}>
-                                            <FaCalendarAlt />
-                                            <span>Joined: {formatDate(participant.date_joined)}</span>
-                                        </div>
-                                        <div className={styles.detailItem}>
-                                            <FaUser />
-                                            <span>Role: {participant.role}</span>
-                                        </div>
-                                    </div>
+                                            <div className={styles.attendanceStatus}>
+                                                <span className={`${styles.attendanceBadge} ${status === "present" ? styles.statusPresent :
+                                                    status === "absent" ? styles.statusAbsent :
+                                                        status === "late" ? styles.statusLate :
+                                                            status === "special_case" ? styles.statusSpecial :
+                                                                styles.statusNotMarked
+                                                    }`}>
+                                                    {getStatusIcon(status)}
+                                                    <span>{getStatusLabel(status)}</span>
+                                                </span>
+                                                {attendance?.attended_at && (
+                                                    <span className={styles.attendanceNote}>
+                                                        Marked at: {formatDate(attendance.attended_at)}
+                                                    </span>
+                                                )}
+                                                {attendance?.note && (
+                                                    <span className={styles.attendanceNote}>
+                                                        Note: {attendance.note}
+                                                    </span>
+                                                )}
+                                            </div>
 
-                                    <div className={styles.participantMeta}>
-                                        <span className={`${styles.metaBadge} ${participant.email_verified ? styles.verified : styles.unverified}`}>
-                                            {participant.email_verified ? "Verified" : "Unverified"}
-                                        </span>
-                                        <span className={`${styles.metaBadge} ${participant.is_active ? styles.active : styles.inactive}`}>
-                                            {participant.is_active ? "Active" : "Inactive"}
-                                        </span>
-                                        <span className={`${styles.metaBadge} ${participant.gender === "female" ? styles.female : styles.male}`}>
-                                            {participant.gender}
-                                        </span>
+                                            <div className={styles.participantMeta}>
+                                                <span className={`${styles.metaBadge} ${participant.email_verified ? styles.verified : styles.unverified}`}>
+                                                    {participant.email_verified ? (
+                                                        <>
+                                                            <FaCheckCircle />
+                                                            Verified
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <FaTimesCircle />
+                                                            Unverified
+                                                        </>
+                                                    )}
+                                                </span>
+                                                <span className={`${styles.metaBadge} ${participant.gender === "female" ? styles.female : styles.male}`}>
+                                                    {participant.gender}
+                                                </span>
+                                            </div>
+                                            <div className={styles.participantProfile}>
+                                                {profile.field && (
+                                                    <span className={styles.profileBadge}>{profile.field}</span>
+                                                )}
+                                                {profile.grade && (
+                                                    <span className={styles.profileBadge}>Grade {profile.grade}</span>
+                                                )}
+                                                {profile.section && (
+                                                    <span className={styles.profileBadge}>Section {profile.section}</span>
+                                                )}
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     )}
                 </div>

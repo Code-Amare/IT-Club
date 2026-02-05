@@ -2,15 +2,11 @@ import time
 from asgiref.sync import sync_to_async
 from channels.layers import get_channel_layer
 from realtime.models import Notification
-
 import cloudinary
 import cloudinary.utils
 import environ
 from pathlib import Path
 
-# ───────────────────────────────────────────────
-# ENV / CLOUDINARY (loaded once)
-# ───────────────────────────────────────────────
 env = environ.Env()
 BASE_DIR = Path(__file__).resolve().parent
 env.read_env(BASE_DIR / ".env")
@@ -22,16 +18,10 @@ cloudinary.config(
     secure=True,
 )
 
-# ───────────────────────────────────────────────
-# CONSTANTS
-# ───────────────────────────────────────────────
 VALID_CODES = {"success", "error", "info", "warning"}
 CHANNEL_LAYER = get_channel_layer()
 
 
-# ───────────────────────────────────────────────
-# HELPERS
-# ───────────────────────────────────────────────
 @sync_to_async
 def _create_notification(**kwargs):
     return Notification.objects.create(**kwargs)
@@ -67,9 +57,6 @@ async def _serialize_actor(actor):
     }
 
 
-# ───────────────────────────────────────────────
-# MAIN API
-# ───────────────────────────────────────────────
 async def notify_user(
     *,
     recipient,
@@ -125,15 +112,11 @@ async def notify_user(
             },
         )
     except Exception as exc:
-        # Never break request due to WS
         print("WS notify failed:", exc)
 
     return notification
 
 
-# ───────────────────────────────────────────────
-# LIGHTWEIGHT LIVE UPDATE (NO DB)
-# ───────────────────────────────────────────────
 async def live_update(recipient, /, **payload):
     if not recipient or not recipient.id:
         raise ValueError("Recipient is required")
@@ -151,3 +134,87 @@ async def live_update(recipient, /, **payload):
         )
     except Exception as exc:
         print("WS live update failed:", exc)
+
+
+@sync_to_async
+def _bulk_create_notifications(notifications):
+    return Notification.objects.bulk_create(notifications)
+
+
+async def notify_users_bulk(
+    *,
+    recipients,
+    title: str,
+    description: str,
+    code: str = "info",
+    actor=None,
+    url: str | None = None,
+    is_push_notif: bool = False,
+):
+    if not recipients:
+        return []
+
+    if not title:
+        raise ValueError("Notification title is required")
+
+    if code not in VALID_CODES:
+        code = "info"
+
+    notifications = []
+    recipient_map = []  # (recipient, notification_index)
+
+    for recipient in recipients:
+        if not recipient or not recipient.id:
+            continue
+
+        # prevent self-notification
+        if actor and actor.id == recipient.id:
+            continue
+
+        notifications.append(
+            Notification(
+                recipient=recipient,
+                actor=actor,
+                title=title,
+                description=description,
+                code=code,
+                url=url,
+            )
+        )
+
+        recipient_map.append(recipient)
+
+    if not notifications:
+        return []
+
+    # 1️⃣ Bulk save (FAST)
+    created_notifications = await _bulk_create_notifications(notifications)
+
+    # 2️⃣ Serialize actor once
+    actor_data = await _serialize_actor(actor)
+
+    # 3️⃣ Send notifications in a loop (OK for ~90 users)
+    for recipient, notification in zip(recipient_map, created_notifications):
+        try:
+            await CHANNEL_LAYER.group_send(
+                f"user_{recipient.id}",
+                {
+                    "type": "send_notification",
+                    "respond": {
+                        "id": notification.id,
+                        "title": notification.title,
+                        "message": notification.description,
+                        "code": notification.code,
+                        "url": notification.url,
+                        "is_read": False,
+                        "is_push_notif": is_push_notif,
+                        "actor": actor_data,
+                        "sent_at": notification.sent_at.isoformat(),
+                    },
+                },
+            )
+        except Exception as exc:
+            # Never break bulk operation
+            print(f"WS notify failed for user {recipient.id}:", exc)
+
+    return created_notifications

@@ -19,7 +19,7 @@ export default function AttendanceList() {
     const navigate = useNavigate();
     const [sessions, setSessions] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [filter, setFilter] = useState("all"); // 'all', 'open', 'closed'
+    const [filter, setFilter] = useState("all");
     const [searchTerm, setSearchTerm] = useState("");
     const [stats, setStats] = useState({
         total: 0,
@@ -27,14 +27,18 @@ export default function AttendanceList() {
         closed: 0
     });
 
+    useEffect(() => {
+        fetchSessions();
+    }, []);
+
     const fetchSessions = async () => {
         try {
             setLoading(true);
-            const res = await api.get("/api/attendance/sessions/");
-            const sessionsData = res.data || [];
+            const res = await api.get("/api/attendance/sessions/all/");
+            const sessionsData = res.data.sessions || [];
+            console.log(res.data);
             setSessions(sessionsData);
 
-            // Calculate stats
             const openSessions = sessionsData.filter(s => !s.is_ended);
             const closedSessions = sessionsData.filter(s => s.is_ended);
 
@@ -51,16 +55,14 @@ export default function AttendanceList() {
     };
 
     const filteredSessions = sessions.filter(session => {
-        // Apply status filter
         if (filter === "open" && session.is_ended) return false;
         if (filter === "closed" && !session.is_ended) return false;
 
-        // Apply search filter
         if (searchTerm) {
             const searchLower = searchTerm.toLowerCase();
             return (
                 session.title.toLowerCase().includes(searchLower) ||
-                session.id.toString().includes(searchTerm)
+                (session.id && session.id.toString().includes(searchTerm))
             );
         }
 
@@ -69,7 +71,6 @@ export default function AttendanceList() {
 
     const getSortedSessions = () => {
         return [...filteredSessions].sort((a, b) => {
-            // Put open sessions first, then sort by creation date (newest first)
             if (a.is_ended !== b.is_ended) {
                 return a.is_ended ? 1 : -1;
             }
@@ -77,116 +78,118 @@ export default function AttendanceList() {
         });
     };
 
+    const calculateAvgParticipants = () => {
+        if (sessions.length === 0) return 0;
+        const totalParticipants = sessions.reduce((acc, s) => {
+            return acc + (s.users?.length || s.targets?.length || 0);
+        }, 0);
+        return Math.round(totalParticipants / sessions.length);
+    };
+
     return (
         <div className={styles.container}>
             <SideBar>
-                {/* Header */}
                 <div className={styles.header}>
                     <div className={styles.headerContent}>
                         <div className={styles.titleSection}>
-                            <FaCalendarAlt />
-                            <div>
-                                <h1>Attendance Sessions</h1>
-                                <p>Manage and monitor attendance sessions</p>
-                            </div>
+                            <h1>
+                                <FaCalendarAlt /> Attendance Sessions
+                            </h1>
+                            <p>Manage and monitor attendance sessions</p>
                         </div>
 
-                        <div className={styles.headerActions}>
+                        <div className={styles.actions}>
                             <button
                                 onClick={fetchSessions}
-                                className={styles.secondaryBtn}
+                                className={styles.refreshBtn}
                                 disabled={loading}
                             >
                                 <FaSync className={loading ? styles.spin : ""} />
-                                <span>Refresh</span>
+                                Refresh
                             </button>
 
-                            <Link to="/admin/attendance/create/" className={styles.primaryBtn}>
+                            <Link to="/admin/attendance/create/" className={styles.createBtn}>
                                 <FaCalendarPlus />
-                                <span>New Session</span>
+                                New Session
                             </Link>
                         </div>
                     </div>
                 </div>
 
-                {/* Stats */}
-                <div className={styles.statsGrid}>
-                    <div className={styles.statCard}>
+                <div className={styles.stats}>
+                    <div className={styles.stat}>
                         <div className={styles.statIcon}>
                             <FaCalendarAlt />
                         </div>
                         <div>
-                            <h3>Total Sessions</h3>
-                            <p>{stats.total}</p>
+                            <span className={styles.statNumber}>{stats.total}</span>
+                            <span className={styles.statLabel}>Total Sessions</span>
                         </div>
                     </div>
 
-                    <div className={`${styles.statCard} ${styles.statOpen}`}>
+                    <div className={`${styles.stat} ${styles.statOpen}`}>
                         <div className={styles.statIcon}>
-                            <div className={styles.openDot} />
+                            <div className={styles.statusDot} />
                         </div>
                         <div>
-                            <h3>Open Sessions</h3>
-                            <p>{stats.open}</p>
+                            <span className={styles.statNumber}>{stats.open}</span>
+                            <span className={styles.statLabel}>Open</span>
                         </div>
                     </div>
 
-                    <div className={`${styles.statCard} ${styles.statClosed}`}>
+                    <div className={`${styles.stat} ${styles.statClosed}`}>
                         <div className={styles.statIcon}>
-                            <div className={styles.closedDot} />
+                            <div className={styles.statusDot} />
                         </div>
                         <div>
-                            <h3>Closed Sessions</h3>
-                            <p>{stats.closed}</p>
+                            <span className={styles.statNumber}>{stats.closed}</span>
+                            <span className={styles.statLabel}>Closed</span>
                         </div>
                     </div>
 
-                    <div className={styles.statCard}>
+                    <div className={styles.stat}>
                         <div className={styles.statIcon}>
                             <FaChartBar />
                         </div>
                         <div>
-                            <h3>Avg Participants</h3>
-                            <p>
-                                {sessions.length > 0
-                                    ? Math.round(
-                                        sessions.reduce((acc, s) => acc + (s.targets?.length || 0), 0) /
-                                        sessions.length
-                                    )
-                                    : 0}
-                            </p>
+                            <span className={styles.statNumber}>{calculateAvgParticipants()}</span>
+                            <span className={styles.statLabel}>Avg. Participants</span>
                         </div>
                     </div>
                 </div>
 
-                {/* Filters and Search */}
-                <div className={styles.controls}>
-                    <div className={styles.searchBox}>
+                <div className={styles.filters}>
+                    <div className={styles.search}>
                         <FaSearch />
                         <input
                             type="text"
-                            placeholder="Search sessions by title or ID..."
+                            placeholder="Search sessions..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className={styles.searchInput}
                         />
+                        {searchTerm && (
+                            <button onClick={() => setSearchTerm("")} className={styles.clearBtn}>
+                                ×
+                            </button>
+                        )}
                     </div>
 
                     <div className={styles.filterTabs}>
                         <button
-                            className={`${styles.filterTab} ${filter === "all" ? styles.active : ""}`}
+                            className={`${styles.tab} ${filter === "all" ? styles.active : ""}`}
                             onClick={() => setFilter("all")}
                         >
                             All ({stats.total})
                         </button>
                         <button
-                            className={`${styles.filterTab} ${filter === "open" ? styles.active : ""}`}
+                            className={`${styles.tab} ${filter === "open" ? styles.active : ""}`}
                             onClick={() => setFilter("open")}
                         >
                             Open ({stats.open})
                         </button>
                         <button
-                            className={`${styles.filterTab} ${filter === "closed" ? styles.active : ""}`}
+                            className={`${styles.tab} ${filter === "closed" ? styles.active : ""}`}
                             onClick={() => setFilter("closed")}
                         >
                             Closed ({stats.closed})
@@ -194,22 +197,21 @@ export default function AttendanceList() {
                     </div>
                 </div>
 
-                {/* Sessions List */}
-                <div className={styles.sessionsSection}>
-                    <div className={styles.sectionHeader}>
-                        <h2>Attendance Sessions</h2>
-                        <span className={styles.sessionCount}>
-                            {filteredSessions.length} session{filteredSessions.length !== 1 ? "s" : ""}
-                        </span>
+                <div className={styles.sessions}>
+                    <div className={styles.sessionsHeader}>
+                        <h2>Sessions ({filteredSessions.length})</h2>
+                        {searchTerm && (
+                            <span className={styles.searchInfo}>Search: "{searchTerm}"</span>
+                        )}
                     </div>
 
                     {loading ? (
-                        <div className={styles.loadingContainer}>
+                        <div className={styles.loading}>
                             <div className={styles.spinner}></div>
                             <p>Loading sessions...</p>
                         </div>
                     ) : filteredSessions.length === 0 ? (
-                        <div className={styles.emptyState}>
+                        <div className={styles.empty}>
                             <FaCalendarAlt />
                             <h3>No sessions found</h3>
                             <p>
@@ -217,17 +219,21 @@ export default function AttendanceList() {
                                     ? "Try adjusting your search or filter"
                                     : "Create your first attendance session to get started"}
                             </p>
-                            {(!searchTerm && filter === "all") && (
-                                <Link to="/admin/attendance/sessions/new" className={styles.primaryBtn}>
+                            {!searchTerm && filter === "all" && (
+                                <Link to="/admin/attendance/create/" className={styles.createBtn}>
                                     <FaCalendarPlus />
-                                    <span>Create Session</span>
+                                    Create Session
                                 </Link>
                             )}
                         </div>
                     ) : (
-                        <div className={styles.sessionsGrid}>
+                        <div className={styles.grid}>
                             {getSortedSessions().map((session) => (
-                                <AttendanceSessionCard key={session.id} session={session} />
+                                <AttendanceSessionCard
+                                    key={session.id}
+                                    session={session}
+                                    onUpdate={fetchSessions}
+                                />
                             ))}
                         </div>
                     )}

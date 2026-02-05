@@ -47,17 +47,16 @@ export default function SideBar({ children }) {
         { icon: <MdSchool />, text: "Learning Tasks", to: "/admin/learning-tasks" },
         { icon: <MdCode />, text: "Languages", to: "/admin/languages" },
         { icon: <MdAccountTree />, text: "Frameworks", to: "/admin/frameworks" },
-        { icon: <MdAssignment />, text: "Projects", to: "/admin/projects" },
-        { icon: <MdAnalytics />, text: "Analytics", to: "/admin/analytics" },
-        { icon: <MdChecklist />, text: "Analytics", to: "/admin/attendance" },
+        // { icon: <MdAssignment />, text: "Projects", to: "/admin/projects" },
+        { icon: <MdChecklist />, text: "Attendance", to: "/admin/attendance" },
     ];
 
     const userMenuItems = [
         { icon: <MdDashboard />, text: "Dashboard", to: `/${role}` },
         { icon: <MdAssignment />, text: "My Learning Task", to: "/user/my-learning-task" },
         { icon: <MdSchool />, text: "Learning Tasks", to: "/user/learning-tasks" },
-        { icon: <MdWork />, text: "Projects", to: "/user/projects" },
-        { icon: <MdAnalytics />, text: "Analytics", to: "/user/analytics" },
+        // { icon: <MdWork />, text: "Projects", to: "/user/projects" },
+        // { icon: <MdAnalytics />, text: "Analytics", to: "/user/analytics" },
     ];
 
     const menuItems = user.role === "admin" ? adminMenuItems : userMenuItems;
@@ -397,12 +396,14 @@ export default function SideBar({ children }) {
                                         <div className={styles.mobileNotificationDropdown}>
                                             <div className={styles.mobileDropdownHeader}>
                                                 <h3>Notifications</h3>
-                                                <button
-                                                    className={styles.mobileCloseBtn}
-                                                    onClick={closeAllMobileDropdowns}
+                                                <span
+                                                    className={styles.clearAll}
+                                                    onClick={() => {
+                                                        navigate("/notifications")
+                                                    }}
                                                 >
-                                                    <MdClose size={20} />
-                                                </button>
+                                                    View All
+                                                </span>
                                             </div>
                                             <div className={styles.mobileNotificationList}>
                                                 {notificationPreview && notificationPreview.length > 0 ? (

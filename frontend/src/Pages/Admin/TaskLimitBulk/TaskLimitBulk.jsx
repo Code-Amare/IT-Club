@@ -93,7 +93,7 @@ export default function TaskLimitBulk() {
 
 
             neonToast.success(
-                `Successfully updated ${response.data.updated_count} users' task limits`,
+                `Successfully updated ${response.data.total_users} users' task limits`,
                 "success"
             );
 

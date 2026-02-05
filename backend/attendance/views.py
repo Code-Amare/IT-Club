@@ -5,9 +5,25 @@ from rest_framework.permissions import IsAdminUser
 from utils.auth import JWTCookieAuthentication
 from .models import Attendance, AttendanceSession
 from django.contrib.auth import get_user_model
-from .serializers import AttendanceSessionSerializer, UpdateSessionSerializer
+from .serializers import (
+    AttendanceSessionSerializer,
+    UpdateSessionSerializer,
+    AttendanceSerializer,
+)
+from django.db import transaction
 
 User = get_user_model()
+
+
+class AttendanceSessionAllView(APIView):
+    authentication_classes = [JWTCookieAuthentication]
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+
+        sessions = AttendanceSession.objects.all()
+        serializer = AttendanceSessionSerializer(sessions, many=True)
+        return Response({"sessions": serializer.data}, status=status.HTTP_200_OK)
 
 
 class AttendanceSessionVeiw(APIView):
@@ -17,8 +33,17 @@ class AttendanceSessionVeiw(APIView):
     def get(self, request, session_id):
         try:
             session = AttendanceSession.objects.get(id=session_id)
-            serializer = AttendanceSessionSerializer(session)
-            return Response({"session": serializer.data}, status=status.HTTP_200_OK)
+            attendances = Attendance.objects.filter(session=session)
+
+            session_serializer = AttendanceSessionSerializer(session)
+            attendance_serializer = AttendanceSerializer(attendances, many=True)
+            return Response(
+                {
+                    "session": session_serializer.data,
+                    "attendances": attendance_serializer.data,
+                },
+                status=status.HTTP_200_OK,
+            )
         except AttendanceSession.DoesNotExist:
             return Response(
                 {"error": "Session doesn't exist."}, status=status.HTTP_404_NOT_FOUND
@@ -124,7 +149,9 @@ class AttendanceAPIView(APIView):
     authentication_classes = [JWTCookieAuthentication]
     permission_classes = [IsAdminUser]
 
+    @transaction.atomic
     def post(self, request, session_id):
+        # Fetch session
         try:
             session = AttendanceSession.objects.prefetch_related("targets").get(
                 id=session_id
@@ -139,67 +166,60 @@ class AttendanceAPIView(APIView):
                 {"error": "Session not found"}, status=status.HTTP_404_NOT_FOUND
             )
 
-        attendances = request.data.get("attendances", [])
-        if not isinstance(attendances, list) or not attendances:
+        # Get attendances from request
+        attendances_data = request.data.get("attendances", [])
+        if not isinstance(attendances_data, list) or not attendances_data:
             return Response(
                 {"error": "attendances must be a non-empty list"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Determine valid users for this session
+        # Determine valid users
         session_target_ids = set(session.targets.values_list("id", flat=True))
-        user_ids = [item.get("user") for item in attendances if "user" in item]
-        valid_user_ids = set(user_ids) & session_target_ids
-        valid_users = User.objects.filter(id__in=valid_user_ids)
+        valid_attendances = [
+            a for a in attendances_data if a.get("user") in session_target_ids
+        ]
 
-        # Prepare for bulk create/update
         errors = []
-        attendances_to_create = []
+        created_attendances = []
+        updated_attendances = []
 
+        # Map existing attendances
         existing_attendances = Attendance.objects.filter(
-            session=session, user_id__in=valid_user_ids
+            session=session, user_id__in=session_target_ids
         )
-        existing_attendance_map = {a.user_id: a for a in existing_attendances}
+        existing_map = {a.user_id: a for a in existing_attendances}
 
-        STATUS_CHOICES = dict(Attendance.STATUS_CHOICES)
-
-        for item in attendances:
+        for item in attendances_data:
             user_id = item.get("user")
-            status_value = item.get("status", "absent")
-
             if not user_id:
                 errors.append({"error": "Missing user ID", "item": item})
                 continue
-
-            if status_value not in STATUS_CHOICES:
-                errors.append({"error": "Invalid status", "item": item})
-                continue
-
-            if user_id not in valid_user_ids:
+            if user_id not in session_target_ids:
                 errors.append({"error": "User not in session targets", "user": user_id})
                 continue
 
-            if user_id in existing_attendance_map:
-                # Update in memory; will bulk update later
-                existing_attendance_map[user_id].status = status_value
+            # If attendance exists, update; else create new
+            instance = existing_map.get(user_id)
+            serializer = AttendanceSerializer(
+                instance=instance,
+                data={**item, "session": session.id},
+                partial=bool(instance),
+            )
+
+            if serializer.is_valid():
+                saved = serializer.save(session=session, user_id=user_id)
+                if instance:
+                    updated_attendances.append(user_id)
+                else:
+                    created_attendances.append(user_id)
             else:
-                # Create new Attendance instance
-                attendances_to_create.append(
-                    Attendance(session=session, user_id=user_id, status=status_value)
-                )
-
-        # Bulk create new attendances
-        if attendances_to_create:
-            Attendance.objects.bulk_create(attendances_to_create)
-
-        # Bulk update existing attendances
-        if existing_attendance_map:
-            Attendance.objects.bulk_update(existing_attendance_map.values(), ["status"])
+                errors.append({"user": user_id, "errors": serializer.errors})
 
         return Response(
             {
-                "created": [a.user_id for a in attendances_to_create],
-                "updated": [a.user_id for a in existing_attendance_map.values()],
+                "created": created_attendances,
+                "updated": updated_attendances,
                 "errors": errors,
             },
             status=status.HTTP_200_OK,

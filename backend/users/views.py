@@ -17,6 +17,8 @@ from django.views.decorators.csrf import csrf_protect
 from utils.axes import get_lockout_message, is_user_locked
 from django.core import signing
 from axes.utils import reset as axes_reset
+from asgiref.sync import async_to_sync
+from utils.notif import notify_user
 
 
 IS_TWOFA_MANDATORY = settings.IS_TWOFA_MANDATORY
@@ -542,7 +544,6 @@ class RefreshTokenView(APIView):
 
         try:
             token = RefreshToken(refresh_token)
- 
 
             response = Response({"success": True}, status=status.HTTP_200_OK)
             response.set_cookie(
@@ -642,6 +643,13 @@ class PasswordChangeView(APIView):
 
         user.set_password(new_password)
         user.save()
+        async_to_sync(notify_user)(
+            recipient=request.user,
+            title=f"Password change.",
+            description=f"Password changed successfully.",
+            code="success",
+            is_push_notif=True,
+        )
         return Response(
             {"message": "Password changed successfully."}, status=status.HTTP_200_OK
         )
@@ -841,6 +849,13 @@ class PasswordChangeViaEmailView(APIView):
             user.set_password(new_password)
             user.save()
             change_pass.delete()
+            async_to_sync(notify_user)(
+                recipient=request.user,
+                title=f"Password change.",
+                description=f"Password changed successfully.",
+                code="success",
+                is_push_notif=True,
+            )
 
         return Response({"message": "Successfully set your new password"})
 
@@ -882,6 +897,13 @@ class PasswordChangeViaCodeView(APIView):
             user.set_password(new_password)
             user.save()
             change_pass.delete()
+            async_to_sync(notify_user)(
+                recipient=request.user,
+                title=f"Password change.",
+                description=f"Password changed successfully.",
+                code="success",
+                is_push_notif=True,
+            )
 
         return Response({"message": "Successfully set your new password"})
 
@@ -903,7 +925,10 @@ class EnableTwoFaView(APIView):
         user.twofa_enabled = True
         user.save()
         return Response(
-            {"message": "Two factor authentication has been enabled."},
+            {
+                "message": "Two factor authentication has been enabled.",
+                "twofa_enabled": True,
+            },
             status=status.HTTP_200_OK,
         )
 
@@ -931,6 +956,9 @@ class DisableTwoFaView(APIView):
         user.twofa_enabled = False
         user.save()
         return Response(
-            {"message": "Two factor authentication has been disabled."},
+            {
+                "message": "Two factor authentication has been disabled.",
+                "twofa_enabled": False,
+            },
             status=status.HTTP_200_OK,
         )

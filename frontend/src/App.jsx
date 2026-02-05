@@ -43,6 +43,8 @@ import NotificationsList from './Pages/NotificationList/NotificationsList'
 import NotificationDetail from './Pages/NotificationDetail/NotificationDetail'
 import AttendanceList from './Pages/Admin/AttendanceList/AttendanceList'
 import CreateAttendanceSession from './Pages/Admin/CreateAttendanceSession/CreateAttendanceSession'
+import SessionDetail from './Pages/Admin/SessionDetail/SessionDetail'
+import MarkAttendance from "./Pages/Admin/MarkAttendance/MarkAttendance"
 
 function App() {
   return (
@@ -86,8 +88,10 @@ function App() {
           <Route path="/admin/learning-tasks" element={<AdminLearningTasksList />} />
           <Route path="/admin/learning-task/:id" element={<AdminLearningTaskDetail />} />
           <Route path="/admin/task-limit" element={<TaskLimitBulk />} />
-          <Route path="/admin/attendance/" element={<AttendanceList />} />
-          <Route path="/admin/attendance/create/" element={<CreateAttendanceSession />} />
+          <Route path="/admin/attendance" element={<AttendanceList />} />
+          <Route path="/admin/attendance/create" element={<CreateAttendanceSession />} />
+          <Route path="/admin/session/:sessionId" element={<SessionDetail />} />
+          <Route path="/admin/session/edit/:sessionId" element={<MarkAttendance />} />
         </Route>
         <Route element={<ProtectedRoute requiredRole={["user"]} />}>
           <Route path='/user' element={<UserDashboard />} />

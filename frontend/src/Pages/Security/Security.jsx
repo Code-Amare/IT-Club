@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { useUser } from "../../Context/UserContext";
 import api from "../../Utils/api";
 import { neonToast } from "../../Components/NeonToast/NeonToast";
-import ConfirmAction from "../../Components/ConfirmAction/ConfirmAction";
 import AsyncButton from "../../Components/AsyncButton/AsyncButton";
 import SideBar from "../../Components/SideBar/SideBar";
 import styles from "./Security.module.css";
@@ -11,7 +10,6 @@ import {
     FaShieldAlt,
     FaKey,
     FaSignOutAlt,
-    FaExclamationTriangle,
     FaCheckCircle,
     FaEye,
     FaEyeSlash,
@@ -23,27 +21,34 @@ import {
     FaRedo,
     FaSpinner
 } from "react-icons/fa";
-import { MdSecurity, MdDevices, MdWarning, MdEmail } from "react-icons/md";
+import { MdSecurity, MdWarning, MdEmail } from "react-icons/md";
 import { IoShieldCheckmark } from "react-icons/io5";
 
 export default function Security() {
-    const { user, logout, refreshUser } = useUser();
+    const { user, refreshUser } = useUser();
     const navigate = useNavigate();
 
+    // Local state for 2FA button
+    const [localTwoFaEnabled, setLocalTwoFaEnabled] = useState(false);
     const [twoFaLoading, setTwoFaLoading] = useState(false);
     const [pwLoading, setPwLoading] = useState(false);
     const [emailPwLoading, setEmailPwLoading] = useState(false);
     const [showCurrentPassword, setShowCurrentPassword] = useState(false);
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const [message, setMessage] = useState({ text: "", type: "" });
-    const [emailMessage, setEmailMessage] = useState({ text: "", type: "" });
 
     const [passwordForm, setPasswordForm] = useState({
         current_password: "",
         new_password: "",
         confirm_password: ""
     });
+
+    // Initialize local state from user context
+    useEffect(() => {
+        if (user.twoFaEnabled !== undefined) {
+            setLocalTwoFaEnabled(user.twoFaEnabled);
+        }
+    }, [user.twoFaEnabled]);
 
     useEffect(() => {
         if (user.isAuthenticated === null) return;
@@ -54,37 +59,47 @@ export default function Security() {
     }, [user, navigate]);
 
     const toggle2FA = async () => {
-        setMessage({ text: "", type: "" });
         setTwoFaLoading(true);
 
         try {
-            if (user.twoFaEnabled) {
-                await api.post("/api/users/twofa/disable/");
-                setMessage({
-                    text: "Two-factor authentication disabled successfully",
-                    type: "success"
-                });
+            const endpoint = localTwoFaEnabled
+                ? "/api/users/twofa/disable/"
+                : "/api/users/twofa/enable/";
+
+            const response = await api.post(endpoint);
+
+            // SUCCESS - Update local state immediately with API response data
+            if (response.data.twofa_enabled !== undefined) {
+                setLocalTwoFaEnabled(response.data.twofa_enabled);
             } else {
-                const response = await api.post("/api/users/twofa/enable/");
-
-
-                setMessage({
-                    text: "Two-factor authentication enabled successfully",
-                    type: "success"
-                });
+                // Fallback: toggle the state
+                setLocalTwoFaEnabled(!localTwoFaEnabled);
             }
 
+            // Also refresh user context in background
             if (typeof refreshUser === "function") {
                 await refreshUser();
             }
+
+            // Show success message from API
+            neonToast.success(response.data.message, "success");
+
         } catch (err) {
-            // Update error handling to match your Django response structure
-            const errorMessage = err.response?.data?.warning ||  // Changed from detail/message
-                err.response?.data?.error ||
-                err.response?.data?.message ||
-                "Failed to update 2FA settings";
-            setMessage({ text: errorMessage, type: "error" });
-            neonToast.error(errorMessage, "error");
+            // Handle 400 errors (warnings or errors from your API)
+            if (err.response?.status === 400) {
+                if (err.response.data.warning) {
+                    neonToast.warning(err.response.data.warning, "warning");
+                } else if (err.response.data.error) {
+                    neonToast.error(err.response.data.error, "error");
+                }
+            } else {
+                // Handle other errors
+                const errorMessage = err.response?.data?.error ||
+                    err.response?.data?.warning ||
+                    err.response?.data?.message ||
+                    "Failed to update 2FA settings";
+                neonToast.error(errorMessage, "error");
+            }
         } finally {
             setTwoFaLoading(false);
         }
@@ -95,10 +110,6 @@ export default function Security() {
             ...prev,
             [e.target.name]: e.target.value
         }));
-        // Clear message when user starts typing
-        if (message.text) {
-            setMessage({ text: "", type: "" });
-        }
     };
 
     const togglePasswordVisibility = (field) => {
@@ -126,23 +137,16 @@ export default function Security() {
 
     const submitPasswordChange = async (e) => {
         e.preventDefault();
-        setMessage({ text: "", type: "" });
 
         // Validation
         if (passwordForm.new_password !== passwordForm.confirm_password) {
-            setMessage({
-                text: "New passwords do not match",
-                type: "error"
-            });
+            neonToast.error("New passwords do not match", "error");
             return;
         }
 
         const passwordValidation = validatePassword(passwordForm.new_password);
         if (!passwordValidation.isValid) {
-            setMessage({
-                text: "New password does not meet requirements",
-                type: "error"
-            });
+            neonToast.error("New password does not meet requirements", "error");
             return;
         }
 
@@ -160,11 +164,6 @@ export default function Security() {
                 confirm_password: ""
             });
 
-            setMessage({
-                text: "Password changed successfully",
-                type: "success"
-            });
-            neonToast.success("Password changed successfully", "success");
 
             if (typeof refreshUser === "function") {
                 await refreshUser();
@@ -174,80 +173,29 @@ export default function Security() {
             const errorMessage = err.response?.data?.error ||
                 err.response?.data?.message?.[0] ||
                 "Failed to change password";
-            setMessage({ text: errorMessage, type: "error" });
             neonToast.error(errorMessage, "error");
         } finally {
             setPwLoading(false);
         }
     };
 
-    // NEW: Request password reset via email
     const requestPasswordChangeViaEmail = async () => {
-        setEmailMessage({ text: "", type: "" });
         setEmailPwLoading(true);
 
         try {
-            const response = await api.post("/api/users/password/change/request/");
+            await api.post("/api/users/password/change/request/");
 
-            setEmailMessage({
-                text: "Password reset email sent! Check your inbox for verification instructions.",
-                type: "success"
-            });
-
-            neonToast.success("Password reset email sent!", "success");
+            neonToast.success("Password reset email sent! Check your inbox for verification instructions.", "success");
 
         } catch (err) {
             const errorMessage = err.response?.data?.detail ||
                 err.response?.data?.error ||
                 "Failed to send password reset email";
 
-            setEmailMessage({
-                text: errorMessage,
-                type: "error"
-            });
-
             neonToast.error(errorMessage, "error");
         } finally {
             setEmailPwLoading(false);
         }
-    };
-
-    const handleLogoutAll = async () => {
-        try {
-            await api.post("/api/auth/logout-all/");
-            logout();
-            neonToast.success("Logged out from all devices", "success");
-        } catch (err) {
-            console.error("Logout all error:", err);
-            logout(); // Still logout locally
-        }
-    };
-
-    const getActiveSessions = () => {
-        // This would typically come from an API
-        return [
-            {
-                id: 1,
-                device: "Chrome on Windows",
-                location: "New York, USA",
-                lastActive: "2 hours ago",
-                current: true
-            },
-            {
-                id: 2,
-                device: "Safari on iPhone",
-                location: "San Francisco, USA",
-                lastActive: "3 days ago",
-                current: false
-            },
-            {
-                id: 3,
-                device: "Firefox on Mac",
-                location: "London, UK",
-                lastActive: "1 week ago",
-                current: false
-            }
-        ];
     };
 
     if (user.isAuthenticated === null) {
@@ -261,7 +209,6 @@ export default function Security() {
 
     if (!user.isAuthenticated) return null;
 
-    const activeSessions = getActiveSessions();
     const passwordValidation = validatePassword(passwordForm.new_password);
 
     return (
@@ -280,14 +227,6 @@ export default function Security() {
                     </div>
                 </div>
 
-                {/* Message Banner */}
-                {message.text && (
-                    <div className={`${styles.messageBanner} ${styles[message.type]}`}>
-                        {message.type === "success" ? <FaCheckCircle /> : <FaExclamationTriangle />}
-                        <span>{message.text}</span>
-                    </div>
-                )}
-
                 {/* Main Content */}
                 <main className={styles.mainContent}>
                     {/* Two-Factor Authentication Card */}
@@ -297,8 +236,8 @@ export default function Security() {
                                 <IoShieldCheckmark className={styles.cardIcon} />
                                 Two-Factor Authentication
                             </h2>
-                            <div className={`${styles.statusBadge} ${user.twoFaEnabled ? styles.enabled : styles.disabled}`}>
-                                {user.twoFaEnabled ? "Enabled" : "Disabled"}
+                            <div className={`${styles.statusBadge} ${localTwoFaEnabled ? styles.enabled : styles.disabled}`}>
+                                {localTwoFaEnabled ? "Enabled" : "Disabled"}
                             </div>
                         </div>
 
@@ -315,7 +254,7 @@ export default function Security() {
                                             When enabled, you'll need to enter a verification code
                                             from your authenticator app when signing in.
                                         </p>
-                                        {user.twoFaEnabled && (
+                                        {localTwoFaEnabled && (
                                             <div className={styles.helperText}>
                                                 <FaCheckCircle />
                                                 <span>2FA is currently protecting your account</span>
@@ -328,9 +267,9 @@ export default function Security() {
                                     onClick={toggle2FA}
                                     loading={twoFaLoading}
                                     disabled={twoFaLoading}
-                                    className={user.twoFaEnabled ? styles.dangerBtn : styles.primaryBtn}
+                                    className={localTwoFaEnabled ? styles.dangerBtn : styles.primaryBtn}
                                 >
-                                    {user.twoFaEnabled ? (
+                                    {localTwoFaEnabled ? (
                                         <>
                                             <FaUnlock />
                                             <span>Disable 2FA</span>
@@ -406,7 +345,7 @@ export default function Security() {
 
                                     {/* Password Requirements */}
                                     <div className={styles.passwordRequirements}>
-                                        <h4>Password must contain:</h4>
+                                        <h4>Password Requirements</h4>
                                         <ul>
                                             <li className={passwordValidation.minLength ? styles.valid : styles.invalid}>
                                                 At least 8 characters
@@ -478,7 +417,7 @@ export default function Security() {
                         </form>
                     </div>
 
-                    {/* NEW: Reset Password via Email Card */}
+                    {/* Reset Password via Email Card */}
                     <div className={`${styles.card} ${styles.emailResetCard}`}>
                         <div className={styles.cardHeader}>
                             <h2>
@@ -487,67 +426,62 @@ export default function Security() {
                             </h2>
                         </div>
 
-                        <div className={styles.emailResetContent}>
-                            <div className={styles.emailResetInfo}>
+                        <div className={styles.cardContent}>
+                            <div className={styles.settingRow}>
+                                <div className={styles.settingInfo}>
+                                    <div className={styles.settingIcon}>
+                                        <FaEnvelope />
+                                    </div>
+                                    <div className={styles.emailResetInfo}>
+                                        <h3>Forgot your password?</h3>
+                                        <p>
+                                            Request a password reset email if you don't remember your current password.
+                                            You'll receive a verification link at <strong>{user.email}</strong>
+                                        </p>
 
-                                <div>
-                                    <h3>Forgot your password?</h3>
-                                    <p>
-                                        Request a password reset email if you don't remember your current password.
-                                        You'll receive a verification link at <br /><br /><strong>{user.email}</strong>
-                                    </p>
-
-                                    {emailMessage.text && (
-                                        <div className={`${styles.emailMessage} ${styles[emailMessage.type]}`}>
-                                            {emailMessage.type === "success" ?
-                                                <FaCheckCircle /> : <FaExclamationTriangle />
-                                            }
-                                            <span>{emailMessage.text}</span>
+                                        <div className={styles.emailResetTips}>
+                                            <h4>How it works:</h4>
+                                            <ul>
+                                                <li>
+                                                    <FaClock /> You'll receive an email with a verification link
+                                                </li>
+                                                <li>
+                                                    <FaKey /> The link will take you to a secure page to set a new password
+                                                </li>
+                                                <li>
+                                                    <FaShieldAlt /> The link expires in 5 minutes for security
+                                                </li>
+                                            </ul>
                                         </div>
-                                    )}
-
-                                    <div className={styles.emailResetTips}>
-                                        <h4>How it works:</h4>
-                                        <ul>
-                                            <li>
-                                                <FaClock /> You'll receive an email with a verification link
-                                            </li>
-                                            <li>
-                                                <FaKey /> The link will take you to a secure page to set a new password
-                                            </li>
-                                            <li>
-                                                <FaShieldAlt /> The link expires in 5 minutes for security
-                                            </li>
-                                        </ul>
                                     </div>
                                 </div>
-                            </div>
 
-                            <div className={styles.emailResetActions}>
-                                <AsyncButton
-                                    onClick={requestPasswordChangeViaEmail}
-                                    loading={emailPwLoading}
-                                    disabled={emailPwLoading}
-                                    className={styles.secondaryBtn}
-                                >
-                                    {emailPwLoading ? (
-                                        <>
-                                            <FaSpinner className={styles.spinner} />
-                                            <span>Sending Email...</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <FaRedo />
-                                            <span>Send Reset Email</span>
-                                        </>
-                                    )}
-                                </AsyncButton>
+                                <div className={styles.emailResetActions}>
+                                    <AsyncButton
+                                        onClick={requestPasswordChangeViaEmail}
+                                        loading={emailPwLoading}
+                                        disabled={emailPwLoading}
+                                        className={styles.secondaryBtn}
+                                    >
+                                        {emailPwLoading ? (
+                                            <>
+                                                <FaSpinner className={styles.spinner} />
+                                                <span>Sending...</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <FaRedo />
+                                                <span>Send Reset Email</span>
+                                            </>
+                                        )}
+                                    </AsyncButton>
 
-                                <div className={styles.emailResetNote}>
-                                    <MdWarning />
-                                    <span>
-                                        Make sure you have access to your email before requesting a reset.
-                                    </span>
+                                    <div className={styles.emailResetNote}>
+                                        <MdWarning />
+                                        <span>
+                                            Make sure you have access to your email before requesting a reset.
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         </div>

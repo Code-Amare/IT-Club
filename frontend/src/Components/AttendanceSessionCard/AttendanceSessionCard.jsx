@@ -17,7 +17,7 @@ export default function AttendanceSessionCard({ session }) {
 
     return (
         <Link
-            to={`/admin/attendance/sessions/${session.id}`}
+            to={`/admin/session/${session.id}`}
             className={`${styles.sessionCard} ${session.is_ended ? styles.closed : styles.open}`}
         >
             <div className={styles.cardHeader}>

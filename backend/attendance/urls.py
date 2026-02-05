@@ -4,10 +4,14 @@ from .views import (
     AttendanceAPIView,
     CloseAttendanceSessionAPIView,
     OpenAttendanceSessionAPIView,
+    AttendanceSessionAllView,
 )
 
 urlpatterns = [
     # CRUD for AttendanceSession
+    path(
+        "sessions/all/", AttendanceSessionAllView.as_view(), name="attendance_sessions"
+    ),
     path("sessions/", AttendanceSessionVeiw.as_view(), name="attendance_sessions"),
     path(
         "sessions/<int:session_id>/",
