@@ -136,6 +136,8 @@ class UserSerializer(serializers.ModelSerializer):
             "is_staff",
             "is_deleted",
             "date_joined",
+            "notif_enabled",
+            "push_notif_enabled",
         ]
 
     def create(self, validated_data):

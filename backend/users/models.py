@@ -61,6 +61,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False)
     date_joined = models.DateTimeField(default=timezone.now)
+    push_notif_enabled = models.BooleanField(default=False)
+    notif_enabled = models.BooleanField(default=True)
 
     objects = UserManager()
     active_users = ActiveUserManager()
