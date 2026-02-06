@@ -18,7 +18,12 @@ export default function NotificationsList() {
     const navigate = useNavigate();
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(true);
-    const { notification, notifUnreadCount, setNotifUnreadCount } = useNotifContext();
+    const { notification, notificationPreview, makeAllAsRead } = useNotifContext();
+    const [notifUnreadCount, setNotifUnreadCount] = useState(notificationPreview.length || 0)
+
+    useEffect(() => {
+        setNotifUnreadCount(notificationPreview.length || 0)
+    }, [notificationPreview])
 
     useEffect(() => {
         if (notification) {
@@ -27,17 +32,14 @@ export default function NotificationsList() {
         }
     }, [notification]);
 
+    useEffect(() => {
+    }, [])
+
     const handleMarkAllAsRead = async () => {
         try {
             await api.post("/api/realtime/mark-read/", { scope: "all" });
-            // Update local state
-            setNotifications(prev =>
-                prev.map(notif => ({ ...notif, is_read: true }))
-            );
-            // Update context state
-            if (setNotifUnreadCount) {
-                setNotifUnreadCount(0);
-            }
+
+            makeAllAsRead()
         } catch (error) {
             console.error("Failed to mark all as read:", error);
         }

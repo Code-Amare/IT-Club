@@ -33,11 +33,16 @@ import {
 } from "react-icons/fa";
 import { FiTrendingUp, FiUser, FiCalendar } from "react-icons/fi";
 import { useUser } from "../../../Context/UserContext";
+import { useNotifContext } from "../../../Context/NotifContext";
 
 const UserDashboard = () => {
     const navigate = useNavigate();
     const { user } = useUser()
-    console.log(user)
+    
+    const { updatePageTitle } = useNotifContext()
+    useEffect(() => {
+        updatePageTitle("User Dashboard")
+    }, [])
 
 
     // User stats

@@ -14,10 +14,15 @@ import {
     FaEdit,
     FaExclamationTriangle,
 } from "react-icons/fa";
+import { useNotifContext } from "../../../Context/NotifContext";
 
 const MyLearningTask = () => {
     const navigate = useNavigate();
-    const { user } = useUser();
+
+    const { updatePageTitle } = useNotifContext()
+    useEffect(() => {
+        updatePageTitle("My Learning Task")
+    }, [])
 
     // Real data states
     const [learningTasks, setLearningTasks] = useState([]);
@@ -160,10 +165,10 @@ const MyLearningTask = () => {
 
     // Handle task edit
     const handleEditTask = (task) => {
-        if (task.status === "draft") {
+        if (task.status === "draft" || task.status === "redo") {
             navigate(`/user/learning-task/edit/${task.id}`);
         } else {
-            neonToast.error("Only drafts can be edited", "error");
+            neonToast.error("Only drafts and redos can be edited", "error");
         }
     };
 

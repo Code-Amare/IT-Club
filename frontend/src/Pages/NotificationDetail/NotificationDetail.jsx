@@ -25,6 +25,13 @@ export default function NotificationDetail() {
     const { getNotif } = useNotifContext()
 
     useEffect(() => {
+        if (!notif_id) return; // do nothing if notif_id is missing
+        getNotif()
+    }, [notif_id]); // only run when notif_id changes
+
+
+
+    useEffect(() => {
         if (!notif_id) return;
         fetchNotification();
     }, [notif_id]);
@@ -150,7 +157,6 @@ export default function NotificationDetail() {
                 <div className={styles.stickyHeader}>
                     <button
                         onClick={() => {
-                            getNotif()
                             navigate(-1)
                         }}
 

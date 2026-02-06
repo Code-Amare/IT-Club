@@ -1,19 +1,13 @@
-/* LearningTaskDetail.module.css */
-
-/* Base Container */
+/* ====== BASE CONTAINER ====== */
 .container {
   width: 100%;
   min-height: 100vh;
   background: var(--bg-body);
-  font-size: 14px;
-  overflow-x: hidden;
 }
 
-/* Header */
+/* ====== HEADER - Clean and Aligned ====== */
 .header {
   margin-bottom: 24px;
-  padding: 16px 0;
-  border-bottom: 1px solid var(--border-color);
 }
 
 .headerContent {
@@ -37,43 +31,38 @@
   transition: all 0.2s ease;
   text-decoration: none;
   width: fit-content;
-  min-height: 44px;
 }
 
 .backBtn:hover {
   background: var(--bg-body);
-  transform: translateY(-1px);
 }
 
 .headerMain {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 20px;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 24px;
+  align-items: start;
 }
 
 .titleSection {
-  flex: 1;
-  min-width: 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .titleSection h1 {
   font-size: 24px;
   font-weight: 700;
   color: var(--text-primary);
-  margin: 0 0 12px 0;
+  margin: 0;
   line-height: 1.3;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
 }
 
-.subtitle {
+.taskMeta {
   display: flex;
-  align-items: center;
-  gap: 12px;
   flex-wrap: wrap;
-  row-gap: 8px;
+  gap: 12px;
+  align-items: center;
 }
 
 .userInfo,
@@ -83,196 +72,184 @@
   gap: 6px;
   font-size: 14px;
   color: var(--text-secondary);
-  flex-wrap: wrap;
-}
-
-.userInfo svg,
-.dateInfo svg {
-  font-size: 12px;
 }
 
 .visibilityBadge,
-.ratingBadge,
+.statusBadge,
 .adminBadge {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
   padding: 6px 12px;
   border-radius: 20px;
   font-size: 12px;
   font-weight: 500;
-  min-height: 32px;
-  white-space: nowrap;
 }
 
 .visibilityBadge.public {
-  background: rgba(16, 185, 129, 0.1);
-  color: #10b981;
-  border: 1px solid rgba(16, 185, 129, 0.2);
+  background: var(--bg-surface);
+  color: var(--success);
+  border: 1px solid var(--border-color);
 }
 
 .visibilityBadge.private {
-  background: rgba(107, 114, 128, 0.1);
-  color: #6b7280;
-  border: 1px solid rgba(107, 114, 128, 0.2);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
 }
 
-.ratingBadge.rated {
-  background: rgba(16, 185, 129, 0.1);
-  color: #10b981;
-  border: 1px solid rgba(16, 185, 129, 0.2);
+.statusBadge {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  font-weight: 600;
 }
 
-.ratingBadge.notRated {
-  background: rgba(245, 158, 11, 0.1);
-  color: #f59e0b;
-  border: 1px solid rgba(245, 158, 11, 0.2);
+.statusDraft {
+  color: var(--warning);
+}
+
+.statusSubmitted {
+  color: var(--info);
+}
+
+.statusRated {
+  color: var(--success);
+}
+
+.statusRedo {
+  color: var(--danger);
 }
 
 .adminBadge {
-  background: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
-  border: 1px solid rgba(239, 68, 68, 0.2);
+  background: var(--bg-surface);
+  color: var(--accent);
+  border: 1px solid var(--border-color);
 }
 
-/* Header Actions */
+/* ====== HEADER ACTIONS - Clean and Simple ====== */
 .headerActions {
   display: flex;
+  flex-direction: column;
   gap: 12px;
-  flex-wrap: wrap;
-  justify-content: flex-start;
 }
 
-/* Like Button */
-.likeBtn {
+.actionRow {
+  display: flex;
+  gap: 8px;
+}
+
+.likeBtn,
+.adminRateBtn,
+.editReviewBtn,
+.cancelEditBtn,
+.deleteTaskBtn,
+.redoBtn {
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 10px 16px;
-  background: var(--bg-surface);
-  color: var(--text-secondary);
-  border: 1px solid var(--border-color);
   border-radius: 8px;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
-  min-height: 44px;
-  white-space: nowrap;
-  flex-shrink: 0;
+  border: 1px solid var(--border-color);
+  background: var(--bg-surface);
+  color: var(--text-primary);
 }
 
-.likeBtn:hover {
+.likeBtn:hover,
+.adminRateBtn:hover,
+.editReviewBtn:hover,
+.cancelEditBtn:hover,
+.deleteTaskBtn:hover,
+.redoBtn:hover {
   background: var(--bg-body);
 }
 
 .likeBtn.liked {
-  background: rgba(59, 130, 246, 0.1);
-  color: #3b82f6;
-  border-color: rgba(59, 130, 246, 0.2);
+  color: var(--primary);
+  border-color: var(--primary);
 }
 
-.adminRateBtn,
-.editReviewBtn,
-.cancelEditBtn,
-.deleteTaskBtn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
-  background: var(--primary);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  min-height: 44px;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.adminRateBtn:hover,
-.editReviewBtn:hover {
-  background: var(--primary-hover);
-  transform: translateY(-1px);
+.adminRateBtn {
+  color: var(--primary);
+  border-color: var(--primary);
 }
 
 .editReviewBtn {
-  background: var(--primary);
-}
-
-.editReviewBtn:hover {
-  background: var(--primary-hover);
+  color: var(--info);
+  border-color: var(--info);
 }
 
 .cancelEditBtn {
-  background: var(--warning);
-}
-
-.cancelEditBtn:hover {
-  background: var(--warning-hover);
+  color: var(--warning);
+  border-color: var(--warning);
 }
 
 .deleteTaskBtn {
-  background: var(--danger);
+  color: var(--danger);
+  border-color: var(--danger);
 }
 
-.deleteTaskBtn:hover {
-  background: var(--danger-hover);
-  transform: translateY(-1px);
+.redoBtn {
+  color: var(--accent);
+  border-color: var(--accent);
 }
 
-/* Content Grid */
+/* ====== CONTENT GRID - Clean Layout ====== */
 .contentGrid {
   display: grid;
   grid-template-columns: 1fr 400px;
   gap: 24px;
+  align-items: start;
 }
 
-/* Sections */
-.section {
+/* ====== CARDS - Simple and Clean ====== */
+.card,
+.adminSection {
   background: var(--bg-surface);
   border: 1px solid var(--border-color);
   border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 20px;
+  padding: 24px;
+  margin-bottom: 24px;
 }
 
-.section:last-child {
+.card:last-child,
+.adminSection:last-child {
   margin-bottom: 0;
 }
 
-.sectionHeader {
+.cardHeader {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-color);
 }
 
-.sectionHeader svg {
+.cardHeader h3 {
   font-size: 18px;
-  color: var(--primary);
-}
-
-.sectionHeader h3 {
-  font-size: 16px;
   font-weight: 600;
   color: var(--text-primary);
   margin: 0;
 }
 
-/* Description */
+.cardHeader svg {
+  color: var(--text-primary);
+  font-size: 18px;
+}
+
+/* ====== DESCRIPTION ====== */
 .description {
   color: var(--text-primary);
   font-size: 14px;
   line-height: 1.6;
   white-space: pre-wrap;
-  word-break: break-word;
 }
 
-/* GitHub Link */
+/* ====== GITHUB LINK ====== */
 .githubLink {
   display: flex;
   align-items: center;
@@ -285,18 +262,14 @@
   text-decoration: none;
   font-size: 14px;
   transition: all 0.2s ease;
-  overflow: hidden;
-  min-height: 44px;
 }
 
 .githubLink:hover {
   background: var(--bg-surface);
-  border-color: var(--primary);
 }
 
 .githubLink svg {
-  color: var(--primary);
-  flex-shrink: 0;
+  color: var(--text-primary);
 }
 
 .githubLink span {
@@ -304,10 +277,9 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 13px;
 }
 
-/* Technologies */
+/* ====== TECHNOLOGIES - Clean Layout ====== */
 .techGroup {
   margin-bottom: 20px;
 }
@@ -318,7 +290,7 @@
 
 .techGroup h4 {
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text-secondary);
   margin: 0 0 12px 0;
   text-transform: uppercase;
@@ -339,7 +311,6 @@
   background: var(--bg-body);
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  flex-wrap: wrap;
 }
 
 .techColor {
@@ -354,7 +325,6 @@
   font-size: 14px;
   font-weight: 500;
   color: var(--text-primary);
-  min-width: 120px;
 }
 
 .techCode,
@@ -365,7 +335,6 @@
   padding: 4px 8px;
   border-radius: 4px;
   border: 1px solid var(--border-color);
-  white-space: nowrap;
 }
 
 .frameworkIcon {
@@ -384,22 +353,32 @@
   border-radius: 8px;
 }
 
-/* Stats Grid */
-.statsGrid {
+/* ====== LEARNING TASK STATISTICS - Card Icons ====== */
+.statsCard {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+  gap: 16px;
+  padding: 20px;
 }
 
 .statItem {
-  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   padding: 16px;
   background: var(--bg-body);
   border: 1px solid var(--border-color);
   border-radius: 8px;
+  text-align: center;
 }
 
-.statValue {
+.statIcon {
+  color: var(--text-primary);
+  font-size: 24px;
+  margin-bottom: 8px;
+}
+
+.statNumber {
   font-size: 20px;
   font-weight: 700;
   color: var(--text-primary);
@@ -413,161 +392,79 @@
   letter-spacing: 0.5px;
 }
 
-/* Admin Actions Panel */
-.adminActionsPanel {
-  background: var(--bg-surface);
+/* ====== ADMIN SECTION ====== */
+.adminSection {
   border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 20px;
 }
 
-.adminSectionHeader {
+.adminHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.adminTitle {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 16px;
 }
 
-.adminSectionHeader h3 {
-  font-size: 16px;
+.adminTitle h3 {
+  font-size: 18px;
   font-weight: 600;
   color: var(--text-primary);
   margin: 0;
 }
 
-.adminSectionHeader svg {
-  font-size: 18px;
-  color: var(--primary);
-}
-
-.adminActions {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.viewUserBtn,
-.exportBtn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
-  background: var(--bg-body);
+.adminTitle svg {
   color: var(--text-primary);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  min-height: 44px;
-  white-space: nowrap;
-}
-
-.viewUserBtn:hover,
-.exportBtn:hover {
-  background: var(--bg-surface);
-  border-color: var(--primary);
-}
-
-/* Admin Section */
-.adminSection {
-  background: var(--bg-surface);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 20px;
-  border-top: 4px solid var(--primary);
-}
-
-.adminStats {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-  margin-bottom: 20px;
-}
-
-.adminStat {
-  padding: 12px;
-  background: var(--bg-body);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-}
-
-.adminStatLabel {
-  display: block;
-  font-size: 11px;
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 6px;
-}
-
-.adminStatValue {
   font-size: 18px;
-  font-weight: 700;
-  color: var(--text-primary);
-  display: block;
 }
 
-.adminStatValue.rated {
-  color: #10b981;
-}
-
-.adminStatValue.notRated {
-  color: #f59e0b;
-}
-
-/* Review Form */
+/* ====== REVIEW FORM ====== */
 .reviewForm {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
+  margin-top: 20px;
 }
 
 .formGroup {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  margin-bottom: 20px;
 }
 
 .formLabel {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-primary);
   display: flex;
   align-items: center;
   gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 8px;
 }
 
 .formLabel svg {
+  color: var(--text-primary);
   font-size: 14px;
-  color: var(--primary);
 }
 
 .ratingInput {
   display: flex;
   gap: 8px;
-  flex-wrap: wrap;
+  margin-bottom: 4px;
 }
 
 .starBtn {
   background: none;
   border: none;
-  padding: 8px;
+  padding: 4px;
   cursor: pointer;
   font-size: 24px;
   color: var(--border-color);
   transition: all 0.2s ease;
-  min-width: 44px;
-  min-height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
-.starBtn:hover:not(:disabled) {
+.starBtn:hover {
   transform: scale(1.1);
 }
 
@@ -575,23 +472,14 @@
   color: #fbbf24;
 }
 
-.starBtn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
 .ratingHelp {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 8px;
-  flex-wrap: wrap;
-  gap: 8px;
+  font-size: 13px;
+  color: var(--text-secondary);
 }
 
 .ratingValue {
-  font-size: 13px;
-  color: var(--text-secondary);
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
 .feedbackInput {
@@ -602,16 +490,15 @@
   background: var(--bg-body);
   color: var(--text-primary);
   font-size: 14px;
+  line-height: 1.5;
   resize: vertical;
   min-height: 120px;
   font-family: inherit;
-  line-height: 1.5;
 }
 
 .feedbackInput:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
 }
 
 .feedbackHelp {
@@ -622,69 +509,60 @@
 }
 
 .formActions {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   padding-top: 16px;
+  margin-top: 16px;
   border-top: 1px solid var(--border-color);
-  margin-top: 8px;
-  flex-wrap: wrap;
-  gap: 12px;
 }
 
 .formButtons {
   display: flex;
   gap: 12px;
-  flex-wrap: wrap;
+  margin-bottom: 12px;
 }
 
 .submitReviewBtn,
 .deleteReviewBtn,
 .cancelFormBtn {
   padding: 12px 20px;
-  background: var(--primary);
-  color: white;
-  border: none;
   border-radius: 8px;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
+  border: 1px solid var(--border-color);
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-height: 44px;
-  white-space: nowrap;
 }
 
-.submitReviewBtn:hover:not(:disabled) {
+.submitReviewBtn {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.submitReviewBtn:hover {
   background: var(--primary-hover);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
-}
-
-.submitReviewBtn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 .deleteReviewBtn {
-  background: var(--danger);
+  background: var(--bg-surface);
+  color: var(--danger);
+  border-color: var(--danger);
 }
 
-.deleteReviewBtn:hover:not(:disabled) {
-  background: var(--danger-hover);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+.deleteReviewBtn:hover {
+  background: var(--bg-body);
 }
 
 .cancelFormBtn {
-  background: var(--warning);
+  background: var(--bg-surface);
+  color: var(--text-primary);
 }
 
-.cancelFormBtn:hover:not(:disabled) {
-  background: var(--warning-hover);
+.cancelFormBtn:hover {
+  background: var(--bg-body);
 }
 
 .reviewStatus {
@@ -693,7 +571,6 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  flex-wrap: wrap;
 }
 
 .reviewStatus svg {
@@ -702,11 +579,37 @@
 
 .updatedNote {
   font-size: 11px;
-  color: #10b981;
+  color: var(--success);
   margin-left: 8px;
 }
 
-/* Reviews List */
+/* ====== ALREADY RATED NOTE ====== */
+.alreadyRatedNote {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  background: var(--bg-body);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  margin-top: 20px;
+}
+
+.alreadyRatedNote svg {
+  color: var(--warning);
+  font-size: 18px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.alreadyRatedNote p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-primary);
+}
+
+/* ====== REVIEWS LIST ====== */
 .reviewsList {
   display: flex;
   flex-direction: column;
@@ -721,12 +624,8 @@
 }
 
 .reviewItem.currentUserReview {
+  background: var(--bg-surface);
   border-color: var(--primary);
-  background: rgba(79, 70, 229, 0.05);
-}
-
-.reviewItem.adminReview {
-  border-left: 4px solid var(--danger);
 }
 
 .reviewHeader {
@@ -739,9 +638,6 @@
 }
 
 .reviewerInfo {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
   flex: 1;
   min-width: 200px;
 }
@@ -750,23 +646,26 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  margin-bottom: 4px;
+  flex-wrap: wrap;
+}
+
+.reviewerName span {
   font-size: 14px;
   font-weight: 500;
   color: var(--text-primary);
-  flex-wrap: wrap;
 }
 
 .adminReviewBadge {
   padding: 2px 6px;
-  background: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
-  border: 1px solid rgba(239, 68, 68, 0.2);
+  background: var(--bg-surface);
+  color: var(--accent);
+  border: 1px solid var(--border-color);
   border-radius: 12px;
   font-size: 10px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  white-space: nowrap;
   display: flex;
   align-items: center;
   gap: 4px;
@@ -787,32 +686,30 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  white-space: nowrap;
 }
 
 .roleBadgeAdmin {
-  background: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
-  border: 1px solid rgba(239, 68, 68, 0.2);
+  background: var(--bg-surface);
+  color: var(--accent);
+  border: 1px solid var(--border-color);
 }
 
 .roleBadgeYou {
-  background: rgba(79, 70, 229, 0.1);
+  background: var(--bg-surface);
   color: var(--primary);
-  border: 1px solid rgba(79, 70, 229, 0.2);
+  border: 1px solid var(--border-color);
 }
 
 .roleBadgeUser {
-  background: rgba(107, 114, 128, 0.1);
-  color: #6b7280;
-  border: 1px solid rgba(107, 114, 128, 0.2);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
 }
 
 .reviewActions {
   display: flex;
   align-items: center;
   gap: 12px;
-  flex-shrink: 0;
 }
 
 .reviewRating {
@@ -844,20 +741,20 @@
 .reviewOptionsToggle {
   background: none;
   border: none;
-  padding: 8px;
+  padding: 4px;
   cursor: pointer;
   color: var(--text-secondary);
   font-size: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 44px;
-  min-height: 44px;
-  border-radius: 6px;
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
 }
 
 .reviewOptionsToggle:hover {
-  background: var(--bg-body);
+  background: var(--bg-surface);
 }
 
 .reviewOptionsMenu {
@@ -867,10 +764,11 @@
   background: var(--bg-surface);
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   z-index: 100;
   min-width: 160px;
   overflow: hidden;
+  margin-top: 4px;
 }
 
 .reviewOption {
@@ -886,7 +784,6 @@
   color: var(--text-primary);
   cursor: pointer;
   transition: all 0.2s ease;
-  min-height: 44px;
 }
 
 .reviewOption:hover {
@@ -898,7 +795,7 @@
 }
 
 .reviewOption.deleteOption:hover {
-  background: rgba(239, 68, 68, 0.1);
+  background: var(--bg-body);
 }
 
 .reviewDate {
@@ -912,7 +809,7 @@
 }
 
 .reviewDate svg {
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .updatedDate {
@@ -933,114 +830,21 @@
 .noReviews {
   padding: 40px 20px;
   text-align: center;
-  background: var(--bg-body);
-  border: 1px dashed var(--border-color);
-  border-radius: 8px;
+  color: var(--text-secondary);
 }
 
 .noReviews svg {
   font-size: 36px;
-  color: var(--text-secondary);
   margin-bottom: 16px;
+  color: var(--border-color);
 }
 
 .noReviews p {
-  color: var(--text-secondary);
-  font-size: 14px;
-  margin: 0;
-}
-
-/* Already Rated Note */
-.alreadyRatedNote {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 16px;
-  background: rgba(245, 158, 11, 0.1);
-  border: 1px solid rgba(245, 158, 11, 0.2);
-  border-radius: 8px;
-  color: var(--text-primary);
-  margin-top: 16px;
-}
-
-.alreadyRatedNote svg {
-  color: #f59e0b;
-  font-size: 20px;
-  flex-shrink: 0;
-}
-
-.alreadyRatedNote p {
   margin: 0;
   font-size: 14px;
-  line-height: 1.5;
 }
 
-/* Metadata */
-.metadata {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.metaItem {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--border-color);
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.metaItem:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
-}
-
-.metaLabel {
-  font-size: 14px;
-  color: var(--text-secondary);
-  flex-shrink: 0;
-}
-
-.metaValue {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-primary);
-  text-align: right;
-  word-break: break-word;
-}
-
-.status-rated {
-  color: #10b981;
-}
-
-.status-not_rated {
-  color: #f59e0b;
-}
-
-.metaValue.public {
-  color: #10b981;
-}
-
-.metaValue.private {
-  color: #6b7280;
-}
-
-.ownerInfo {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-}
-
-.userEmail {
-  font-size: 12px;
-  color: var(--text-secondary);
-  margin-left: 8px;
-}
-
-/* Profile Picture Styles */
+/* ====== PROFILE PICTURE ====== */
 .profilePic,
 .profilePicPlaceholder {
   border-radius: 50%;
@@ -1051,11 +855,6 @@
 .profilePicSmall {
   width: 32px;
   height: 32px;
-}
-
-.profilePicMedium {
-  width: 40px;
-  height: 40px;
 }
 
 .profilePicPlaceholder {
@@ -1072,13 +871,7 @@
   font-size: 14px;
 }
 
-.profilePicPlaceholder.profilePicMedium {
-  width: 40px;
-  height: 40px;
-  font-size: 16px;
-}
-
-/* Loading and Error States */
+/* ====== LOADING AND ERROR STATES ====== */
 .loadingContainer,
 .errorContainer {
   display: flex;
@@ -1088,7 +881,6 @@
   min-height: 300px;
   text-align: center;
   gap: 16px;
-  padding: 20px;
 }
 
 .errorContainer svg {
@@ -1119,7 +911,6 @@
   cursor: pointer;
   transition: all 0.2s ease;
   margin-top: 8px;
-  min-height: 44px;
 }
 
 .primaryBtn:hover {
@@ -1145,375 +936,164 @@
   }
 }
 
-/* ========== RESPONSIVE BREAKPOINTS ========== */
-
-/* Large Tablets and Below (1024px) */
+/* ====== RESPONSIVE DESIGN ====== */
 @media (max-width: 1024px) {
   .contentGrid {
     grid-template-columns: 1fr;
-    gap: 20px;
   }
 
   .rightColumn {
-    order: -1; /* Move reviews above details on smaller screens */
-  }
-
-  .adminStats,
-  .statsGrid {
-    grid-template-columns: repeat(2, 1fr);
+    order: -1;
   }
 }
 
-/* Tablets and Large Mobile (768px and below) */
 @media (max-width: 768px) {
-  .container {
-    font-size: 13px;
-  }
-
   .headerMain {
-    flex-direction: column;
+    grid-template-columns: 1fr;
     gap: 16px;
   }
 
   .headerActions {
-    width: 100%;
-    justify-content: flex-start;
+    flex-direction: row;
+    flex-wrap: wrap;
   }
 
+  .actionRow {
+    flex-wrap: wrap;
+  }
+
+  .likeBtn,
   .adminRateBtn,
   .editReviewBtn,
   .cancelEditBtn,
   .deleteTaskBtn,
-  .likeBtn {
+  .redoBtn {
     flex: 1;
     min-width: 140px;
-    justify-content: center;
-    font-size: 13px;
-    padding: 10px 12px;
+  }
+
+  .statsCard {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .formButtons {
+    flex-wrap: wrap;
+  }
+
+  .submitReviewBtn,
+  .deleteReviewBtn,
+  .cancelFormBtn {
+    flex: 1;
+    min-width: 120px;
+  }
+}
+
+@media (max-width: 480px) {
+  .headerMain {
+    flex-direction: column;
   }
 
   .titleSection h1 {
     font-size: 20px;
   }
 
-  .subtitle {
+  .taskMeta {
     flex-direction: column;
     align-items: flex-start;
     gap: 8px;
   }
 
-  .userInfo,
-  .dateInfo,
-  .visibilityBadge,
-  .ratingBadge,
-  .adminBadge {
-    align-self: flex-start;
-  }
-
-  .section {
-    padding: 16px;
-    margin-bottom: 16px;
-  }
-
-  .sectionHeader {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-    margin-bottom: 12px;
-  }
-
-  .sectionHeader h3 {
-    font-size: 15px;
-  }
-
-  .techItem {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-  }
-
-  .techName,
-  .techCode,
-  .techLanguage {
-    width: 100%;
-    text-align: left;
-  }
-
-  .adminStats,
-  .statsGrid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
-  }
-
-  .adminStatValue {
-    font-size: 16px;
-  }
-
-  .statValue {
-    font-size: 18px;
-  }
-
-  .formActions {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 16px;
+  .statsCard {
+    grid-template-columns: 1fr;
   }
 
   .formButtons {
-    width: 100%;
     flex-direction: column;
-    gap: 8px;
   }
 
   .submitReviewBtn,
   .deleteReviewBtn,
   .cancelFormBtn {
     width: 100%;
-    justify-content: center;
   }
 
   .reviewHeader {
     flex-direction: column;
-    gap: 12px;
   }
 
   .reviewActions {
     width: 100%;
     justify-content: space-between;
   }
-
-  .reviewOptionsMenu {
-    right: auto;
-    left: 0;
-    transform: translateX(-10%);
-    min-width: 140px;
-  }
-
-  .metaItem {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 4px;
-  }
-
-  .metaLabel,
-  .metaValue {
-    width: 100%;
-    text-align: left;
-  }
-
-  .ownerInfo {
-    width: 100%;
-    justify-content: flex-start;
-  }
-
-  .githubLink span {
-    font-size: 12px;
-  }
-
-  .adminSectionHeader {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-  }
-
-  .adminBadge {
-    margin-left: 0;
-  }
-
-  .ratingInput {
-    justify-content: center;
-  }
-
-  .starBtn {
-    font-size: 20px;
-    padding: 6px;
-    min-width: 40px;
-    min-height: 40px;
-  }
-
-  .reviewerName {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 4px;
-  }
-
-  .adminActions {
-    flex-direction: column;
-  }
-
-  .viewUserBtn,
-  .exportBtn {
-    width: 100%;
-    justify-content: center;
-  }
+}
+/* ====== COMPACT QUICK STATS ====== */
+.statsCard {
+  padding: 16px;
 }
 
-/* Small Mobile (480px and below) */
-@media (max-width: 480px) {
-  .container {
-    font-size: 12px;
-  }
-
-  .titleSection h1 {
-    font-size: 18px;
-  }
-
-  .backBtn {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .headerActions {
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .adminRateBtn,
-  .editReviewBtn,
-  .cancelEditBtn,
-  .deleteTaskBtn,
-  .likeBtn {
-    width: 100%;
-    min-width: unset;
-  }
-
-  .sectionHeader h3 {
-    font-size: 14px;
-  }
-
-  .adminStatValue,
-  .statValue {
-    font-size: 16px;
-  }
-
-  .ratingInput {
-    justify-content: space-between;
-  }
-
-  .starBtn {
-    flex: 1;
-    max-width: 50px;
-  }
-
-  .reviewFeedback {
-    font-size: 13px;
-  }
-
-  .description {
-    font-size: 13px;
-  }
-
-  .loadingContainer,
-  .errorContainer {
-    min-height: 250px;
-  }
-
-  .adminStats,
-  .statsGrid {
-    grid-template-columns: 1fr;
-  }
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
 }
 
-/* Extra Small Mobile (360px and below) */
-@media (max-width: 360px) {
-  .section {
-    padding: 12px;
-  }
-
-  .titleSection h1 {
-    font-size: 16px;
-  }
-
-  .userInfo,
-  .dateInfo {
-    font-size: 12px;
-  }
-
-  .visibilityBadge,
-  .ratingBadge,
-  .adminBadge {
-    font-size: 11px;
-    padding: 4px 8px;
-  }
-
-  .formLabel {
-    font-size: 13px;
-  }
-
-  .feedbackInput {
-    font-size: 13px;
-    padding: 10px 12px;
-  }
-
-  .reviewItem {
-    padding: 12px;
-  }
-
-  .reviewOption {
-    padding: 10px 12px;
-    font-size: 13px;
-  }
+.statItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px;
+  background: var(--bg-body);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
 }
 
-/* Touch-friendly improvements for mobile */
-@media (hover: none) and (pointer: coarse) {
-  .backBtn,
-  .adminRateBtn,
-  .editReviewBtn,
-  .cancelEditBtn,
-  .deleteTaskBtn,
-  .submitReviewBtn,
-  .deleteReviewBtn,
-  .cancelFormBtn,
-  .reviewOptionsToggle,
-  .reviewOption,
-  .starBtn,
-  .likeBtn,
-  .viewUserBtn,
-  .exportBtn {
-    min-height: 48px;
-    font-size: 15px;
-  }
-
-  .starBtn {
-    min-width: 48px;
-    min-height: 48px;
-  }
-
-  .githubLink {
-    min-height: 48px;
-  }
-
-  .techItem {
-    padding: 12px;
-  }
-
-  /* Increase touch targets for mobile */
-  .visibilityBadge,
-  .ratingBadge,
-  .adminBadge {
-    min-height: 36px;
-    padding: 8px 12px;
-  }
-
-  /* Increase spacing for touch */
-  .headerActions,
-  .formButtons,
-  .adminActions {
-    gap: 10px;
-  }
+.statIcon {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
 }
 
-/* Dark mode optimizations */
-@media (prefers-color-scheme: dark) {
-  .githubLink:hover,
-  .techItem:hover,
-  .statItem:hover {
-    border-color: var(--primary);
-  }
+.statNumber {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
 
-  .reviewOptionsMenu {
-    background: var(--bg-body);
-    border-color: var(--border-color-dark);
-  }
+.statLabel {
+  font-size: 10px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Remove old statsCard grid styles and replace with compact version */
+/* Replace the existing .statsCard styles with these: */
+.statsCard {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 24px;
+}
+
+.statsCard .cardHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.statsCard .cardHeader h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.statsCard .cardHeader svg {
+  color: var(--text-primary);
+  font-size: 14px;
 }

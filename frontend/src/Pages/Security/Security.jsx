@@ -23,10 +23,15 @@ import {
 } from "react-icons/fa";
 import { MdSecurity, MdWarning, MdEmail } from "react-icons/md";
 import { IoShieldCheckmark } from "react-icons/io5";
+import { useNotifContext } from "../../Context/NotifContext";
 
 export default function Security() {
     const { user, refreshUser } = useUser();
     const navigate = useNavigate();
+    const { updatePageTitle } = useNotifContext()
+    useEffect(() => {
+        updatePageTitle("Security")
+    }, [])
 
     // Local state for 2FA button
     const [localTwoFaEnabled, setLocalTwoFaEnabled] = useState(false);

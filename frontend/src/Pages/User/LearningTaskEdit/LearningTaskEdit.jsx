@@ -18,11 +18,12 @@ import {
 } from "react-icons/fa";
 import { MdTitle, MdDescription, MdLanguage, MdCode, MdEdit } from "react-icons/md";
 import styles from "./LearningTaskEdit.module.css";
+import { useNotifContext } from "../../../Context/NotifContext";
 
 export default function LearningTaskEdit() {
     const navigate = useNavigate();
     const { id } = useParams();
-    const { user } = useUser();
+
 
     const [loading, setLoading] = useState(false);
     const [fetching, setFetching] = useState(true);
@@ -43,6 +44,13 @@ export default function LearningTaskEdit() {
         reviews: [],
         user: null
     });
+
+    const { updatePageTitle } = useNotifContext()
+
+    useEffect(() => {
+        if (!task.title === "") return
+        updatePageTitle(`Edit Learning Task '${task.title}'`)
+    }, [task])
 
     useEffect(() => {
         fetchTaskData();
@@ -81,7 +89,6 @@ export default function LearningTaskEdit() {
             setFrameworks(fwRes.data);
 
         } catch (err) {
-            console.log(err);
             neonToast.error("Failed to load task");
             navigate(`/user/learning-tasks/${id}`);
         } finally {

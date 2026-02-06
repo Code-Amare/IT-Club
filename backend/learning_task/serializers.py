@@ -104,6 +104,9 @@ class LearningTaskSerializer(serializers.ModelSerializer):
                 {"error": "You cannot update a task that is under review."}
             )
 
+        if instance.status == "redo":
+            instance.status = "under_review"
+
         validated_data.pop("status", None)
 
         languages = validated_data.pop("languages", None)
@@ -113,6 +116,12 @@ class LearningTaskSerializer(serializers.ModelSerializer):
             setattr(instance, attr, value)
 
         git_link = validated_data.get("git_link", instance.git_link)
+
+        if instance.status == "redo" and git_link in [None, ""]:
+            raise serializers.ValidationError(
+                {"error": "You cannot make set the git link empty while redoing."}
+            )
+
         if git_link in [None, ""]:
             instance.status = "draft"
         else:
@@ -126,6 +135,35 @@ class LearningTaskSerializer(serializers.ModelSerializer):
             instance.frameworks.set(frameworks)
 
         return instance
+
+
+class LearningTaskNonExtraSerializer(serializers.ModelSerializer):
+    likes_count = serializers.SerializerMethodField()
+    reviews = TaskReviewSerializer(many=True, read_only=True)
+
+    languages = LanguageSerializer(many=True, read_only=True)
+    frameworks = FrameworkSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = LearningTask
+        fields = [
+            "id",
+            "user",
+            "title",
+            "description",
+            "git_link",
+            "is_public",
+            "languages",
+            "frameworks",
+            "created_at",
+            "updated_at",
+            "likes_count",
+            "reviews",
+            "status",
+        ]
+
+    def get_likes_count(self, obj):
+        return obj.likes.count()
 
 
 class LearningTaskLimitSerializer(serializers.ModelSerializer):

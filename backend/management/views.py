@@ -448,68 +448,110 @@ class StudentUpdateView(APIView):
 
 class StudentDetailView(APIView):
     authentication_classes = [JWTCookieAuthentication]
-    permission_classes = [IsAuthenticated, RolePermissionFactory(["admin", "staff"])]
 
-    def _get_profile(self, student_id):
-        try:
-            return Profile.objects.select_related("user").get(user_id=student_id)
-        except Profile.DoesNotExist:
-            return Profile.objects.select_related("user").get(id=student_id)
-
+    # permission_classes = [RolePermissionFactory(["admin", "staff"])]
     def get(self, request, student_id):
         try:
-            profile = self._get_profile(student_id)
-
-            try:
-                user = User.objects.get(id=student_id)
-
-                task_limit = LearningTaskLimit.objects.get(user=user)
-
-            except User.DoesNotExist:
-                return Response(
-                    {"error": f"User with '{id}' doesn't exist."},
-                    status=status.HTTP_404_NOT_FOUND,
-                )
-            except LearningTaskLimit.DoesNotExist:
-                task_limit = LearningTaskLimit.objects.create(user=user)
-
-            task_limit_serializer = LearningTaskLimitSerializer(task_limit)
-
-            # best-effort profile pic URL (if ImageField used)
+            profile = Profile.objects.select_related("user").get(
+                user__id=student_id, user__role="user"
+            )
             user = profile.user
 
-            profile_pic_url, _ = cloudinary.utils.cloudinary_url(
-                user.profile_pic_id,
-                resource_type="image",
-                type="authenticated",
-                sign_url=True,
-                secure=True,
+            profile_data = ProfileSerializer(profile).data
+
+            profile_pic_url = None
+            if user.profile_pic_id:
+                try:
+                    profile_pic_url, _ = cloudinary.utils.cloudinary_url(
+                        user.profile_pic_id,
+                        resource_type="image",
+                        type="authenticated",
+                        sign_url=True,
+                        secure=True,
+                    )
+                except Exception:
+                    profile_pic_url = None
+
+            attendance_counts = user.attendances.aggregate(
+                total_present=Count("id", filter=Q(status="present")),
+                total_late=Count("id", filter=Q(status="late")),
+                total_absent=Count("id", filter=Q(status="absent")),
+                total_special_case=Count("id", filter=Q(status="special_case")),
             )
+            total_attendance = sum(v or 0 for v in attendance_counts.values())
+            attendance_percentages = {
+                "present": (
+                    round(
+                        (attendance_counts["total_present"] or 0)
+                        / total_attendance
+                        * 100,
+                        2,
+                    )
+                    if total_attendance
+                    else 0.0
+                ),
+                "late": (
+                    round(
+                        (attendance_counts["total_late"] or 0) / total_attendance * 100,
+                        2,
+                    )
+                    if total_attendance
+                    else 0.0
+                ),
+                "absent": (
+                    round(
+                        (attendance_counts["total_absent"] or 0)
+                        / total_attendance
+                        * 100,
+                        2,
+                    )
+                    if total_attendance
+                    else 0.0
+                ),
+                "special_case": (
+                    round(
+                        (attendance_counts["total_special_case"] or 0)
+                        / total_attendance
+                        * 100,
+                        2,
+                    )
+                    if total_attendance
+                    else 0.0
+                ),
+            }
+
+            tasks_qs = LearningTask.objects.filter(user=user)
+
+            total_tasks_created = tasks_qs.count()
+
+            # Admin rating only + bonus
+            total_rating = 0
+            for task in tasks_qs.prefetch_related("reviews", "bonuses"):
+                admin_review = task.reviews.filter(is_admin=True).first()
+                task_bonus = getattr(task, "bonuses", None)
+                task_score = 0
+                if admin_review:
+                    task_score += admin_review.rating
+                if task_bonus:
+                    task_score += task_bonus.score
+                total_rating += task_score
+
+            task_limit, _ = LearningTaskLimit.objects.get_or_create(user=user)
+            task_limit_data = LearningTaskLimitSerializer(task_limit).data
 
             student_data = {
-                "id": user.id,
-                "full_name": user.full_name,
-                "email": user.email,
-                "grade": profile.grade,
-                "section": profile.section,
-                "field": profile.field,
-                "gender": user.gender,
-                "account": profile.account,
-                "phone_number": profile.phone_number,
-                "address": profile.address if hasattr(profile, "address") else None,
-                "date_of_birth": getattr(profile, "date_of_birth", None),
-                "account_status": "active" if user.is_active else "inactive",
+                "profile": profile_data,
                 "profile_pic_url": profile_pic_url,
-                "created_at": profile.created_at,
-                "updated_at": profile.updated_at,
-                "last_login": user.last_login,
-                "date_joined": user.date_joined,
-                "profile_id": profile.id,
-                "notes": getattr(profile, "notes", None),
-                "parent_name": getattr(profile, "parent_name", None),
-                "homeroom_teacher": getattr(profile, "homeroom_teacher", None),
-                "academic_year": getattr(profile, "academic_year", None),
-                "task_limit": task_limit_serializer.data,
+                "attendance_summary": {
+                    "status_counts": attendance_counts,
+                    "status_percentages": attendance_percentages,
+                    "total": total_attendance,
+                },
+                "learning_tasks": {
+                    "total_created": total_tasks_created,
+                    "total_admin_rating_plus_bonus": total_rating,
+                },
+                "task_limit": task_limit_data,
             }
 
             return Response({"student": student_data}, status=status.HTTP_200_OK)

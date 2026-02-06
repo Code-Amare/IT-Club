@@ -7,6 +7,8 @@ from .views import (
     MyLearningTaskView,
     LearningTaskAllView,
     TaskBonusAPIView,
+    StudentLearningTaskView,
+    TaskToRedoView,
 )
 
 urlpatterns = [
@@ -35,4 +37,14 @@ urlpatterns = [
     ),
     path("like/<int:task_id>/", LikeLearningTaskAPIView.as_view(), name="task-like"),
     path("bonus/<int:task_id>/", TaskBonusAPIView.as_view(), name="task-bonus"),
+    path(
+        "student/<int:student_id>/",
+        StudentLearningTaskView.as_view(),
+        name="get-student-tasks",
+    ),
+    path(
+        "redo/<int:task_id>/",
+        TaskToRedoView.as_view(),
+        name="redo-task",
+    ),
 ]

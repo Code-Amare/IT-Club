@@ -37,9 +37,11 @@ export default function SideBar({ children }) {
 
     const initialRender = useRef(true);
     const { user, logout } = useUser();
-    const { notificationPreview, notifUnreadCount } = useNotifContext();
+    const { notificationPreview } = useNotifContext();
     const role = user.role;
     const navigate = useNavigate();
+
+
 
     const adminMenuItems = [
         { icon: <MdDashboard />, text: "Dashboard", to: `/${role}` },
@@ -247,9 +249,9 @@ export default function SideBar({ children }) {
                                         aria-label="Notifications"
                                     >
                                         <MdNotifications size={24} />
-                                        {notifUnreadCount > 0 && (
+                                        {(notificationPreview.length || 0) > 0 && (
                                             <span className={styles.notificationBadge}>
-                                                {notifUnreadCount > 99 ? '99+' : notifUnreadCount}
+                                                {(notificationPreview.length || 0) > 99 ? '99+' : (notificationPreview.length || 0)}
                                             </span>
                                         )}
                                     </button>
@@ -384,9 +386,9 @@ export default function SideBar({ children }) {
                                     aria-label="Notifications"
                                 >
                                     <MdNotifications size={24} />
-                                    {notifUnreadCount > 0 && (
+                                    {(notificationPreview.length || 0) > 0 && (
                                         <span className={styles.notificationBadge}>
-                                            {notifUnreadCount > 99 ? '99+' : notifUnreadCount}
+                                            {(notificationPreview.length || 0) > 99 ? '99+' : (notificationPreview.length || 0)}
                                         </span>
                                     )}
                                 </button>

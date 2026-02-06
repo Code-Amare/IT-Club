@@ -17,6 +17,8 @@ export function UserProvider({ children }) {
         dateJoined: null,
         fullName: null,
         profilePicURL: null,
+        notifEnabled: null,
+        pushNotifEnabled: null,
     })
 
     // Exposed getUser function
@@ -37,6 +39,8 @@ export function UserProvider({ children }) {
                     dateJoined: user.date_joined,
                     fullName: user.full_name,
                     profilePicURL: user.profile_pic_url,
+                    pushNotifEnabled: user.push_notif_enabled,
+                    notifEnabled: user.notif_enabled,
                 })
             }
         } catch (error) {
@@ -72,6 +76,8 @@ export function UserProvider({ children }) {
             dateJoined: null,
             fullName: null,
             profilePicURL: null,
+            notifEnabled: null,
+            pushNotifEnabled: null,
         })
     }
 

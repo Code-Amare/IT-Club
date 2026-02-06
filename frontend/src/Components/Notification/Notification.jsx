@@ -11,7 +11,7 @@ const WS_URL =
 
 export default function Notification() {
     const { user, loading } = useUser();
-    const { incrementNotif, addNotifications } = useNotifContext();
+    const { addNotifications } = useNotifContext();
 
     const wsRef = useRef(null);
     const retryTimeoutRef = useRef(null);
@@ -45,7 +45,6 @@ export default function Notification() {
                     "sent_at": data?.sent_at,
                     "actor": data?.actor,
                 }
-                incrementNotif()
                 addNotifications([notif])
                 switch (data.code) {
                     case "success":

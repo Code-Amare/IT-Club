@@ -25,10 +25,16 @@ import {
     MdFilterList
 } from "react-icons/md";
 import styles from "./LearningTasksList.module.css";
+import { useNotifContext } from "../../../Context/NotifContext";
 
 export default function LearningTasksList() {
     const { user } = useUser();
     const navigate = useNavigate();
+
+    const { updatePageTitle } = useNotifContext()
+    useEffect(() => {
+        updatePageTitle("Learning Tasks")
+    }, [])
 
     // State
     const [tasks, setTasks] = useState([]);

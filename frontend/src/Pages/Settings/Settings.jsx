@@ -1,20 +1,19 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../Context/UserContext";
+import api from "../../Utils/api";
+import { neonToast } from "../../Components/NeonToast/NeonToast";
+import AsyncButton from "../../Components/AsyncButton/AsyncButton";
 import styles from "./Settings.module.css";
 import SideBar from "../../Components/SideBar/SideBar";
 import {
     FaBell,
     FaSave,
     FaTimes,
-    FaVolumeUp,
-    FaVolumeMute,
     FaCheck,
     FaExclamationTriangle,
     FaSearch,
     FaAndroid,
-    FaEye,
-    FaEyeSlash,
     FaClock,
     FaCog,
     FaRegBell,
@@ -28,34 +27,24 @@ import {
     MdInfoOutline
 } from "react-icons/md";
 
-// Device detection
-const isAndroid = () => /android/i.test(navigator.userAgent);
-const isIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent);
-
 export default function Settings() {
-    const { user } = useUser();
+    const { user, refreshUser } = useUser();
     const navigate = useNavigate();
 
     const [form, setForm] = useState({
-        emailNotifications: true,
+        emailNotifications: false,
         pushNotifications: false,
-        soundEnabled: true,
-        browserNotificationsEnabled: false,
     });
 
     const [isLoading, setIsLoading] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const [error, setError] = useState(null);
+    const [success, setSuccess] = useState(null);
     const [browserPermission, setBrowserPermission] = useState(
         "Notification" in window ? Notification.permission : "unsupported"
     );
-    const [error, setError] = useState(null);
-    const [success, setSuccess] = useState(null);
-    const [testNotificationSent, setTestNotificationSent] = useState(false);
-    const [deviceInfo, setDeviceInfo] = useState({
-        isAndroid: false,
-        isIOS: false,
-    });
 
-    // Initialize
+    // Initialize from API
     useEffect(() => {
         if (user.isAuthenticated === null) return;
 
@@ -64,50 +53,162 @@ export default function Settings() {
             return;
         }
 
-        // Detect device
-        setDeviceInfo({
-            isAndroid: isAndroid(),
-            isIOS: isIOS(),
-        });
-
-        // Load saved settings
-        const savedSettings = localStorage.getItem("notificationSettings");
-        if (savedSettings) {
-            try {
-                const parsed = JSON.parse(savedSettings);
-                setForm(parsed);
-            } catch (err) {
-                console.error("Error loading saved settings:", err);
-            }
-        }
+        // Fetch current notification settings from API
+        fetchNotificationSettings();
 
         // Update permission state
         if ("Notification" in window) {
             setBrowserPermission(Notification.permission);
         }
-
-        return () => {
-            // Cleanup
-        };
     }, [user, navigate]);
 
-    const handleToggle = useCallback((field) => {
-        setForm(prev => {
-            const newValue = !prev[field];
-            const updatedForm = { ...prev, [field]: newValue };
+    const fetchNotificationSettings = async () => {
+        try {
+            // Fetch email notifications
+            const notifRes = await api.get("/api/users/notif/");
+            const emailEnabled = notifRes.data?.notif_enabled || false;
 
-            if (field === "browserNotificationsEnabled" && newValue) {
-                requestBrowserPermission(updatedForm);
-            } else if (field === "browserNotificationsEnabled" && !newValue) {
-                setSuccess("Browser notifications disabled");
-                setTimeout(() => setSuccess(null), 3000);
+            // Fetch push notifications
+            const pushRes = await api.get("/api/users/push-notif/");
+            const pushEnabled = pushRes.data?.push_notif_enabled || false;
+
+            setForm({
+                emailNotifications: emailEnabled,
+                pushNotifications: pushEnabled,
+            });
+        } catch (err) {
+            console.error("Error fetching notification settings:", err);
+            // Fallback to user context
+            setForm({
+                emailNotifications: user.notifEnabled || false,
+                pushNotifications: user.pushNotifEnabled || false,
+            });
+        }
+    };
+
+    // Handle push notification toggle with permission logic
+    const handlePushToggle = async () => {
+        const newValue = !form.pushNotifications;
+
+        // If trying to enable push notifications
+        if (newValue) {
+            // Check if browser permission is already granted
+            if (browserPermission === "granted") {
+                // Permission is granted, we can enable push notifications
+                await updatePushSetting(true);
+            } else if (browserPermission === "default") {
+                // Request permission first
+                const granted = await requestBrowserPermission();
+                if (granted) {
+                    await updatePushSetting(true);
+                }
+            } else if (browserPermission === "denied") {
+                setError("Notifications are blocked. Please enable them in your browser settings.");
+                neonToast.error("Browser notifications are blocked. Enable them in browser settings.", "error");
+            }
+        } else {
+            // Disabling push notifications
+            await updatePushSetting(false);
+        }
+    };
+
+    const updatePushSetting = async (value) => {
+        try {
+            await api.patch("/api/users/push-notif/", {
+                push_notif_enabled: value
+            });
+
+            setForm(prev => ({ ...prev, pushNotifications: value }));
+
+            if (refreshUser) {
+                await refreshUser();
             }
 
-            return updatedForm;
-        });
-    }, []);
+            const action = value ? "enabled" : "disabled";
+            neonToast.success(`Push notifications ${action}`, "success");
 
-    const requestBrowserPermission = useCallback(async (updatedForm = null) => {
+        } catch (err) {
+            const errorMessage = err.response?.data?.detail ||
+                err.response?.data?.error ||
+                "Failed to update push notifications";
+            neonToast.error(errorMessage, "error");
+        }
+    };
+
+    const handleEmailToggle = async () => {
+        const newValue = !form.emailNotifications;
+
+        try {
+            await api.patch("/api/users/notif/", {
+                notif_enabled: newValue
+            });
+
+            setForm(prev => ({ ...prev, emailNotifications: newValue }));
+
+            if (refreshUser) {
+                await refreshUser();
+            }
+
+            const action = newValue ? "enabled" : "disabled";
+            neonToast.success(`Email notifications ${action}`, "success");
+
+        } catch (err) {
+            const errorMessage = err.response?.data?.detail ||
+                err.response?.data?.error ||
+                "Failed to update email notifications";
+            neonToast.error(errorMessage, "error");
+        }
+    };
+
+    const handleSave = async () => {
+        setIsSaving(true);
+        setError(null);
+        setSuccess(null);
+
+        try {
+            // Save email notifications
+            await api.patch("/api/users/notif/", {
+                notif_enabled: form.emailNotifications
+            });
+
+            // Save push notifications
+            await api.patch("/api/users/push-notif/", {
+                push_notif_enabled: form.pushNotifications
+            });
+
+            // Refresh user context
+            if (refreshUser) {
+                await refreshUser();
+            }
+
+            setSuccess("Settings saved successfully!");
+            neonToast.success("Notification settings updated", "success");
+
+        } catch (err) {
+            const errorMessage = err.response?.data?.detail ||
+                err.response?.data?.error ||
+                "Failed to save settings";
+            setError(errorMessage);
+            neonToast.error(errorMessage, "error");
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleReset = async () => {
+        try {
+            // Reset to current API values
+            await fetchNotificationSettings();
+
+            setError(null);
+            setSuccess("Settings refreshed");
+
+        } catch (err) {
+            setError("Failed to reset settings");
+        }
+    };
+
+    const requestBrowserPermission = async () => {
         if (!("Notification" in window)) {
             setError("Your browser does not support notifications");
             return false;
@@ -118,79 +219,53 @@ export default function Settings() {
             setBrowserPermission(permission);
 
             if (permission === "granted") {
-                const finalForm = updatedForm || form;
-                setForm({ ...finalForm, browserNotificationsEnabled: true });
-
-                // Show a success notification immediately
-                createNotification("Notifications Enabled", "You'll now receive notifications from our app.");
-
                 setSuccess("Browser notifications enabled!");
-                setTimeout(() => setSuccess(null), 3000);
                 return true;
-            }
-
-            if (permission === "denied") {
+            } else if (permission === "denied") {
                 setError("Notifications have been blocked. Please enable them in your browser settings.");
-                const finalForm = updatedForm || form;
-                setForm({ ...finalForm, browserNotificationsEnabled: false });
                 return false;
             }
-
-            // Default case
-            const finalForm = updatedForm || form;
-            setForm({ ...finalForm, browserNotificationsEnabled: false });
             return false;
 
         } catch (err) {
             console.error("Error requesting notification permission:", err);
             setError("Failed to request notification permission");
-            const finalForm = updatedForm || form;
-            setForm({ ...finalForm, browserNotificationsEnabled: false });
             return false;
         }
-    }, [form]);
+    };
 
-    const createNotification = useCallback((title, body) => {
-        if (!("Notification" in window) || Notification.permission !== "granted") {
+    const checkNotificationStatus = () => {
+        const status = `
+Notification Status:
+• Email Notifications: ${form.emailNotifications ? "Enabled" : "Disabled"}
+• Push Notifications: ${form.pushNotifications ? "Enabled" : "Disabled"}
+• Browser Permission: ${browserPermission}
+• Browser Support: ${"Notification" in window ? "Yes" : "No"}
+• Page Active: ${document.hidden ? "Background" : "Foreground"}
+        `.trim();
+        alert(status);
+    };
+
+    const handleTestPushNotification = () => {
+        if (browserPermission !== "granted") {
+            if (browserPermission === "default") {
+                requestBrowserPermission();
+            } else {
+                setError("Please enable browser notifications first");
+            }
+            return;
+        }
+
+        if (!("Notification" in window)) {
+            setError("Your browser does not support notifications");
             return;
         }
 
         try {
-            // Try to use service worker if available
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.ready
-                    .then(registration => {
-                        registration.showNotification(title, {
-                            body: body,
-                            icon: '/favicon.ico',
-                            badge: '/favicon.ico',
-                            tag: `notification-${Date.now()}`,
-                            vibrate: [200, 100, 200],
-                            silent: !form.soundEnabled,
-                        });
-                    })
-                    .catch(err => {
-                        console.log("Service Worker notification failed, falling back to Notification API");
-                        fallbackNotification(title, body);
-                    });
-            } else {
-                // Fallback to regular Notification API
-                fallbackNotification(title, body);
-            }
-        } catch (err) {
-            console.error("Error creating notification:", err);
-            fallbackNotification(title, body);
-        }
-    }, [form.soundEnabled]);
-
-    const fallbackNotification = (title, body) => {
-        try {
-            const notification = new Notification(title, {
-                body: body,
+            const notification = new Notification("Test Notification", {
+                body: "This is a test push notification from our app.",
                 icon: '/favicon.ico',
-                badge: '/favicon.ico',
-                tag: `notification-${Date.now()}`,
-                silent: !form.soundEnabled,
+                tag: `test-${Date.now()}`,
             });
 
             notification.onclick = () => {
@@ -199,139 +274,32 @@ export default function Settings() {
             };
 
             setTimeout(() => notification.close(), 5000);
-        } catch (err) {
-            console.error("Fallback notification also failed:", err);
-            // Last resort: Use a custom alert/div
-            showCustomAlert(title, body);
-        }
-    };
-
-    const showCustomAlert = (title, body) => {
-        // Create a custom alert element
-        const alertDiv = document.createElement('div');
-        alertDiv.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: #10b981;
-            color: white;
-            padding: 16px;
-            border-radius: 8px;
-            z-index: 9999;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            max-width: 300px;
-            animation: slideIn 0.3s ease;
-        `;
-
-        alertDiv.innerHTML = `
-            <strong>${title}</strong>
-            <p style="margin: 8px 0 0 0; font-size: 14px;">${body}</p>
-        `;
-
-        document.body.appendChild(alertDiv);
-
-        setTimeout(() => {
-            alertDiv.style.animation = 'slideOut 0.3s ease';
-            setTimeout(() => {
-                if (alertDiv.parentNode) {
-                    alertDiv.parentNode.removeChild(alertDiv);
-                }
-            }, 300);
-        }, 5000);
-
-        // Add CSS animations if not present
-        if (!document.querySelector('#notification-animations')) {
-            const style = document.createElement('style');
-            style.id = 'notification-animations';
-            style.textContent = `
-                @keyframes slideIn {
-                    from { transform: translateX(100%); opacity: 0; }
-                    to { transform: translateX(0); opacity: 1; }
-                }
-                @keyframes slideOut {
-                    from { transform: translateX(0); opacity: 1; }
-                    to { transform: translateX(100%); opacity: 0; }
-                }
-            `;
-            document.head.appendChild(style);
-        }
-    };
-
-    const handleTestNotification = () => {
-        setError(null);
-        setSuccess(null);
-
-        if (browserPermission === "granted") {
-            createNotification("Test Notification", "This is a test notification from our app.");
-            setTestNotificationSent(true);
-            setTimeout(() => setTestNotificationSent(false), 3000);
             setSuccess("Test notification sent!");
-            setTimeout(() => setSuccess(null), 3000);
-        } else if (browserPermission === "default") {
-            requestBrowserPermission();
-        } else if (browserPermission === "denied") {
-            setError("Notifications are blocked. Please enable them in your browser settings.");
-        } else {
-            setError("Your browser does not support notifications.");
-        }
-    };
-
-    const handleSave = async () => {
-        setIsLoading(true);
-        setError(null);
-        setSuccess(null);
-
-        try {
-            localStorage.setItem("notificationSettings", JSON.stringify(form));
-
-            if (form.browserNotificationsEnabled && browserPermission !== "granted") {
-                const permissionGranted = await requestBrowserPermission();
-                if (!permissionGranted) {
-                    setError("Could not enable browser notifications. Please grant permission.");
-                    setIsLoading(false);
-                    return;
-                }
-            }
-
-            setSuccess("Settings saved successfully!");
-            setTimeout(() => setSuccess(null), 3000);
 
         } catch (err) {
-            console.error("Error saving settings:", err);
-            setError("Failed to save settings. Please try again.");
-        } finally {
-            setIsLoading(false);
+            console.error("Error creating test notification:", err);
+            setError("Failed to send test notification");
         }
     };
 
-    const handleReset = () => {
-        setForm({
-            emailNotifications: true,
-            pushNotifications: false,
-            soundEnabled: true,
-            browserNotificationsEnabled: false,
-        });
-        setError(null);
-        setSuccess(null);
-        setTestNotificationSent(false);
-        localStorage.removeItem("notificationSettings");
+    // Sync push notifications with permission when permission changes
+    useEffect(() => {
+        // If permission is not granted, push notifications should be false
+        if (browserPermission !== "granted" && form.pushNotifications) {
+            // This handles the case where permission was revoked or denied
+            setForm(prev => ({ ...prev, pushNotifications: false }));
 
-        if ("Notification" in window) {
-            setBrowserPermission(Notification.permission);
+            // Also update the backend if needed
+            if (user.isAuthenticated) {
+                updatePushSetting(false).catch(console.error);
+            }
         }
-    };
 
-    const checkNotificationStatus = () => {
-        const status = `
-Notification Status:
-• Permission: ${Notification.permission}
-• Browser Support: ${"Notification" in window ? "Yes" : "No"}
-• Service Worker: ${'serviceWorker' in navigator ? "Yes" : "No"}
-• Device: ${deviceInfo.isAndroid ? "Android" : deviceInfo.isIOS ? "iOS" : "Desktop"}
-• Page Active: ${document.hidden ? "Background" : "Foreground"}
-        `.trim();
-        alert(status);
-    };
+        // If permission is granted but user.pushNotifEnabled is false, sync with backend
+        if (browserPermission === "granted" && user.pushNotifEnabled === false && form.pushNotifications) {
+            setForm(prev => ({ ...prev, pushNotifications: false }));
+        }
+    }, [browserPermission, user.pushNotifEnabled]);
 
     if (user.isAuthenticated === null) {
         return (
@@ -356,28 +324,24 @@ Notification Status:
                             </div>
                         </div>
                         <div className={styles.actionButtons}>
-                            <button
-                                className={styles.resetBtn}
+                            <AsyncButton
                                 onClick={handleReset}
-                                disabled={isLoading}
+                                loading={isLoading}
+                                disabled={isLoading || isSaving}
+                                className={styles.resetBtn}
                             >
                                 <FaTimes />
-                                <span>Reset</span>
-                            </button>
-                            <button
-                                className={styles.saveBtn}
+                                <span>Refresh</span>
+                            </AsyncButton>
+                            <AsyncButton
                                 onClick={handleSave}
-                                disabled={isLoading}
+                                loading={isSaving}
+                                disabled={isLoading || isSaving}
+                                className={styles.saveBtn}
                             >
-                                {isLoading ? (
-                                    <div className={styles.spinner}></div>
-                                ) : (
-                                    <>
-                                        <FaSave />
-                                        <span>Save Changes</span>
-                                    </>
-                                )}
-                            </button>
+                                <FaSave />
+                                <span>Save Changes</span>
+                            </AsyncButton>
                         </div>
                     </div>
                 </div>
@@ -397,24 +361,17 @@ Notification Status:
                     </div>
                 )}
 
-                {testNotificationSent && (
-                    <div className={styles.testBanner}>
-                        <FaBell />
-                        <span>Test notification sent! Check your notifications.</span>
-                    </div>
-                )}
-
                 {/* Settings Grid */}
                 <div className={styles.settingsGrid}>
                     {/* Email Notifications */}
                     <div className={styles.settingCard}>
                         <div className={styles.settingContent}>
-                            <div className={styles.settingIcon} style={{ background: '#4f46e5' }}>
+                            <div className={styles.settingIcon}>
                                 <MdEmail />
                             </div>
                             <div className={styles.settingInfo}>
                                 <h3>Email Notifications</h3>
-                                <p>Receive email updates about your account</p>
+                                <p>Receive email updates about your account activities</p>
                             </div>
                         </div>
                         <div className={styles.toggleContainer}>
@@ -422,8 +379,8 @@ Notification Status:
                                 type="checkbox"
                                 id="emailNotifications"
                                 checked={form.emailNotifications}
-                                onChange={() => handleToggle("emailNotifications")}
-                                disabled={isLoading}
+                                onChange={handleEmailToggle}
+                                disabled={isLoading || isSaving}
                                 className={styles.toggleInput}
                             />
                             <label htmlFor="emailNotifications" className={styles.toggleLabel}>
@@ -436,66 +393,12 @@ Notification Status:
                     {/* Push Notifications */}
                     <div className={styles.settingCard}>
                         <div className={styles.settingContent}>
-                            <div className={styles.settingIcon} style={{ background: '#10b981' }}>
-                                {form.pushNotifications ? <FaRegBell /> : <FaRegBellSlash />}
+                            <div className={styles.settingIcon}>
+                                {form.pushNotifications ? <MdNotifications /> : <MdNotificationsOff />}
                             </div>
                             <div className={styles.settingInfo}>
                                 <h3>Push Notifications</h3>
-                                <p>Receive push notifications for updates</p>
-                            </div>
-                        </div>
-                        <div className={styles.toggleContainer}>
-                            <input
-                                type="checkbox"
-                                id="pushNotifications"
-                                checked={form.pushNotifications}
-                                onChange={() => handleToggle("pushNotifications")}
-                                disabled={isLoading}
-                                className={styles.toggleInput}
-                            />
-                            <label htmlFor="pushNotifications" className={styles.toggleLabel}>
-                                <span className={styles.toggleTrack}></span>
-                                <span className={styles.toggleThumb}></span>
-                            </label>
-                        </div>
-                    </div>
-
-                    {/* Notification Sounds */}
-                    <div className={styles.settingCard}>
-                        <div className={styles.settingContent}>
-                            <div className={styles.settingIcon} style={{ background: '#f59e0b' }}>
-                                {form.soundEnabled ? <FaVolumeUp /> : <FaVolumeMute />}
-                            </div>
-                            <div className={styles.settingInfo}>
-                                <h3>Notification Sounds</h3>
-                                <p>Play sound for notifications</p>
-                            </div>
-                        </div>
-                        <div className={styles.toggleContainer}>
-                            <input
-                                type="checkbox"
-                                id="soundEnabled"
-                                checked={form.soundEnabled}
-                                onChange={() => handleToggle("soundEnabled")}
-                                disabled={isLoading}
-                                className={styles.toggleInput}
-                            />
-                            <label htmlFor="soundEnabled" className={styles.toggleLabel}>
-                                <span className={styles.toggleTrack}></span>
-                                <span className={styles.toggleThumb}></span>
-                            </label>
-                        </div>
-                    </div>
-
-                    {/* Browser Notifications */}
-                    <div className={styles.settingCard}>
-                        <div className={styles.settingContent}>
-                            <div className={styles.settingIcon} style={{ background: '#ec4899' }}>
-                                {browserPermission === "granted" ? <MdNotifications /> : <MdNotificationsOff />}
-                            </div>
-                            <div className={styles.settingInfo}>
-                                <h3>Browser Notifications</h3>
-                                <p>Allow desktop notifications from browser</p>
+                                <p>Receive browser notifications for real-time updates</p>
                                 <div className={styles.permissionStatus}>
                                     {browserPermission === "granted" && (
                                         <span className={styles.statusGranted}>
@@ -518,13 +421,13 @@ Notification Status:
                         <div className={styles.toggleContainer}>
                             <input
                                 type="checkbox"
-                                id="browserNotificationsEnabled"
-                                checked={form.browserNotificationsEnabled}
-                                onChange={() => handleToggle("browserNotificationsEnabled")}
-                                disabled={isLoading || browserPermission === "denied" || browserPermission === "unsupported"}
+                                id="pushNotifications"
+                                checked={form.pushNotifications}
+                                onChange={handlePushToggle}
+                                disabled={isLoading || isSaving || browserPermission === "denied" || browserPermission === "unsupported"}
                                 className={styles.toggleInput}
                             />
-                            <label htmlFor="browserNotificationsEnabled" className={styles.toggleLabel}>
+                            <label htmlFor="pushNotifications" className={styles.toggleLabel}>
                                 <span className={styles.toggleTrack}></span>
                                 <span className={styles.toggleThumb}></span>
                             </label>
@@ -535,28 +438,31 @@ Notification Status:
                 {/* Test Section */}
                 <div className={styles.testSection}>
                     <div className={styles.testButtons}>
-                        <button
+                        <AsyncButton
+                            onClick={handleTestPushNotification}
+                            loading={false}
+                            disabled={!form.pushNotifications || browserPermission !== "granted"}
                             className={styles.testBtn}
-                            onClick={handleTestNotification}
-                            disabled={browserPermission === "denied" || browserPermission === "unsupported"}
                         >
                             <FaBell />
-                            <span>Test Notifications</span>
-                        </button>
+                            <span>Test Push Notification</span>
+                        </AsyncButton>
+
                         <button
                             className={styles.debugBtn}
                             onClick={checkNotificationStatus}
                         >
                             <FaSearch />
-                            <span>Debug</span>
+                            <span>Check Status</span>
                         </button>
-                        {deviceInfo.isAndroid && (
+
+                        {browserPermission === "default" && (
                             <button
-                                className={styles.androidBtn}
-                                onClick={() => alert('For Android: Make sure Chrome notifications are enabled in settings')}
+                                className={styles.enableBtn}
+                                onClick={requestBrowserPermission}
                             >
-                                <FaAndroid />
-                                <span>Android Help</span>
+                                <MdNotifications />
+                                <span>Enable Browser Notifications</span>
                             </button>
                         )}
                     </div>
@@ -564,7 +470,7 @@ Notification Status:
                     {/* Status */}
                     <div className={styles.statusCard}>
                         <div className={styles.statusRow}>
-                            <span className={styles.statusLabel}>Status:</span>
+                            <span className={styles.statusLabel}>Browser Status:</span>
                             <span className={`
                                 ${styles.statusValue}
                                 ${browserPermission === "granted" ? styles.active : ''}
@@ -578,20 +484,32 @@ Notification Status:
                             </span>
                         </div>
                         <div className={styles.statusRow}>
-                            <span className={styles.statusLabel}>App State:</span>
-                            <span className={document.hidden ? styles.background : styles.foreground}>
-                                {document.hidden ? <><FaEyeSlash /> Background</> : <><FaEye /> Foreground</>}
+                            <span className={styles.statusLabel}>Email Notifications:</span>
+                            <span className={form.emailNotifications ? styles.active : styles.inactive}>
+                                {form.emailNotifications ? <><FaCheck /> Enabled</> : <><FaTimes /> Disabled</>}
+                            </span>
+                        </div>
+                        <div className={styles.statusRow}>
+                            <span className={styles.statusLabel}>Push Notifications:</span>
+                            <span className={form.pushNotifications ? styles.active : styles.inactive}>
+                                {form.pushNotifications ? <><FaCheck /> Enabled</> : <><FaTimes /> Disabled</>}
                             </span>
                         </div>
                     </div>
 
-                    {/* Tips */}
-                    {deviceInfo.isAndroid && (
-                        <div className={styles.tipCard}>
-                            <FaExclamationTriangle />
-                            <p>On Android, make sure Chrome notifications are enabled in device settings and browser settings.</p>
+                    {/* Info */}
+                    <div className={styles.infoCard}>
+                        <MdInfoOutline />
+                        <div className={styles.infoContent}>
+                            <h4>How notifications work:</h4>
+                            <ul>
+                                <li><strong>Email notifications</strong> are sent to your registered email address</li>
+                                <li><strong>Push notifications</strong> require browser permission to work</li>
+                                <li>If browser permissions are revoked, push notifications will be automatically disabled</li>
+                                <li>You can manage browser permissions in your browser settings</li>
+                            </ul>
                         </div>
-                    )}
+                    </div>
                 </div>
             </SideBar>
         </div>

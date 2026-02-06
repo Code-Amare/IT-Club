@@ -10,7 +10,8 @@ import {
     FaArrowLeft, FaUser, FaPhone, FaCalendarAlt, FaEdit, FaTrash,
     FaGraduationCap, FaUsers, FaBook, FaChalkboardTeacher,
     FaChartLine, FaHistory, FaFileAlt, FaStar, FaCheckCircle,
-    FaTimesCircle, FaExclamationTriangle, FaTasks, FaCamera
+    FaTimesCircle, FaExclamationTriangle, FaTasks, FaCamera,
+    FaList // Added for learning tasks button
 } from "react-icons/fa";
 import {
     MdEmail, MdLocationOn, MdDateRange,
@@ -19,13 +20,6 @@ import {
 import styles from "./StudentDetail.module.css";
 
 /* ---------------- MOCK DATA (OUTSIDE COMPONENT) ---------------- */
-const MOCK_PERFORMANCE = {
-    averageGrade: 86,
-    completedTasks: 42,
-    attendanceRate: 94,
-    rank: 5
-};
-
 const MOCK_ACTIVITIES = [
     { type: "grade", description: "Math test graded: 88%", timestamp: "2025-01-12T09:30:00" },
     { type: "attendance", description: "Present in morning class", timestamp: "2025-01-11T08:10:00" },
@@ -43,7 +37,6 @@ export default function StudentDetail() {
     const [loading, setLoading] = useState(true);
     const [loadingDelete, setLoadingDelete] = useState(false);
 
-    const [performance] = useState(MOCK_PERFORMANCE);
     const [activities] = useState(MOCK_ACTIVITIES);
 
     useEffect(() => {
@@ -58,10 +51,11 @@ export default function StudentDetail() {
             setLoading(true);
             try {
                 const response = await api.get(`/api/management/student/${id}/`);
-                console.log(response.data.student)
+                console.log("API Response:", response.data);
+
                 if (!mounted) return;
 
-                // Handle both response structures
+                // Handle the nested response structure
                 const studentData = response.data.student || response.data;
                 setStudent(studentData || null);
             } catch (error) {
@@ -77,12 +71,34 @@ export default function StudentDetail() {
         return () => { mounted = false; };
     }, [id, user, navigate]);
 
+    // Helper function to get student data from nested structure
+    const getStudentData = () => {
+        if (!student) return {};
+
+        // Extract data from the nested structure
+        const userData = student.profile?.user || {};
+        const profileData = student.profile || {};
+
+        return {
+            ...userData,
+            ...profileData,
+            profile_pic_url: student.profile_pic_url,
+            attendance_summary: student.attendance_summary,
+            learning_tasks: student.learning_tasks,
+            task_limit: student.task_limit,
+            // For status, use is_active from user
+            account_status: userData.is_active ? "active" : "inactive"
+        };
+    };
+
     const handleDelete = async (event, typedName) => {
         if (!student) return false;
 
-        if (typedName !== student.full_name) {
+        const studentData = getStudentData();
+
+        if (typedName !== studentData.full_name) {
             neonToast.error(
-                `The name you typed does not match the student's full name. Please type "${student.full_name}" exactly to delete.`,
+                `The name you typed does not match the student's full name. Please type "${studentData.full_name}" exactly to delete.`,
                 "error"
             );
             return false;
@@ -125,12 +141,31 @@ export default function StudentDetail() {
     const getTaskLimit = () => {
         if (!student) return 0;
 
-        // Check for task_limit object structure or direct value
         if (student.task_limit && typeof student.task_limit === 'object') {
             return student.task_limit.limit || 0;
         }
 
         return student.task_limit || 0;
+    };
+
+    // Calculate performance from real data
+    const calculatePerformance = () => {
+        if (!student) return {
+            averageGrade: "N/A",
+            completedTasks: 0,
+            attendanceRate: 0,
+            rank: "N/A"
+        };
+
+        const attendanceRate = student.attendance_summary?.status_percentages?.present || 0;
+        const completedTasks = student.learning_tasks?.total_created || 0;
+
+        return {
+            averageGrade: "N/A", // Not in API
+            completedTasks,
+            attendanceRate,
+            rank: "N/A" // Not in API
+        };
     };
 
     if (loading) {
@@ -162,7 +197,10 @@ export default function StudentDetail() {
         );
     }
 
+    const studentData = getStudentData();
+    const performance = calculatePerformance();
     const taskLimit = getTaskLimit();
+    const attendanceSummary = student.attendance_summary || {};
 
     return (
         <div className={styles.container}>
@@ -176,6 +214,15 @@ export default function StudentDetail() {
                         </Link>
 
                         <div className={styles.headerActions}>
+                            {/* NEW: Learning Tasks Button */}
+                            <button
+                                className={styles.learningTasksBtn}
+                                onClick={() => navigate(`/admin/student/task/${id}`)}
+                                title="View Student Learning Tasks"
+                            >
+                                <FaList /> Learning Tasks
+                            </button>
+
                             <button
                                 className={styles.editBtn}
                                 onClick={() => navigate(`/admin/student/edit/${id}/`)}
@@ -189,7 +236,7 @@ export default function StudentDetail() {
                                 confirmText="Delete Student"
                                 cancelText="Cancel"
                                 requireReason={true}
-                                placeholder={`Type: "${student.full_name}"`}
+                                placeholder={`Type: "${studentData.full_name}"`}
                                 onConfirm={handleDelete}
                             >
                                 <AsyncButton
@@ -205,10 +252,10 @@ export default function StudentDetail() {
 
                     <div className={styles.studentHeader}>
                         <div className={styles.avatar}>
-                            {student.profile_pic_url ? (
+                            {studentData.profile_pic_url ? (
                                 <img
-                                    src={student.profile_pic_url}
-                                    alt={student.full_name}
+                                    src={studentData.profile_pic_url}
+                                    alt={studentData.full_name}
                                     className={styles.avatarImage}
                                 />
                             ) : (
@@ -216,27 +263,27 @@ export default function StudentDetail() {
                             )}
                         </div>
                         <div className={styles.studentInfo}>
-                            <h1>{student.full_name || "Unnamed Student"}</h1>
+                            <h1>{studentData.full_name || "Unnamed Student"}</h1>
                             <div className={styles.studentMeta}>
-                                <span className={styles.studentId}>ID: {student.id}</span>
-                                <span className={`${styles.status} ${styles[student.account_status || "pending"]}`}>
-                                    {student.account_status === "active" ? <><FaCheckCircle /> Active</> :
-                                        student.account_status === "inactive" ? <><FaTimesCircle /> Inactive</> :
+                                <span className={styles.studentId}>ID: {studentData.id}</span>
+                                <span className={`${styles.status} ${styles[studentData.account_status || "pending"]}`}>
+                                    {studentData.account_status === "active" ? <><FaCheckCircle /> Active</> :
+                                        studentData.account_status === "inactive" ? <><FaTimesCircle /> Inactive</> :
                                             <><FaExclamationTriangle /> Pending</>}
                                 </span>
-                                {student.grade && (
+                                {studentData.grade && (
                                     <span className={styles.gradeBadge}>
-                                        <FaGraduationCap /> Grade {student.grade}
+                                        <FaGraduationCap /> Grade {studentData.grade}
                                     </span>
                                 )}
-                                {student.section && (
+                                {studentData.section && (
                                     <span className={styles.sectionBadge}>
-                                        <MdClass /> Section {student.section}
+                                        <MdClass /> Section {studentData.section}
                                     </span>
                                 )}
-                                {student.field && (
+                                {studentData.field && (
                                     <span className={styles.fieldBadge}>
-                                        <FaBook /> {student.field.charAt(0).toUpperCase() + student.field.slice(1)}
+                                        <FaBook /> {studentData.field.charAt(0).toUpperCase() + studentData.field.slice(1)}
                                     </span>
                                 )}
                             </div>
@@ -252,7 +299,7 @@ export default function StudentDetail() {
                         </div>
                         <div className={styles.statContent}>
                             <h3>Average Grade</h3>
-                            <p className={styles.statNumber}>{performance.averageGrade ?? "N/A"}</p>
+                            <p className={styles.statNumber}>{performance.averageGrade}</p>
                         </div>
                     </div>
                     <div className={styles.statCard}>
@@ -261,7 +308,7 @@ export default function StudentDetail() {
                         </div>
                         <div className={styles.statContent}>
                             <h3>Completed Tasks</h3>
-                            <p className={styles.statNumber}>{performance.completedTasks ?? 0}</p>
+                            <p className={styles.statNumber}>{performance.completedTasks}</p>
                         </div>
                     </div>
                     <div className={styles.statCard}>
@@ -270,7 +317,7 @@ export default function StudentDetail() {
                         </div>
                         <div className={styles.statContent}>
                             <h3>Attendance Rate</h3>
-                            <p className={styles.statNumber}>{performance.attendanceRate ?? 0}%</p>
+                            <p className={styles.statNumber}>{performance.attendanceRate.toFixed(1)}%</p>
                         </div>
                     </div>
                     <div className={styles.statCard}>
@@ -279,10 +326,78 @@ export default function StudentDetail() {
                         </div>
                         <div className={styles.statContent}>
                             <h3>Class Rank</h3>
-                            <p className={styles.statNumber}>{performance.rank ?? "N/A"}</p>
+                            <p className={styles.statNumber}>{performance.rank}</p>
                         </div>
                     </div>
                 </div>
+
+                {/* ATTENDANCE SUMMARY */}
+                {attendanceSummary.status_counts && (
+                    <div className={styles.card}>
+                        <h2 className={styles.cardTitle}><FaCalendarAlt /> Attendance Summary</h2>
+                        <div className={styles.attendanceGrid}>
+                            <div className={styles.attendanceItem}>
+                                <div className={`${styles.attendanceIcon} ${styles.present}`}>
+                                    <FaCheckCircle />
+                                </div>
+                                <div className={styles.attendanceContent}>
+                                    <h3>Present</h3>
+                                    <p className={styles.attendanceCount}>
+                                        {attendanceSummary.status_counts.total_present || 0}
+                                        <span className={styles.attendancePercentage}>
+                                            ({attendanceSummary.status_percentages?.present?.toFixed(1) || 0}%)
+                                        </span>
+                                    </p>
+                                </div>
+                            </div>
+                            <div className={styles.attendanceItem}>
+                                <div className={`${styles.attendanceIcon} ${styles.late}`}>
+                                    <FaExclamationTriangle />
+                                </div>
+                                <div className={styles.attendanceContent}>
+                                    <h3>Late</h3>
+                                    <p className={styles.attendanceCount}>
+                                        {attendanceSummary.status_counts.total_late || 0}
+                                        <span className={styles.attendancePercentage}>
+                                            ({attendanceSummary.status_percentages?.late?.toFixed(1) || 0}%)
+                                        </span>
+                                    </p>
+                                </div>
+                            </div>
+                            <div className={styles.attendanceItem}>
+                                <div className={`${styles.attendanceIcon} ${styles.absent}`}>
+                                    <FaTimesCircle />
+                                </div>
+                                <div className={styles.attendanceContent}>
+                                    <h3>Absent</h3>
+                                    <p className={styles.attendanceCount}>
+                                        {attendanceSummary.status_counts.total_absent || 0}
+                                        <span className={styles.attendancePercentage}>
+                                            ({attendanceSummary.status_percentages?.absent?.toFixed(1) || 0}%)
+                                        </span>
+                                    </p>
+                                </div>
+                            </div>
+                            <div className={styles.attendanceItem}>
+                                <div className={`${styles.attendanceIcon} ${styles.special}`}>
+                                    <FaExclamationTriangle />
+                                </div>
+                                <div className={styles.attendanceContent}>
+                                    <h3>Special Cases</h3>
+                                    <p className={styles.attendanceCount}>
+                                        {attendanceSummary.status_counts.total_special_case || 0}
+                                        <span className={styles.attendancePercentage}>
+                                            ({attendanceSummary.status_percentages?.special_case?.toFixed(1) || 0}%)
+                                        </span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div className={styles.attendanceTotal}>
+                            <span>Total Attendance Records: {attendanceSummary.total || 0}</span>
+                        </div>
+                    </div>
+                )}
 
                 {/* CONTENT */}
                 <div className={styles.contentGrid}>
@@ -295,15 +410,15 @@ export default function StudentDetail() {
                                     <div className={styles.infoIcon}><MdEmail /></div>
                                     <div>
                                         <label>Email Address</label>
-                                        <p>{student.email || "Not specified"}</p>
+                                        <p>{studentData.email || "Not specified"}</p>
                                     </div>
                                 </div>
-                                {student.phone_number && (
+                                {studentData.phone_number && studentData.phone_number !== "N/A" && (
                                     <div className={styles.infoItem}>
                                         <div className={styles.infoIcon}><FaPhone /></div>
                                         <div>
                                             <label>Phone Number</label>
-                                            <p>{student.phone_number}</p>
+                                            <p>{studentData.phone_number}</p>
                                         </div>
                                     </div>
                                 )}
@@ -311,39 +426,41 @@ export default function StudentDetail() {
                                     <div className={styles.infoIcon}><FaUser /></div>
                                     <div>
                                         <label>Gender</label>
-                                        <p>{student.gender ? student.gender.charAt(0).toUpperCase() + student.gender.slice(1) : "Not specified"}</p>
+                                        <p>{studentData.gender ? studentData.gender.charAt(0).toUpperCase() + studentData.gender.slice(1) : "Not specified"}</p>
                                     </div>
                                 </div>
                                 <div className={styles.infoItem}>
                                     <div className={styles.infoIcon}><FaUser /></div>
                                     <div>
                                         <label>Account Identifier</label>
-                                        <p>{student.account || "N/A"}</p>
+                                        <p>{studentData.account || "N/A"}</p>
                                     </div>
                                 </div>
                                 <div className={styles.infoItem}>
                                     <div className={styles.infoIcon}><MdDateRange /></div>
                                     <div>
                                         <label>Joined Date</label>
-                                        <p>{formatDate(student.created_at || student.date_joined)}</p>
+                                        <p>{formatDate(studentData.date_joined)}</p>
                                     </div>
                                 </div>
-                                {student.profile_pic_url && (
-                                    <div className={styles.infoItem}>
-                                        <div className={styles.infoIcon}><FaCamera /></div>
-                                        <div>
-                                            <label>Profile Picture</label>
-                                            <p className={styles.profilePicUrl}>
-                                                <img
-                                                    src={student.profile_pic_url}
-                                                    alt="Profile"
-                                                    className={styles.profilePicThumb}
-                                                />
-                                                <span>Uploaded</span>
-                                            </p>
-                                        </div>
+                                <div className={styles.infoItem}>
+                                    <div className={styles.infoIcon}><FaUser /></div>
+                                    <div>
+                                        <label>Email Verified</label>
+                                        <p className={studentData.email_verified ? styles.verified : styles.notVerified}>
+                                            {studentData.email_verified ? "✓ Verified" : "✗ Not Verified"}
+                                        </p>
                                     </div>
-                                )}
+                                </div>
+                                <div className={styles.infoItem}>
+                                    <div className={styles.infoIcon}><FaUser /></div>
+                                    <div>
+                                        <label>2FA Enabled</label>
+                                        <p className={studentData.twofa_enabled ? styles.enabled : styles.disabled}>
+                                            {studentData.twofa_enabled ? "✓ Enabled" : "✗ Disabled"}
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -355,39 +472,23 @@ export default function StudentDetail() {
                                     <div className={styles.infoIcon}><FaGraduationCap /></div>
                                     <div>
                                         <label>Grade Level</label>
-                                        <p>{student.grade ?? "N/A"}</p>
+                                        <p>{studentData.grade ?? "N/A"}</p>
                                     </div>
                                 </div>
                                 <div className={styles.infoItem}>
                                     <div className={styles.infoIcon}><MdClass /></div>
                                     <div>
                                         <label>Section</label>
-                                        <p>{student.section ?? "N/A"}</p>
+                                        <p>{studentData.section ?? "N/A"}</p>
                                     </div>
                                 </div>
                                 <div className={styles.infoItem}>
                                     <div className={styles.infoIcon}><FaBook /></div>
                                     <div>
                                         <label>Field of Study</label>
-                                        <p>{student.field ? student.field.charAt(0).toUpperCase() + student.field.slice(1) : "Not specified"}</p>
+                                        <p>{studentData.field ? studentData.field.charAt(0).toUpperCase() + studentData.field.slice(1) : "Not specified"}</p>
                                     </div>
                                 </div>
-                                <div className={styles.infoItem}>
-                                    <div className={styles.infoIcon}><FaBook /></div>
-                                    <div>
-                                        <label>Academic Year</label>
-                                        <p>{student.academic_year || "2024-2025"}</p>
-                                    </div>
-                                </div>
-                                {student.homeroom_teacher && (
-                                    <div className={styles.infoItem}>
-                                        <div className={styles.infoIcon}><FaChalkboardTeacher /></div>
-                                        <div>
-                                            <label>Homeroom Teacher</label>
-                                            <p>{student.homeroom_teacher}</p>
-                                        </div>
-                                    </div>
-                                )}
                             </div>
                         </div>
 
@@ -412,6 +513,45 @@ export default function StudentDetail() {
                     </div>
 
                     <div className={styles.rightColumn}>
+                        {/* Learning Tasks Summary */}
+                        {student.learning_tasks && (
+                            <div className={styles.card}>
+                                <div className={styles.cardHeader}>
+                                    <h2 className={styles.cardTitle}><FaTasks /> Learning Tasks Summary</h2>
+                                    <button
+                                        className={styles.viewAllBtn}
+                                        onClick={() => navigate(`/admin/student/task/${id}`)}
+                                    >
+                                        View All Tasks
+                                    </button>
+                                </div>
+                                <div className={styles.learningTasksGrid}>
+                                    <div className={styles.learningTaskItem}>
+                                        <div className={styles.learningTaskIcon}>
+                                            <MdAssignment />
+                                        </div>
+                                        <div className={styles.learningTaskContent}>
+                                            <h3>Total Tasks Created</h3>
+                                            <p className={styles.learningTaskNumber}>
+                                                {student.learning_tasks.total_created || 0}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className={styles.learningTaskItem}>
+                                        <div className={styles.learningTaskIcon}>
+                                            <FaStar />
+                                        </div>
+                                        <div className={styles.learningTaskContent}>
+                                            <h3>Admin Rating + Bonus</h3>
+                                            <p className={styles.learningTaskNumber}>
+                                                {student.learning_tasks.total_admin_rating_plus_bonus || 0}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Recent Activities Card */}
                         <div className={styles.card}>
                             <div className={styles.cardHeader}>
@@ -446,29 +586,6 @@ export default function StudentDetail() {
                                     </div>
                                 )}
                             </div>
-                        </div>
-
-                        {/* Notes Card */}
-                        <div className={styles.card}>
-                            <h2 className={styles.cardTitle}><FaFileAlt /> Notes</h2>
-                            {student.notes ? (
-                                <div className={styles.notesContent}>
-                                    <p>{student.notes}</p>
-                                    <div className={styles.notesMeta}>
-                                        <span>Last updated: {formatDate(student.updated_at)}</span>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className={styles.emptyNotes}>
-                                    <p>No notes added yet.</p>
-                                    <button
-                                        className={styles.addNoteBtn}
-                                        onClick={() => navigate(`/admin/student/edit/${id}/`)}
-                                    >
-                                        Add Note
-                                    </button>
-                                </div>
-                            )}
                         </div>
                     </div>
                 </div>

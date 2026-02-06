@@ -34,18 +34,25 @@ import {
     MdDescription
 } from "react-icons/md";
 import styles from "./LearningTaskDetail.module.css";
+import { useNotifContext } from "../../../Context/NotifContext";
 
 export default function LearningTaskDetail() {
     const navigate = useNavigate();
     const { id } = useParams();
     const { user } = useUser();
 
+    const { updatePageTitle } = useNotifContext()
+
     const [loading, setLoading] = useState(true);
     const [task, setTask] = useState(null);
     const [liked, setLiked] = useState(false);
     const [likeCount, setLikeCount] = useState(0);
 
-    // Review form state
+    useEffect(() => {
+        if (!task) return
+        updatePageTitle(`Learning Task Detail '${task.title}'`)
+    }, [task])
+
     const [reviewForm, setReviewForm] = useState({
         rating: 5,
         feedback: ""
@@ -117,7 +124,7 @@ export default function LearningTaskDetail() {
 
             neonToast.error(error, "error");
 
-            navigate(-1);
+            navigate("/user/my-learning-task");
         } finally {
             setLoading(false);
         }
@@ -206,7 +213,7 @@ export default function LearningTaskDetail() {
                 rating: parseInt(reviewForm.rating),
                 feedback: reviewForm.feedback.trim()
             });
- 
+
             neonToast.success(
                 userReview ? "Review updated successfully!" : "Review submitted successfully!",
                 "success"
@@ -345,7 +352,7 @@ export default function LearningTaskDetail() {
                         <p>The requested learning task could not be found.</p>
                         <button
                             className={styles.primaryBtn}
-                            onClick={() => navigate(-1)}
+                            onClick={() => navigate("/user/my-learning-task")}
                         >
                             Go Back
                         </button>
@@ -367,7 +374,7 @@ export default function LearningTaskDetail() {
                     <div className={styles.headerContent}>
                         <button
                             className={styles.backBtn}
-                            onClick={() => navigate(-1)}
+                            onClick={() => navigate("/user/my-learning-task")}
                         >
                             <FaArrowLeft /> Go Back
                         </button>

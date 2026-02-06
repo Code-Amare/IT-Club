@@ -5,16 +5,8 @@ import api from "../../Utils/api";
 import { neonToast } from "../../Components/NeonToast/NeonToast";
 import AsyncButton from "../../Components/AsyncButton/AsyncButton";
 import styles from "./EditProfile.module.css";
-import {
-    FaUserEdit,
-    FaCamera,
-    FaSave,
-    FaTimes,
-    FaUser,
-    FaEnvelope,
-    FaExclamationTriangle,
-} from "react-icons/fa";
-import { MdPerson, MdImage, MdWarning } from "react-icons/md";
+import { FaUserEdit, FaCamera, FaSave, FaTimes, FaUser, FaEnvelope } from "react-icons/fa";
+import { MdPerson, MdImage } from "react-icons/md";
 import SideBar from "../../Components/SideBar/SideBar";
 
 export default function ProfileEdit() {
@@ -40,12 +32,10 @@ export default function ProfileEdit() {
     const handleImageChange = (e) => {
         const file = e.target.files[0];
         if (file) {
-            // Validate file size (max 5MB)
             if (file.size > 10 * 1024 * 1024) {
                 neonToast.error("Image size must be less than 10MB", "error");
                 return;
             }
-            // Validate file type
             if (!file.type.startsWith("image/")) {
                 neonToast.error("Please select an image file", "error");
                 return;
@@ -68,12 +58,11 @@ export default function ProfileEdit() {
             data.append("email", form.email.trim());
             if (profileImage) data.append("profile_pic", profileImage);
 
-            const res = await api.patch("/api/users/edit/", data, {
+            await api.patch("/api/users/edit/", data, {
                 headers: { "Content-Type": "multipart/form-data" },
             });
 
             getUser();
-
             neonToast.success("Profile updated successfully", "success");
             navigate("/profile");
         } catch (err) {
@@ -101,7 +90,6 @@ export default function ProfileEdit() {
 
     return (
         <div className={styles.editProfileContainer}>
-            {/* Header */}
             <SideBar>
                 <div className={styles.profileHeader}>
                     <div className={styles.headerContent}>
@@ -126,8 +114,7 @@ export default function ProfileEdit() {
                                         />
                                     ) : null}
                                     <div
-                                        className={`${styles.avatarFallback} ${(preview || user.profilePicURL) ? styles.hidden : ""
-                                            }`}
+                                        className={`${styles.avatarFallback} ${(preview || user.profilePicURL) ? styles.hidden : ""}`}
                                     >
                                         <MdPerson />
                                     </div>
@@ -168,7 +155,6 @@ export default function ProfileEdit() {
 
                 {/* Main Content */}
                 <main className={styles.mainContent}>
-                    {/* Edit Form Card */}
                     <div className={styles.card}>
                         <div className={styles.cardHeader}>
                             <h2>
@@ -278,45 +264,6 @@ export default function ProfileEdit() {
                                 </button>
                             </div>
                         </form>
-                    </div>
-
-                    {/* Danger Zone */}
-                    <div className={`${styles.card} ${styles.dangerZone}`}>
-                        <div className={styles.cardHeader}>
-                            <h2>
-                                <MdWarning className={styles.dangerIcon} />
-                                Danger Zone
-                            </h2>
-                        </div>
-                        <div className={styles.dangerContent}>
-                            <div className={styles.warningBox}>
-                                <FaExclamationTriangle className={styles.warningIcon} />
-                                <div className={styles.warningContent}>
-                                    <h3>Account Deletion</h3>
-                                    <p>
-                                        Deleting your account will permanently remove all your data,
-                                        including profile information, learning tasks, and projects.
-                                        This action cannot be undone.
-                                    </p>
-                                </div>
-                            </div>
-                            <div className={styles.dangerActions}>
-                                <button
-                                    type="button"
-                                    className={styles.dangerBtn}
-                                    onClick={() => navigate("/support")}
-                                >
-                                    Contact Support
-                                </button>
-                                <button
-                                    type="button"
-                                    className={styles.deleteBtn}
-                                    onClick={() => navigate("/account/deletion")}
-                                >
-                                    Request Account Deletion
-                                </button>
-                            </div>
-                        </div>
                     </div>
                 </main>
             </SideBar>

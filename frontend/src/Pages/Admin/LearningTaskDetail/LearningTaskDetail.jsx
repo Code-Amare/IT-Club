@@ -12,12 +12,10 @@ import {
     FaGlobe,
     FaLock,
     FaLink,
-    FaPalette,
     FaStar,
     FaEdit,
     FaTrash,
     FaUser,
-    FaUsers,
     FaCalendar,
     FaThumbsUp,
     FaComment,
@@ -27,7 +25,11 @@ import {
     FaEllipsisV,
     FaShieldAlt,
     FaCrown,
-    FaEye
+    FaEye,
+    FaRedo, // Added for redo
+    FaCheckCircle, // Added for marking as complete
+    FaChartBar, // Added for stats
+    FaLightbulb // Added for ideas
 } from "react-icons/fa";
 import {
     MdLanguage,
@@ -46,6 +48,7 @@ export default function LearningTaskDetail() {
     const [showReviewMenu, setShowReviewMenu] = useState(null);
     const [liked, setLiked] = useState(false);
     const [likeCount, setLikeCount] = useState(0);
+    const [settingToRedo, setSettingToRedo] = useState(false); // New state for redo
 
     // Review form state
     const [reviewForm, setReviewForm] = useState({
@@ -68,19 +71,15 @@ export default function LearningTaskDetail() {
     const fetchTaskData = async () => {
         setLoading(true);
         try {
-            // Fetch task
             const taskResponse = await api.get(`/api/learning-task/${id}/`);
             const responseData = taskResponse.data;
 
-            // Check if data is nested under 'task' property
             const taskData = responseData.task || responseData;
             setTask(taskData);
 
-            // Set like status
             setLiked(responseData.user_liked || false);
             setLikeCount(taskData.likes_count || 0);
 
-            // Check if current admin has already reviewed this task
             if (taskData.reviews) {
                 const existingReview = taskData.reviews.find(
                     review => review.user?.id === user.id && review.is_admin
@@ -92,7 +91,6 @@ export default function LearningTaskDetail() {
                         feedback: existingReview.feedback || ""
                     });
                 } else {
-                    // If admin hasn't reviewed yet, show empty form
                     setReviewForm({
                         rating: 5,
                         feedback: ""
@@ -113,7 +111,27 @@ export default function LearningTaskDetail() {
         }
     };
 
-    // Handle like/unlike - ADMIN CAN LIKE TOO!
+    // Handle set to redo
+    const handleSetToRedo = async () => {
+        if (!task || task.status !== "rated") {
+            neonToast.error("Only rated tasks can be set to redo", "error");
+            return;
+        }
+
+        setSettingToRedo(true);
+        try {
+            await api.post(`/api/learning-task/redo/${id}/`);
+            neonToast.success("Task set to redo successfully", "success");
+            await fetchTaskData(); // Refresh task data
+        } catch (error) {
+            console.error("Error setting task to redo:", error);
+            neonToast.error(error.response?.data?.error || "Failed to set task to redo", "error");
+        } finally {
+            setSettingToRedo(false);
+        }
+    };
+
+    // Handle like/unlike
     const handleLike = async () => {
         if (!user.isAuthenticated) {
             neonToast.error("Please login to like learning tasks", "error");
@@ -154,7 +172,6 @@ export default function LearningTaskDetail() {
     const handleSubmitReview = async (e) => {
         e.preventDefault();
 
-        // Basic validation
         if (!reviewForm.rating || reviewForm.rating < 1 || reviewForm.rating > 5) {
             neonToast.error("Please select a rating between 1 and 5", "error");
             return;
@@ -167,10 +184,9 @@ export default function LearningTaskDetail() {
 
         setSubmittingReview(true);
         try {
-            // Use correct endpoints based on your Django URLs
             const endpoint = userReview
-                ? `/api/learning-task/review/edit/${id}/`  // PATCH endpoint
-                : `/api/learning-task/review/create/${id}/`; // POST endpoint
+                ? `/api/learning-task/review/edit/${id}/`
+                : `/api/learning-task/review/create/${id}/`;
 
             const method = userReview ? "patch" : "post";
 
@@ -184,7 +200,6 @@ export default function LearningTaskDetail() {
                 "success"
             );
 
-            // Refresh task data to get updated reviews
             await fetchTaskData();
             setEditingReview(false);
 
@@ -204,15 +219,13 @@ export default function LearningTaskDetail() {
         }
     };
 
-    // Handle delete review - ADMIN ONLY
+    // Handle delete review
     const handleDeleteReview = async () => {
         setSubmittingDelete(true);
         try {
-            const res = await api.delete(`/api/management/review/delete/${id}/`);
-            console.log(res)
-
+            await api.delete(`/api/management/review/delete/${id}/`);
             neonToast.success("Review deleted successfully!", "success");
-
+            await fetchTaskData();
         } catch (error) {
             console.error("Error deleting review:", error);
             neonToast.error(
@@ -233,7 +246,6 @@ export default function LearningTaskDetail() {
         });
         setEditingReview(true);
 
-        // Scroll to form
         setTimeout(() => {
             document.querySelector(`.${styles.reviewForm}`)?.scrollIntoView({
                 behavior: 'smooth',
@@ -261,7 +273,7 @@ export default function LearningTaskDetail() {
         }
     };
 
-    // Handle delete learning task - ADMIN ONLY
+    // Handle delete learning task
     const handleDeleteTask = async () => {
         try {
             await api.delete(`/api/management/task/delete/${id}/`);
@@ -282,7 +294,7 @@ export default function LearningTaskDetail() {
         const date = new Date(dateString);
         return date.toLocaleDateString('en-US', {
             year: 'numeric',
-            month: 'long',
+            month: 'short',
             day: 'numeric',
             hour: '2-digit',
             minute: '2-digit'
@@ -340,6 +352,28 @@ export default function LearningTaskDetail() {
         return taskUser?.profile_pic_url || null;
     };
 
+    // Get status badge class
+    const getStatusBadgeClass = (status) => {
+        switch (status) {
+            case 'draft': return styles.statusDraft;
+            case 'submitted': return styles.statusSubmitted;
+            case 'rated': return styles.statusRated;
+            case 'redo': return styles.statusRedo;
+            default: return styles.statusDefault;
+        }
+    };
+
+    // Get status display text
+    const getStatusDisplay = (status) => {
+        switch (status) {
+            case 'draft': return 'Draft';
+            case 'submitted': return 'Submitted';
+            case 'rated': return 'Rated';
+            case 'redo': return 'Needs Redo';
+            default: return status;
+        }
+    };
+
     if (loading) {
         return (
             <div className={styles.container}>
@@ -375,6 +409,7 @@ export default function LearningTaskDetail() {
 
     const averageRating = calculateAverageRating();
     const isRated = task.status === "rated";
+    const isRedo = task.status === "redo";
     const isCurrentlyEditing = editingReview && userReview;
 
     return (
@@ -415,8 +450,8 @@ export default function LearningTaskDetail() {
                                             </>
                                         )}
                                     </span>
-                                    <span className={`${styles.ratingBadge} ${isRated ? styles.rated : styles.notRated}`}>
-                                        <FaStar /> {isRated ? `Rated (${averageRating}/5)` : "Not Rated"}
+                                    <span className={`${styles.statusBadge} ${getStatusBadgeClass(task.status)}`}>
+                                        {getStatusDisplay(task.status)}
                                     </span>
                                     <span className={styles.adminBadge}>
                                         <FaCrown /> Admin View
@@ -426,7 +461,7 @@ export default function LearningTaskDetail() {
 
                             {/* Admin Action Buttons */}
                             <div className={styles.headerActions}>
-                                {/* Like Button - ADDED FOR ADMINS */}
+                                {/* Like Button */}
                                 <button
                                     className={`${styles.likeBtn} ${liked ? styles.liked : ""}`}
                                     onClick={handleLike}
@@ -437,7 +472,27 @@ export default function LearningTaskDetail() {
                                     <span>{likeCount}</span>
                                 </button>
 
-                                {/* Delete Learning Task Button (admin only) */}
+                                {/* Set to Redo Button (only for rated tasks) */}
+                                {isRated && (
+                                    <ConfirmAction
+                                        title="Set Task to Redo"
+                                        message="Are you sure you want to set this task to redo? The student will be able to modify and resubmit it."
+                                        confirmText="Set to Redo"
+                                        cancelText="Cancel"
+                                        onConfirm={handleSetToRedo}
+                                    >
+                                        <AsyncButton
+                                            className={styles.redoBtn}
+                                            loading={settingToRedo}
+                                            disabled={settingToRedo}
+                                            title="Set task to redo mode"
+                                        >
+                                            <FaRedo /> Set to Redo
+                                        </AsyncButton>
+                                    </ConfirmAction>
+                                )}
+
+                                {/* Delete Learning Task Button */}
                                 <ConfirmAction
                                     title="Delete Learning Task"
                                     message="Are you sure you want to delete this learning task? This action cannot be undone."
@@ -497,8 +552,8 @@ export default function LearningTaskDetail() {
                     {/* Left Column - Learning Task Details */}
                     <div className={styles.leftColumn}>
                         {/* Description */}
-                        <div className={styles.section}>
-                            <div className={styles.sectionHeader}>
+                        <div className={styles.card}>
+                            <div className={styles.cardHeader}>
                                 <MdDescription />
                                 <h3>Description</h3>
                             </div>
@@ -509,8 +564,8 @@ export default function LearningTaskDetail() {
 
                         {/* GitHub Link */}
                         {task.git_link && (
-                            <div className={styles.section}>
-                                <div className={styles.sectionHeader}>
+                            <div className={styles.card}>
+                                <div className={styles.cardHeader}>
                                     <FaLink />
                                     <h3>GitHub Repository</h3>
                                 </div>
@@ -527,8 +582,8 @@ export default function LearningTaskDetail() {
                         )}
 
                         {/* Technologies */}
-                        <div className={styles.section}>
-                            <div className={styles.sectionHeader}>
+                        <div className={styles.card}>
+                            <div className={styles.cardHeader}>
                                 <MdLanguage />
                                 <h3>Technologies Used</h3>
                             </div>
@@ -583,66 +638,43 @@ export default function LearningTaskDetail() {
                             )}
                         </div>
 
-                        {/* Learning Task Stats */}
-                        <div className={styles.section}>
-                            <div className={styles.sectionHeader}>
-                                <FaUsers />
-                                <h3>Learning Task Statistics</h3>
+                        {/* Quick Stats - COMPACT VERSION */}
+                        <div className={styles.statsCard}>
+                            <div className={styles.cardHeader}>
+                                <FaChartBar />
+                                <h3>Quick Stats</h3>
                             </div>
                             <div className={styles.statsGrid}>
                                 <div className={styles.statItem}>
-                                    <div className={styles.statValue}>{likeCount}</div>
+                                    <div className={styles.statIcon}>
+                                        <FaThumbsUp />
+                                    </div>
+                                    <div className={styles.statNumber}>{likeCount}</div>
                                     <div className={styles.statLabel}>Likes</div>
                                 </div>
                                 <div className={styles.statItem}>
-                                    <div className={styles.statValue}>
-                                        {task.reviews?.length || 0}
+                                    <div className={styles.statIcon}>
+                                        <FaComment />
                                     </div>
-                                    <div className={styles.statLabel}>Total Reviews</div>
+                                    <div className={styles.statNumber}>{task.reviews?.length || 0}</div>
+                                    <div className={styles.statLabel}>Reviews</div>
                                 </div>
                                 <div className={styles.statItem}>
-                                    <div className={styles.statValue}>
+                                    <div className={styles.statIcon}>
+                                        <FaCrown />
+                                    </div>
+                                    <div className={styles.statNumber}>
                                         {task.reviews?.filter(r => r.is_admin)?.length || 0}
                                     </div>
-                                    <div className={styles.statLabel}>Admin Reviews</div>
+                                    <div className={styles.statLabel}>Admin</div>
                                 </div>
                                 <div className={styles.statItem}>
-                                    <div className={styles.statValue}>
-                                        {isRated ? "Yes" : "No"}
+                                    <div className={styles.statIcon}>
+                                        <FaStar />
                                     </div>
-                                    <div className={styles.statLabel}>Rated</div>
+                                    <div className={styles.statNumber}>{averageRating}</div>
+                                    <div className={styles.statLabel}>Avg</div>
                                 </div>
-                            </div>
-                        </div>
-
-                        {/* Admin Actions Panel */}
-                        <div className={styles.adminActionsPanel}>
-                            <div className={styles.adminSectionHeader}>
-                                <FaShieldAlt />
-                                <h3>Admin Actions</h3>
-                            </div>
-                            <div className={styles.adminActions}>
-                                <button
-                                    className={styles.viewUserBtn}
-                                    onClick={() => {
-                                        if (task.user?.id) {
-                                            navigate(`/admin/student/${task.user.id}`);
-                                        } else {
-                                            neonToast.error("User information not available", "error");
-                                        }
-                                    }}
-                                >
-                                    <FaUser /> View User Profile
-                                </button>
-                                <button
-                                    className={styles.exportBtn}
-                                    onClick={() => {
-                                        // Export functionality would go here
-                                        neonToast.info("Export feature coming soon", "info");
-                                    }}
-                                >
-                                    <FaCode /> Export Task Data
-                                </button>
                             </div>
                         </div>
                     </div>
@@ -651,38 +683,17 @@ export default function LearningTaskDetail() {
                     <div className={styles.rightColumn}>
                         {/* Admin Review & Rating Section */}
                         <div className={styles.adminSection}>
-                            <div className={styles.adminSectionHeader}>
-                                <FaStar />
-                                <h3>
-                                    {isCurrentlyEditing ? "Edit Your Review" :
-                                        userReview ? "Your Admin Review" : "Admin Review & Rating"}
-                                </h3>
+                            <div className={styles.adminHeader}>
+                                <div className={styles.adminTitle}>
+                                    <FaStar />
+                                    <h3>
+                                        {isCurrentlyEditing ? "Edit Your Review" :
+                                            userReview ? "Your Admin Review" : "Admin Review & Rating"}
+                                    </h3>
+                                </div>
                                 <span className={styles.adminBadge}>
                                     <FaCrown /> Admin
                                 </span>
-                            </div>
-
-                            <div className={styles.adminStats}>
-                                <div className={styles.adminStat}>
-                                    <span className={styles.adminStatLabel}>Current Status:</span>
-                                    <span className={`${styles.adminStatValue} ${isRated ? styles.rated : styles.notRated}`}>
-                                        {isRated ? "✓ Rated" : "Not Rated"}
-                                    </span>
-                                </div>
-                                <div className={styles.adminStat}>
-                                    <span className={styles.adminStatLabel}>Task Owner:</span>
-                                    <span className={styles.adminStatValue}>
-                                        {getUserDisplayName(task.user)}
-                                    </span>
-                                </div>
-                                {isRated && (
-                                    <div className={styles.adminStat}>
-                                        <span className={styles.adminStatLabel}>Average Rating:</span>
-                                        <span className={styles.adminStatValue}>
-                                            {averageRating} / 5
-                                        </span>
-                                    </div>
-                                )}
                             </div>
 
                             {(!isRated || userReview) && (
@@ -709,9 +720,6 @@ export default function LearningTaskDetail() {
                                         <div className={styles.ratingHelp}>
                                             <span className={styles.ratingValue}>
                                                 Selected: {reviewForm.rating} / 5 stars
-                                            </span>
-                                            <span className={styles.adminNote}>
-                                                Your review will mark this task as "rated"
                                             </span>
                                         </div>
                                     </div>
@@ -816,8 +824,8 @@ export default function LearningTaskDetail() {
                         </div>
 
                         {/* All Reviews List */}
-                        <div className={styles.section}>
-                            <div className={styles.sectionHeader}>
+                        <div className={styles.card}>
+                            <div className={styles.cardHeader}>
                                 <FaComment />
                                 <h3>All Reviews ({task.reviews?.length || 0})</h3>
                             </div>
@@ -939,62 +947,6 @@ export default function LearningTaskDetail() {
                                     <p>No reviews yet. Be the first to review this learning task!</p>
                                 </div>
                             )}
-                        </div>
-
-                        {/* Task Information Panel */}
-                        <div className={styles.section}>
-                            <div className={styles.sectionHeader}>
-                                <FaEye />
-                                <h3>Task Information</h3>
-                            </div>
-                            <div className={styles.metadata}>
-                                <div className={styles.metaItem}>
-                                    <span className={styles.metaLabel}>Task ID:</span>
-                                    <span className={styles.metaValue}>{task.id}</span>
-                                </div>
-                                <div className={styles.metaItem}>
-                                    <span className={styles.metaLabel}>Created:</span>
-                                    <span className={styles.metaValue}>
-                                        {formatDate(task.created_at)}
-                                    </span>
-                                </div>
-                                {task.updated_at && task.updated_at !== task.created_at && (
-                                    <div className={styles.metaItem}>
-                                        <span className={styles.metaLabel}>Updated:</span>
-                                        <span className={styles.metaValue}>
-                                            {formatDate(task.updated_at)}
-                                        </span>
-                                    </div>
-                                )}
-                                <div className={styles.metaItem}>
-                                    <span className={styles.metaLabel}>Status:</span>
-                                    <span className={`${styles.metaValue} ${styles[`status-${task.status}`]}`}>
-                                        {task.status.charAt(0).toUpperCase() + task.status.slice(1).replace('_', ' ')}
-                                    </span>
-                                </div>
-                                <div className={styles.metaItem}>
-                                    <span className={styles.metaLabel}>Visibility:</span>
-                                    <span className={`${styles.metaValue} ${task.is_public ? styles.public : styles.private}`}>
-                                        {task.is_public ? "Public" : "Private"}
-                                    </span>
-                                </div>
-                                <div className={styles.metaItem}>
-                                    <span className={styles.metaLabel}>Task Owner:</span>
-                                    <div className={styles.ownerInfo}>
-                                        <ProfilePicture
-                                            src={getUserProfilePic(task.user)}
-                                            alt={getUserDisplayName(task.user)}
-                                            size="small"
-                                        />
-                                        <span className={styles.metaValue}>
-                                            {getUserDisplayName(task.user)}
-                                            {task.user?.email && (
-                                                <span className={styles.userEmail}>({task.user.email})</span>
-                                            )}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>

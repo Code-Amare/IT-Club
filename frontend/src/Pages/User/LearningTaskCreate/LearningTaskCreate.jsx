@@ -16,6 +16,7 @@ import {
 } from "react-icons/fa";
 import { MdTitle, MdDescription, MdLanguage, MdCode } from "react-icons/md";
 import styles from "./LearningTaskCreate.module.css";
+import { useNotifContext } from "../../../Context/NotifContext";
 
 export default function LearningTaskCreate() {
     const navigate = useNavigate();
@@ -26,6 +27,11 @@ export default function LearningTaskCreate() {
     const [languages, setLanguages] = useState([]);
     const [frameworks, setFrameworks] = useState([]);
     const [errors, setErrors] = useState({});
+
+    const { updatePageTitle } = useNotifContext()
+    useEffect(() => {
+        updatePageTitle("Create Learning Task")
+    }, [])
 
     const [formData, setFormData] = useState({
         title: "",
@@ -128,8 +134,7 @@ export default function LearningTaskCreate() {
             navigate("/user/learning-tasks");
 
         } catch (error) {
-            console.log(error)
-            console.error("Error creating learning task:", error?.response?.data || error);
+            console.error("Error creating learning task:", error?.response?.data?.error || error);
             if (error.response?.data?.errors) {
                 setErrors(error.response.data.errors);
                 neonToast.error("Please fix the errors in the form", "error");

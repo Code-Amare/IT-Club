@@ -97,6 +97,13 @@
   flex-shrink: 0;
 }
 
+.avatarImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
 .studentInfo h1 {
   font-size: 28px;
   font-weight: 700;
@@ -157,6 +164,19 @@
   color: var(--badge-text);
 }
 
+.fieldBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  background: var(--bg-body);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
 /* Stats Grid */
 .statsGrid {
   display: grid;
@@ -205,6 +225,128 @@
 
 .statNumber {
   font-size: 24px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* Attendance Summary Styles */
+.attendanceGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.attendanceItem {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: var(--card-bg);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.attendanceIcon {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+}
+
+.attendanceIcon.present {
+  background: rgba(34, 197, 94, 0.1);
+  color: #22c55e;
+}
+
+.attendanceIcon.late {
+  background: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+}
+
+.attendanceIcon.absent {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.attendanceIcon.special {
+  background: rgba(168, 85, 247, 0.1);
+  color: #a855f7;
+}
+
+.attendanceContent h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.attendanceCount {
+  margin: 0.25rem 0 0 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.attendancePercentage {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin-left: 0.5rem;
+  font-weight: 400;
+}
+
+.attendanceTotal {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+  text-align: center;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+/* Learning Tasks Styles */
+.learningTasksGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.learningTaskItem {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: var(--card-bg);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.learningTaskIcon {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}
+
+.learningTaskContent h3 {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.learningTaskNumber {
+  margin: 0.25rem 0 0 0;
+  font-size: 1.5rem;
   font-weight: 700;
   color: var(--text-primary);
 }
@@ -375,6 +517,31 @@
   line-height: 1.5;
 }
 
+/* Task Limit Display */
+.taskLimitDisplay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30px 20px;
+  text-align: center;
+}
+
+.taskLimitValue {
+  font-size: 48px;
+  font-weight: 700;
+  color: var(--primary);
+  line-height: 1;
+  margin-bottom: 16px;
+}
+
+.taskLimitDescription {
+  font-size: 14px;
+  color: var(--text-secondary);
+  max-width: 300px;
+  margin: 0;
+}
+
 /* Content Grid */
 .contentGrid {
   display: grid;
@@ -473,6 +640,42 @@
   font-size: 14px;
   color: var(--text-primary);
   font-weight: 500;
+}
+
+/* Profile Picture Thumbnail */
+.profilePicUrl {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.profilePicThumb {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--border-color);
+}
+
+/* Verification Status Styles */
+.verified {
+  color: #22c55e;
+  font-weight: 600;
+}
+
+.notVerified {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.enabled {
+  color: #22c55e;
+  font-weight: 600;
+}
+
+.disabled {
+  color: #ef4444;
+  font-weight: 600;
 }
 
 /* Activities */
@@ -783,7 +986,8 @@
 }
 
 .secondaryBtn,
-.dangerBtn {
+.dangerBtn,
+.learningTasksBtn {
   padding: 10px 24px;
   border-radius: 8px;
   font-size: 14px;
@@ -791,6 +995,12 @@
   border: none;
   cursor: pointer;
   transition: all 0.2s ease;
+}
+
+.learningTasksBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.7em;
 }
 
 .secondaryBtn {
@@ -815,6 +1025,12 @@
   background: var(--danger-dark);
 }
 
+.learningTasksBtn {
+  background: var(--bg-body);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .headerTop {
@@ -824,6 +1040,7 @@
 
   .headerActions {
     justify-content: stretch;
+    flex-direction: column;
   }
 
   .editBtn,
@@ -846,6 +1063,14 @@
     grid-template-columns: 1fr;
   }
 
+  .attendanceGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .learningTasksGrid {
+    grid-template-columns: 1fr;
+  }
+
   .infoGrid {
     grid-template-columns: 1fr;
   }
@@ -853,6 +1078,16 @@
   .modal {
     margin: 20px;
     max-height: calc(100vh - 40px);
+  }
+
+  .fieldBadge {
+    display: none; /* Hide on mobile to save space */
+  }
+
+  .profilePicUrl {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
   }
 }
 
@@ -891,104 +1126,16 @@
     align-self: stretch;
     justify-content: center;
   }
-}
-/* Task Limit Display */
-.taskLimitDisplay {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 30px 20px;
-  text-align: center;
-}
 
-.taskLimitValue {
-  font-size: 48px;
-  font-weight: 700;
-  color: var(--primary);
-  line-height: 1;
-  margin-bottom: 16px;
-}
-
-.taskLimitDescription {
-  font-size: 14px;
-  color: var(--text-secondary);
-  max-width: 300px;
-  margin: 0;
-}
-
-/* Add these styles to your existing StudentDetail.module.css file */
-
-/* Avatar Image Style */
-.avatarImage {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 50%;
-}
-
-/* Field Badge */
-.fieldBadge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 500;
-  background: var(--bg-body);
-  color: var(--text-primary);
-  border: 1px solid var(--border-color);
-}
-
-/* Profile Picture Thumbnail */
-.profilePicUrl {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.profilePicThumb {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid var(--border-color);
-}
-
-/* Edit Limit Button */
-.editLimitBtn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  background: var(--warning-light);
-  color: var(--warning);
-  border: 1px solid var(--warning-border);
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.editLimitBtn:hover {
-  background: var(--warning-lighter);
-}
-
-/* Responsive adjustments for profile picture */
-@media (max-width: 768px) {
-  .studentMeta {
-    justify-content: center;
-  }
-
-  .fieldBadge {
-    display: none; /* Hide on mobile to save space */
-  }
-
-  .profilePicUrl {
+  .attendanceItem {
     flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
+    text-align: center;
+    gap: 12px;
+  }
+
+  .learningTaskItem {
+    flex-direction: column;
+    text-align: center;
+    gap: 12px;
   }
 }

@@ -9,6 +9,7 @@ from .serializers import (
     TaskReviewSerializer,
     LearningTaskLimitSerializer,
     TaskBonusSerializer,
+    LearningTaskNonExtraSerializer,
 )
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_protect
@@ -246,6 +247,12 @@ class TaskReviewAPIView(APIView):
             task_owner = task.user
             user = request.user
 
+            if task.status == "redo":
+                return Response(
+                    {"error": "Task must be updated to rate again."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
             rated = (
                 TaskReview.objects.filter(
                     task=task,
@@ -289,6 +296,58 @@ class TaskReviewAPIView(APIView):
                 {"message": "Review not found. You can create one with POST."},
                 status=status.HTTP_404_NOT_FOUND,
             )
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@method_decorator(csrf_protect, name="dispatch")
+class TaskToRedoView(APIView):
+    authentication_classes = [JWTCookieAuthentication]
+    permission_classes = [IsAdminUser]
+
+    def post(self, request, task_id):
+        try:
+            task = LearningTask.objects.get(id=task_id)
+            task_owner = task.user
+            user = request.user
+
+            if not task.status == "rated":
+
+                return Response(
+                    {"error": "Task must be rated to set to redo."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            if task.status == "redo":
+                return Response(
+                    {"error": "Task already set to redo."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            with transaction.atomic():
+
+                task.status = "redo"
+                task.save()
+
+                async_to_sync(notify_user)(
+                    recipient=task_owner,
+                    actor=user,
+                    title="Learning task set to 'redo' mode.",
+                    description=f"Your learning task '{task.title}' has ben set to redo, you are allowed to modify it and rated again.",
+                    code="info",
+                    url=f"/user/learning-task/{task.id}",
+                    is_push_notif=True,
+                )
+                return Response(
+                    {"error": "Successfully set to redo."},
+                    status=status.HTTP_202_ACCEPTED,
+                )
+
+        except LearningTask.DoesNotExist:
+            return Response(
+                {"error": "Task not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -370,6 +429,24 @@ class LearningTaskLimitView(APIView):
 class TaskBonusAPIView(APIView):
     authentication_classes = [JWTCookieAuthentication]
     permission_classes = [IsAuthenticated, IsAdminUser]
+
+    def get(self, request, task_id):
+        try:
+            task = LearningTask.objects.get(id=task_id)
+            task_bonus = TaskBonus.objects.get(task=task)
+            serializer = TaskBonusSerializer(task_bonus)
+            return Response(
+                {"task_bonus": serializer.data},
+                status=status.HTTP_200_OK,
+            )
+        except LearningTask.DoesNotExist:
+            return Response(
+                {"error": "Task not found."}, status=status.HTTP_404_NOT_FOUND
+            )
+        except TaskBonus.DoesNotExist:
+            return Response(
+                {"error": "Task bonus not found."}, status=status.HTTP_404_NOT_FOUND
+            )
 
     def post(self, request, task_id):
         try:
@@ -477,3 +554,26 @@ class TaskBonusAPIView(APIView):
             )
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class StudentLearningTaskView(APIView):
+    authentication_classes = [JWTCookieAuthentication]
+    # permission_classes = [IsAuthenticated, IsAdminUser]
+
+    def get(self, request, student_id):
+        try:
+            student = User.objects.get(id=student_id, role="user")
+        except User.DoesNotExist:
+            return Response(
+                {"error": "User not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        tasks = LearningTask.objects.filter(user=student).exclude(status="draft")
+
+        if not tasks.exists():
+            return Response(
+                {"warning": "No tasks yet"}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        serialzier = LearningTaskNonExtraSerializer(tasks, many=True)
+        return Response({"tasks": serialzier.data}, status=status.HTTP_200_OK)

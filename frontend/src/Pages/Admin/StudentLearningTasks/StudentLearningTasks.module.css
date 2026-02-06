@@ -1,0 +1,626 @@
+.container {
+  width: 100%;
+  min-height: 100vh;
+  background: var(--bg-body);
+}
+
+/* Header Styles */
+.header {
+  margin-bottom: 2rem;
+}
+
+.headerTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.backLink:hover {
+  background: var(--bg-body);
+  border-color: var(--border-hover);
+}
+
+.headerActions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.viewProfileBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.viewProfileBtn:hover {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+/* Student Header */
+.studentHeader {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 1rem;
+  padding: 2rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.avatarSection {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 2rem;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.avatarImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.studentInfo h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 0.25rem 0;
+  line-height: 1.2;
+}
+
+.studentEmail {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin: 0 0 1rem 0;
+}
+
+.studentMeta {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.studentId {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  background: var(--bg-body);
+  padding: 0.25rem 0.75rem;
+  border-radius: 1rem;
+  font-weight: 500;
+}
+
+.gradeBadge,
+.sectionBadge,
+.fieldBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  border-radius: 1rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background: var(--bg-body);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+/* Page Title */
+.pageTitle {
+  margin-bottom: 2rem;
+}
+
+.pageTitle h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 0.5rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pageSubtitle {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* Stats Grid */
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 2rem;
+}
+
+.statCard {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.statCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.statCard::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+}
+
+.statTotal::before {
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+}
+
+.statRating::before {
+  background: linear-gradient(90deg, #f6d365 0%, #fda085 100%);
+}
+
+.statPublic::before {
+  background: linear-gradient(90deg, #a8edea 0%, #fed6e3 100%);
+}
+
+.statReviewed::before {
+  background: linear-gradient(90deg, #d299c2 0%, #fef9d7 100%);
+}
+
+.statIcon {
+  width: 48px;
+  height: 48px;
+  border-radius: 0.75rem;
+  background: var(--bg-body);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-primary);
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.statContent h3 {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin: 0 0 0.25rem 0;
+}
+
+.statNumber {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1;
+}
+
+.statSub {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin-left: 0.125rem;
+}
+
+/* Status Summary */
+.statusSummary {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  padding: 1rem;
+  background: var(--bg-body);
+  border: 1px solid var(--border-color);
+  border-radius: 0.75rem;
+}
+
+.statusBadge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 2rem;
+  font-size: 0.875rem;
+}
+
+.statusDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.statusDraft {
+  background: #f59e0b;
+}
+
+.statusSubmitted {
+  background: #3b82f6;
+}
+
+.statusRated {
+  background: #10b981;
+}
+
+.statusText {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.statusSummaryInfo {
+  margin-left: auto;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+/* Controls Section */
+.controlsSection {
+  margin-bottom: 2rem;
+}
+
+.searchContainer {
+  margin-bottom: 1.5rem;
+}
+
+.searchBox {
+  position: relative;
+  max-width: 500px;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-secondary);
+  font-size: 1rem;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 0.875rem 1rem 0.875rem 3rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 0.75rem;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  transition: all 0.2s ease;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.filtersContainer {
+  display: flex;
+  align-items: flex-end;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.filterGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 180px;
+}
+
+.filterLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.filterSelect,
+.sortSelect {
+  padding: 0.625rem 0.875rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filterSelect:focus,
+.sortSelect:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.sortControls {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.sortSelect {
+  flex: 1;
+}
+
+.sortOrderBtn {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sortOrderBtn:hover {
+  background: var(--bg-body);
+  border-color: var(--border-hover);
+}
+
+.clearFiltersBtn {
+  padding: 0.625rem 1.25rem;
+  background: var(--bg-body);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.clearFiltersBtn:hover {
+  background: var(--bg-surface);
+  border-color: var(--border-hover);
+}
+
+/* Tasks Section */
+.tasksSection {
+  margin-bottom: 3rem;
+}
+
+.loadingTasks {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  text-align: center;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 1rem;
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  text-align: center;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 1rem;
+}
+
+.emptyIcon {
+  color: var(--border-color);
+  margin-bottom: 1.5rem;
+  opacity: 0.5;
+}
+
+.emptyState h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 0.5rem 0;
+}
+
+.emptyState p {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin: 0;
+  max-width: 300px;
+}
+
+.tasksGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 1.5rem;
+}
+
+/* Loading & Not Found */
+.loadingContainer,
+.notFound {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  text-align: center;
+  padding: 3rem 2rem;
+}
+
+.loadingSpinner {
+  width: 48px;
+  height: 48px;
+  border: 3px solid var(--border-color);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.notFound h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 0.5rem 0;
+}
+
+.notFound p {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin: 0 0 1.5rem 0;
+}
+
+.backBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.backBtn:hover {
+  background: var(--bg-body);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .headerTop {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .headerActions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .avatarSection {
+    flex-direction: column;
+    text-align: center;
+    gap: 1rem;
+  }
+
+  .studentMeta {
+    justify-content: center;
+  }
+
+  .statsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .statusSummary {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .statusSummaryInfo {
+    margin-left: 0;
+    margin-top: 0.5rem;
+  }
+
+  .filtersContainer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filterGroup {
+    min-width: auto;
+    width: 100%;
+  }
+
+  .tasksGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .studentInfo h1 {
+    font-size: 1.5rem;
+  }
+
+  .pageTitle h2 {
+    font-size: 1.25rem;
+  }
+
+  .statCard {
+    flex-direction: column;
+    text-align: center;
+    gap: 1rem;
+  }
+
+  .statIcon {
+    width: 40px;
+    height: 40px;
+    font-size: 1rem;
+  }
+
+  .statNumber {
+    font-size: 1.5rem;
+  }
+}

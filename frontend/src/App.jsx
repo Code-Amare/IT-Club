@@ -4,7 +4,6 @@ import Home from './Pages/Home/Home'
 import Profile from './Pages/Profile/Profile'
 import ProtectedRoute from './Components/ProtectedRoute/ProtectedRoute'
 import Login from './Pages/Login/Login'
-import Register from "./Pages/Register/Register"
 import NotFound from './Pages/NotFound/NotFound'
 import VerifyEmail from './Pages/VerifyEmail/VerifyEmail'
 import NeonToast from './Components/NeonToast/NeonToast'
@@ -21,9 +20,7 @@ import AdminDashboard from './Pages/Admin/Dashboard/AdminDashboard'
 import MyLearningTask from './Pages/User/MyLearningTask/MyLearningTask'
 import EmailLogin from "./Pages/EmailLogin/EmailLogin"
 import PublicRoute from './Components/PublicRoute/PublicRoute'
-// import AdminLearningTaskDetail from './Pages/Admin/LearningTaskDetail/LearningTaskDetail'
 import UserLearningTaskDetail from './Pages/User/LearningTaskDetail/LearningTaskDetail'
-import EditLearningTask from "./Pages/EditLearningTask/EditLearningTask"
 import LanguagesAdd from './Pages/Admin/LanguagesAdd/LanguagesAdd'
 import LanguagesList from './Pages/Admin/LanguagesList/LanguagesList'
 import LanguagesEdit from './Pages/Admin/LanguagesEdit/LanguagesEdit'
@@ -45,6 +42,7 @@ import AttendanceList from './Pages/Admin/AttendanceList/AttendanceList'
 import CreateAttendanceSession from './Pages/Admin/CreateAttendanceSession/CreateAttendanceSession'
 import SessionDetail from './Pages/Admin/SessionDetail/SessionDetail'
 import MarkAttendance from "./Pages/Admin/MarkAttendance/MarkAttendance"
+import StudentLearningTasks from './Pages/Admin/StudentLearningTasks/StudentLearningTasks'
 
 function App() {
   return (
@@ -57,7 +55,6 @@ function App() {
 
           <Route path="/" element={<Home />} />
           <Route path='/login' element={<Login />} />
-          <Route path='/register' element={<Register />} />
           <Route path='/verify-email' element={<VerifyEmail />} />
           <Route path='/login/email' element={<EmailLogin />} />
 
@@ -92,6 +89,7 @@ function App() {
           <Route path="/admin/attendance/create" element={<CreateAttendanceSession />} />
           <Route path="/admin/session/:sessionId" element={<SessionDetail />} />
           <Route path="/admin/session/edit/:sessionId" element={<MarkAttendance />} />
+          <Route path="/admin/student/task/:id" element={<StudentLearningTasks />} />
         </Route>
         <Route element={<ProtectedRoute requiredRole={["user"]} />}>
           <Route path='/user' element={<UserDashboard />} />
