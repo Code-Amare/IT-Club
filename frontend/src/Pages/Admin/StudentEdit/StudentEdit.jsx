@@ -60,7 +60,7 @@ export default function StudentEdit() {
     const fetchStudentData = async () => {
         try {
             setFetching(true);
-            const response = await api.get(`/api/management/student/${id}/`);
+            const response = await api.get(`/api/management/student/data/${id}/`);
 
             let student;
             if (response.data && response.data.student) {
@@ -68,7 +68,6 @@ export default function StudentEdit() {
             } else if (response.data && response.data.id) {
                 student = response.data;
             } else {
-                console.error("Unexpected response structure:", response.data);
                 throw new Error("Invalid response structure from server");
             }
             setOriginalData(student);
@@ -96,7 +95,6 @@ export default function StudentEdit() {
             }
 
         } catch (error) {
-            console.error("Error fetching student data:", error);
 
             if (error.response?.status === 404) {
                 neonToast.error("Student not found", "error");
@@ -285,7 +283,6 @@ export default function StudentEdit() {
             navigate(`/admin/student/${id}`);
 
         } catch (error) {
-            console.error("Error updating student:", error?.response?.data || error);
 
             if (error.response?.status === 400) {
                 const backendErrors = error.response.data?.errors || {};
@@ -338,7 +335,6 @@ export default function StudentEdit() {
             navigate("/admin/students");
             return true;
         } catch (error) {
-            console.error("Error deleting student:", error);
 
             if (error.response?.status === 404) {
                 neonToast.error("Student not found", "error");

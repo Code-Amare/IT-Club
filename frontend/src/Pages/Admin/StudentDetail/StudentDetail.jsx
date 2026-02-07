@@ -51,7 +51,6 @@ export default function StudentDetail() {
             setLoading(true);
             try {
                 const response = await api.get(`/api/management/student/${id}/`);
-                console.log("API Response:", response.data);
 
                 if (!mounted) return;
 
@@ -59,7 +58,6 @@ export default function StudentDetail() {
                 const studentData = response.data.student || response.data;
                 setStudent(studentData || null);
             } catch (error) {
-                console.error("Error fetching student details:", error);
                 neonToast.error("Failed to load student details", "error");
                 navigate("/admin/students");
             } finally {
@@ -111,7 +109,6 @@ export default function StudentDetail() {
             navigate("/admin/students");
             return true;
         } catch (error) {
-            console.error("Error deleting student:", error);
 
             if (error.response?.status === 404) {
                 neonToast.error("Student not found", "error");

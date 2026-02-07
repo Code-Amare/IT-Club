@@ -572,24 +572,24 @@ class StudentDataView(APIView):
             student = User.objects.get(id=student_id)
             student_serializer = UserInverseSerializer(student)
             student_data = student_serializer.data
-            task_limit = LearningTaskLimit.objects.get_or_create(user=student)
+            task_limit, created = LearningTaskLimit.objects.get_or_create(user=student)
 
             return Response(
                 {
                     "student": {
-                        "id": student_data.id,
-                        "full_name": student_data.full_name,
-                        "email": student_data.email,
-                        "gender": student_data.gender,
-                        "grade": student_data.profile.grade,
-                        "section": student_data.profile.section,
-                        "field": student_data.profile.field,
-                        "phone_number": student_data.profile.phone_number,
-                        "account": student_data.is_active,
+                        "id": student_data["id"],
+                        "full_name": student_data["full_name"],
+                        "email": student_data["email"],
+                        "gender": student_data["gender"],
+                        "grade": student_data["profile"]["grade"],
+                        "section": student_data["profile"]["section"],
+                        "field": student_data["profile"]["field"],
+                        "phone_number": student_data["profile"]["phone_number"],
+                        "account": student_data["profile"]["account"],
                         "account_status": (
-                            "active" if student_data.is_active else "inactive"
+                            "active" if student_data["is_active"] else "inactive"
                         ),
-                        "profile_pic_url": student_data.profile_pic_url,
+                        "profile_pic_url": student_data["profile_pic_url"],
                         "task_limit": {"limit": task_limit.limit},
                     }
                 },
