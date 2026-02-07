@@ -15,6 +15,8 @@ from .views import (
     PasswordChangeViaCodeView,
     EnableTwoFaView,
     DisableTwoFaView,
+    ToggleNotificationView,
+    TogglePushNotificationView,
 )
 
 urlpatterns = [
@@ -49,4 +51,6 @@ urlpatterns = [
     ),
     path("twofa/enable/", EnableTwoFaView.as_view(), name="enable-twofa"),
     path("twofa/disable/", DisableTwoFaView.as_view(), name="disable-twofa"),
+    path("notif/", ToggleNotificationView.as_view(), name="toggle-notif"),
+    path("push-notif/", TogglePushNotificationView.as_view(), name="toggle-push-notif"),
 ]

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../Context/UserContext";
 import api from "../../Utils/api";
@@ -13,38 +13,28 @@ import {
     FaCheck,
     FaExclamationTriangle,
     FaSearch,
-    FaAndroid,
     FaClock,
     FaCog,
-    FaRegBell,
-    FaRegBellSlash
 } from "react-icons/fa";
 import {
     MdNotifications,
     MdNotificationsOff,
-    MdEmail,
     MdErrorOutline,
     MdInfoOutline
 } from "react-icons/md";
 
 export default function Settings() {
-    const { user, refreshUser } = useUser();
+    const { user, getUser } = useUser();
     const navigate = useNavigate();
 
-    const [form, setForm] = useState({
-        emailNotifications: false,
-        pushNotifications: false,
-    });
-
     const [isLoading, setIsLoading] = useState(false);
-    const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(null);
     const [browserPermission, setBrowserPermission] = useState(
         "Notification" in window ? Notification.permission : "unsupported"
     );
 
-    // Initialize from API
+    // Initialize permission state
     useEffect(() => {
         if (user.isAuthenticated === null) return;
 
@@ -53,158 +43,107 @@ export default function Settings() {
             return;
         }
 
-        // Fetch current notification settings from API
-        fetchNotificationSettings();
-
         // Update permission state
         if ("Notification" in window) {
             setBrowserPermission(Notification.permission);
         }
     }, [user, navigate]);
 
-    const fetchNotificationSettings = async () => {
+    // Handle master notification toggle
+    const handleNotifToggle = async () => {
+        setIsLoading(true);
+        setError(null);
+
         try {
-            // Fetch email notifications
-            const notifRes = await api.get("/api/users/notif/");
-            const emailEnabled = notifRes.data?.notif_enabled || false;
+            const response = await api.post("/api/users/notif/");
 
-            // Fetch push notifications
-            const pushRes = await api.get("/api/users/push-notif/");
-            const pushEnabled = pushRes.data?.push_notif_enabled || false;
+            // Refresh user data from context
+            await getUser();
 
-            setForm({
-                emailNotifications: emailEnabled,
-                pushNotifications: pushEnabled,
-            });
+            const newState = response.data?.notif_enabled;
+            const action = newState ? "enabled" : "disabled";
+            const message = response.data?.message
+
+            if (response.data?.notif_enabled) {
+                neonToast.success(message)
+            }
+            else {
+                neonToast.warning(message)
+            }
+
         } catch (err) {
-            console.error("Error fetching notification settings:", err);
-            // Fallback to user context
-            setForm({
-                emailNotifications: user.notifEnabled || false,
-                pushNotifications: user.pushNotifEnabled || false,
-            });
+            const errorMessage = err.response?.data?.detail ||
+                err.response?.data?.error ||
+                "Failed to update notifications";
+            setError(errorMessage);
+            neonToast.error(errorMessage, "error");
+        } finally {
+            setIsLoading(false);
         }
     };
 
-    // Handle push notification toggle with permission logic
+    // Handle push notification toggle
     const handlePushToggle = async () => {
-        const newValue = !form.pushNotifications;
+        setIsLoading(true);
+        setError(null);
+
+        // Can't enable push if master notifications are disabled
+        if (!user.notifEnabled) {
+            setError("Enable notifications first to use push notifications");
+            setIsLoading(false);
+            return;
+        }
 
         // If trying to enable push notifications
-        if (newValue) {
+        if (!user.pushNotifEnabled) {
             // Check if browser permission is already granted
             if (browserPermission === "granted") {
                 // Permission is granted, we can enable push notifications
-                await updatePushSetting(true);
+                await togglePushSetting();
             } else if (browserPermission === "default") {
                 // Request permission first
                 const granted = await requestBrowserPermission();
                 if (granted) {
-                    await updatePushSetting(true);
+                    await togglePushSetting();
+                } else {
+                    setIsLoading(false);
                 }
             } else if (browserPermission === "denied") {
                 setError("Notifications are blocked. Please enable them in your browser settings.");
                 neonToast.error("Browser notifications are blocked. Enable them in browser settings.", "error");
+                setIsLoading(false);
             }
         } else {
             // Disabling push notifications
-            await updatePushSetting(false);
+            await togglePushSetting();
         }
     };
 
-    const updatePushSetting = async (value) => {
+    const togglePushSetting = async () => {
         try {
-            await api.patch("/api/users/push-notif/", {
-                push_notif_enabled: value
-            });
+            const response = await api.post("/api/users/push-notif/");
 
-            setForm(prev => ({ ...prev, pushNotifications: value }));
+            // Refresh user data from context
+            await getUser();
 
-            if (refreshUser) {
-                await refreshUser();
+            const newState = response.data?.push_notif_enabled;
+            const message = response.data?.message
+
+            if (response.data?.push_notif_enabled) {
+                neonToast.success(message)
             }
-
-            const action = value ? "enabled" : "disabled";
-            neonToast.success(`Push notifications ${action}`, "success");
+            else {
+                neonToast.warning(message)
+            }
 
         } catch (err) {
             const errorMessage = err.response?.data?.detail ||
                 err.response?.data?.error ||
                 "Failed to update push notifications";
-            neonToast.error(errorMessage, "error");
-        }
-    };
-
-    const handleEmailToggle = async () => {
-        const newValue = !form.emailNotifications;
-
-        try {
-            await api.patch("/api/users/notif/", {
-                notif_enabled: newValue
-            });
-
-            setForm(prev => ({ ...prev, emailNotifications: newValue }));
-
-            if (refreshUser) {
-                await refreshUser();
-            }
-
-            const action = newValue ? "enabled" : "disabled";
-            neonToast.success(`Email notifications ${action}`, "success");
-
-        } catch (err) {
-            const errorMessage = err.response?.data?.detail ||
-                err.response?.data?.error ||
-                "Failed to update email notifications";
-            neonToast.error(errorMessage, "error");
-        }
-    };
-
-    const handleSave = async () => {
-        setIsSaving(true);
-        setError(null);
-        setSuccess(null);
-
-        try {
-            // Save email notifications
-            await api.patch("/api/users/notif/", {
-                notif_enabled: form.emailNotifications
-            });
-
-            // Save push notifications
-            await api.patch("/api/users/push-notif/", {
-                push_notif_enabled: form.pushNotifications
-            });
-
-            // Refresh user context
-            if (refreshUser) {
-                await refreshUser();
-            }
-
-            setSuccess("Settings saved successfully!");
-            neonToast.success("Notification settings updated", "success");
-
-        } catch (err) {
-            const errorMessage = err.response?.data?.detail ||
-                err.response?.data?.error ||
-                "Failed to save settings";
             setError(errorMessage);
             neonToast.error(errorMessage, "error");
         } finally {
-            setIsSaving(false);
-        }
-    };
-
-    const handleReset = async () => {
-        try {
-            // Reset to current API values
-            await fetchNotificationSettings();
-
-            setError(null);
-            setSuccess("Settings refreshed");
-
-        } catch (err) {
-            setError("Failed to reset settings");
+            setIsLoading(false);
         }
     };
 
@@ -237,8 +176,8 @@ export default function Settings() {
     const checkNotificationStatus = () => {
         const status = `
 Notification Status:
-• Email Notifications: ${form.emailNotifications ? "Enabled" : "Disabled"}
-• Push Notifications: ${form.pushNotifications ? "Enabled" : "Disabled"}
+• Notifications: ${user.notifEnabled ? "Enabled" : "Disabled"}
+• Push Notifications: ${user.pushNotifEnabled ? "Enabled" : "Disabled"}
 • Browser Permission: ${browserPermission}
 • Browser Support: ${"Notification" in window ? "Yes" : "No"}
 • Page Active: ${document.hidden ? "Background" : "Foreground"}
@@ -247,6 +186,11 @@ Notification Status:
     };
 
     const handleTestPushNotification = () => {
+        if (!user.pushNotifEnabled) {
+            setError("Push notifications are not enabled");
+            return;
+        }
+
         if (browserPermission !== "granted") {
             if (browserPermission === "default") {
                 requestBrowserPermission();
@@ -285,21 +229,17 @@ Notification Status:
     // Sync push notifications with permission when permission changes
     useEffect(() => {
         // If permission is not granted, push notifications should be false
-        if (browserPermission !== "granted" && form.pushNotifications) {
+        if (browserPermission !== "granted" && user.pushNotifEnabled) {
+            // If push is enabled but permission is not granted, disable it
             // This handles the case where permission was revoked or denied
-            setForm(prev => ({ ...prev, pushNotifications: false }));
-
-            // Also update the backend if needed
+            // We'll disable it on the backend
             if (user.isAuthenticated) {
-                updatePushSetting(false).catch(console.error);
+                api.post("/api/users/push-notif/").then(() => {
+                    getUser();
+                }).catch(console.error);
             }
         }
-
-        // If permission is granted but user.pushNotifEnabled is false, sync with backend
-        if (browserPermission === "granted" && user.pushNotifEnabled === false && form.pushNotifications) {
-            setForm(prev => ({ ...prev, pushNotifications: false }));
-        }
-    }, [browserPermission, user.pushNotifEnabled]);
+    }, [browserPermission, user.pushNotifEnabled, user.isAuthenticated, getUser]);
 
     if (user.isAuthenticated === null) {
         return (
@@ -325,22 +265,16 @@ Notification Status:
                         </div>
                         <div className={styles.actionButtons}>
                             <AsyncButton
-                                onClick={handleReset}
+                                onClick={() => {
+                                    getUser();
+                                    setSuccess("Settings refreshed");
+                                }}
                                 loading={isLoading}
-                                disabled={isLoading || isSaving}
+                                disabled={isLoading}
                                 className={styles.resetBtn}
                             >
                                 <FaTimes />
                                 <span>Refresh</span>
-                            </AsyncButton>
-                            <AsyncButton
-                                onClick={handleSave}
-                                loading={isSaving}
-                                disabled={isLoading || isSaving}
-                                className={styles.saveBtn}
-                            >
-                                <FaSave />
-                                <span>Save Changes</span>
                             </AsyncButton>
                         </div>
                     </div>
@@ -363,30 +297,32 @@ Notification Status:
 
                 {/* Settings Grid */}
                 <div className={styles.settingsGrid}>
-                    {/* Email Notifications */}
+                    {/* Master Notifications */}
                     <div className={styles.settingCard}>
                         <div className={styles.settingContent}>
                             <div className={styles.settingIcon}>
-                                <MdEmail />
+                                {user.notifEnabled ? <MdNotifications /> : <MdNotificationsOff />}
                             </div>
                             <div className={styles.settingInfo}>
-                                <h3>Email Notifications</h3>
-                                <p>Receive email updates about your account activities</p>
+                                <h3>Notifications</h3>
+                                <p>Enable or disable all notifications from the system</p>
+                                <div className={styles.currentStatus}>
+                                    Current status:
+                                    <span className={user.notifEnabled ? styles.statusEnabled : styles.statusDisabled}>
+                                        {user.notifEnabled ? "Enabled" : "Disabled"}
+                                    </span>
+                                </div>
                             </div>
                         </div>
                         <div className={styles.toggleContainer}>
-                            <input
-                                type="checkbox"
-                                id="emailNotifications"
-                                checked={form.emailNotifications}
-                                onChange={handleEmailToggle}
-                                disabled={isLoading || isSaving}
-                                className={styles.toggleInput}
-                            />
-                            <label htmlFor="emailNotifications" className={styles.toggleLabel}>
-                                <span className={styles.toggleTrack}></span>
-                                <span className={styles.toggleThumb}></span>
-                            </label>
+                            <AsyncButton
+                                onClick={handleNotifToggle}
+                                loading={isLoading}
+                                disabled={isLoading}
+                                className={`${styles.toggleBtn} ${user.notifEnabled ? styles.toggleBtnEnabled : styles.toggleBtnDisabled}`}
+                            >
+                                {user.notifEnabled ? "Disable" : "Enable"}
+                            </AsyncButton>
                         </div>
                     </div>
 
@@ -394,43 +330,40 @@ Notification Status:
                     <div className={styles.settingCard}>
                         <div className={styles.settingContent}>
                             <div className={styles.settingIcon}>
-                                {form.pushNotifications ? <MdNotifications /> : <MdNotificationsOff />}
+                                {user.pushNotifEnabled ? <FaBell /> : <FaBell style={{ opacity: 0.5 }} />}
                             </div>
                             <div className={styles.settingInfo}>
                                 <h3>Push Notifications</h3>
-                                <p>Receive browser notifications for real-time updates</p>
+                                <p>Show browser popup notifications when enabled</p>
+                                {/* ADDED BACK: Permission status label */}
                                 <div className={styles.permissionStatus}>
                                     {browserPermission === "granted" && (
                                         <span className={styles.statusGranted}>
-                                            <FaCheck /> Permission granted
+                                            <FaCheck /> Browser permission granted
                                         </span>
                                     )}
                                     {browserPermission === "denied" && (
                                         <span className={styles.statusDenied}>
-                                            <FaTimes /> Permission denied
+                                            <FaTimes /> Browser permission denied
                                         </span>
                                     )}
                                     {browserPermission === "default" && (
                                         <span className={styles.statusDefault}>
-                                            <FaClock /> Click to enable
+                                            <FaClock /> Click to grant browser permission
                                         </span>
                                     )}
                                 </div>
                             </div>
                         </div>
                         <div className={styles.toggleContainer}>
-                            <input
-                                type="checkbox"
-                                id="pushNotifications"
-                                checked={form.pushNotifications}
-                                onChange={handlePushToggle}
-                                disabled={isLoading || isSaving || browserPermission === "denied" || browserPermission === "unsupported"}
-                                className={styles.toggleInput}
-                            />
-                            <label htmlFor="pushNotifications" className={styles.toggleLabel}>
-                                <span className={styles.toggleTrack}></span>
-                                <span className={styles.toggleThumb}></span>
-                            </label>
+                            <AsyncButton
+                                onClick={handlePushToggle}
+                                loading={isLoading}
+                                disabled={isLoading || !user.notifEnabled || browserPermission === "denied" || browserPermission === "unsupported"}
+                                className={`${styles.toggleBtn} ${user.pushNotifEnabled ? styles.toggleBtnEnabled : styles.toggleBtnDisabled}`}
+                            >
+                                {user.pushNotifEnabled ? "Disable" : "Enable"}
+                            </AsyncButton>
                         </div>
                     </div>
                 </div>
@@ -441,7 +374,7 @@ Notification Status:
                         <AsyncButton
                             onClick={handleTestPushNotification}
                             loading={false}
-                            disabled={!form.pushNotifications || browserPermission !== "granted"}
+                            disabled={!user.pushNotifEnabled || browserPermission !== "granted"}
                             className={styles.testBtn}
                         >
                             <FaBell />
@@ -456,7 +389,7 @@ Notification Status:
                             <span>Check Status</span>
                         </button>
 
-                        {browserPermission === "default" && (
+                        {browserPermission === "default" && user.notifEnabled && (
                             <button
                                 className={styles.enableBtn}
                                 onClick={requestBrowserPermission}
@@ -484,15 +417,15 @@ Notification Status:
                             </span>
                         </div>
                         <div className={styles.statusRow}>
-                            <span className={styles.statusLabel}>Email Notifications:</span>
-                            <span className={form.emailNotifications ? styles.active : styles.inactive}>
-                                {form.emailNotifications ? <><FaCheck /> Enabled</> : <><FaTimes /> Disabled</>}
+                            <span className={styles.statusLabel}>Notifications:</span>
+                            <span className={user.notifEnabled ? styles.active : styles.inactive}>
+                                {user.notifEnabled ? <><FaCheck /> Enabled</> : <><FaTimes /> Disabled</>}
                             </span>
                         </div>
                         <div className={styles.statusRow}>
                             <span className={styles.statusLabel}>Push Notifications:</span>
-                            <span className={form.pushNotifications ? styles.active : styles.inactive}>
-                                {form.pushNotifications ? <><FaCheck /> Enabled</> : <><FaTimes /> Disabled</>}
+                            <span className={user.pushNotifEnabled ? styles.active : styles.inactive}>
+                                {user.pushNotifEnabled ? <><FaCheck /> Enabled</> : <><FaTimes /> Disabled</>}
                             </span>
                         </div>
                     </div>
@@ -503,9 +436,10 @@ Notification Status:
                         <div className={styles.infoContent}>
                             <h4>How notifications work:</h4>
                             <ul>
-                                <li><strong>Email notifications</strong> are sent to your registered email address</li>
-                                <li><strong>Push notifications</strong> require browser permission to work</li>
-                                <li>If browser permissions are revoked, push notifications will be automatically disabled</li>
+                                <li><strong>Notifications</strong>: Master switch for all system notifications</li>
+                                <li><strong>Push Notifications</strong>: Browser popup notifications (requires browser permission)</li>
+                                <li>Push notifications only work when the main notifications are enabled</li>
+                                <li>If you disable notifications, push notifications will be automatically disabled</li>
                                 <li>You can manage browser permissions in your browser settings</li>
                             </ul>
                         </div>

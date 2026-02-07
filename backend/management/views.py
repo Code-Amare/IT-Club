@@ -10,12 +10,9 @@ from django.utils import timezone
 from django.http import HttpResponse
 from io import BytesIO
 from datetime import datetime
-import re
-import random
-import string
 from utils.auth import JWTCookieAuthentication, RolePermissionFactory
 from users.models import Profile
-from users.serializers import UserSerializer, ProfileSerializer
+from users.serializers import UserSerializer, ProfileSerializer, UserInverseSerializer
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 from .serializers import LanguageSerializer, FrameworkSerializer
@@ -37,7 +34,6 @@ from django.db.models import (
     When,
     Case,
     Value,
-    IntegerField,
     FloatField,
     Avg,
 )
@@ -448,8 +444,8 @@ class StudentUpdateView(APIView):
 
 class StudentDetailView(APIView):
     authentication_classes = [JWTCookieAuthentication]
+    permission_classes = [RolePermissionFactory(["admin", "staff"])]
 
-    # permission_classes = [RolePermissionFactory(["admin", "staff"])]
     def get(self, request, student_id):
         try:
             profile = Profile.objects.select_related("user").get(
@@ -564,6 +560,44 @@ class StudentDetailView(APIView):
             return Response(
                 {"error": str(e), "detail": "Failed to fetch student details"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+
+class StudentDataView(APIView):
+    authentication_classes = [JWTCookieAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, student_id):
+        try:
+            student = User.objects.get(id=student_id)
+            student_serializer = UserInverseSerializer(student)
+            student_data = student_serializer.data
+            task_limit = LearningTaskLimit.objects.get_or_create(user=student)
+
+            return Response(
+                {
+                    "student": {
+                        "id": student_data.id,
+                        "full_name": student_data.full_name,
+                        "email": student_data.email,
+                        "gender": student_data.gender,
+                        "grade": student_data.profile.grade,
+                        "section": student_data.profile.section,
+                        "field": student_data.profile.field,
+                        "phone_number": student_data.profile.phone_number,
+                        "account": student_data.is_active,
+                        "account_status": (
+                            "active" if student_data.is_active else "inactive"
+                        ),
+                        "profile_pic_url": student_data.profile_pic_url,
+                        "task_limit": {"limit": task_limit.limit},
+                    }
+                },
+                status=status.HTTP_200_OK,
+            )
+        except User.DoesNotExist:
+            return Response(
+                {"error": "User not found."}, status=status.HTTP_404_NOT_FOUND
             )
 
 

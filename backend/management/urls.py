@@ -24,6 +24,7 @@ from .views import (
     TaskLimitView,
     GetAllUsersView,
     DashboardView,
+    StudentDataView,
 )
 
 urlpatterns = [
@@ -53,6 +54,11 @@ urlpatterns = [
     ),
     path(
         "student/<int:student_id>/", StudentDetailView.as_view(), name="student-detail"
+    ),
+    path(
+        "student/data/<int:student_id>/",
+        StudentDataView.as_view(),
+        name="student-detail",
     ),
     path(
         "students/bulk-upload/",

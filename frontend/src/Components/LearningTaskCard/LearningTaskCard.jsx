@@ -8,15 +8,15 @@ import {
     FaRedo
 } from "react-icons/fa";
 import { FiGitPullRequest } from "react-icons/fi";
-import ConfirmAction from "../ConfirmAction/ConfirmAction"; // Adjust path as needed
+import { useUser } from "../../Context/UserContext";
 
 const LearningTaskCard = ({
     task,
-    isOwner = false,
     onEdit,
-    onDelete,
     onView
 }) => {
+    const { user } = useUser()
+    let isOwner = task.user.id == user.id
     const getStatusBadge = (status, grade) => {
         const badges = {
             draft: {
@@ -60,16 +60,7 @@ const LearningTaskCard = ({
         return task.status === "draft" || task.status === "redo";
     };
 
-    const canDeleteTask = () => {
-        return isOwner && task.status === "draft";
-    };
 
-    const handleDelete = (event, reason) => {
-        // The ConfirmAction passes (event, reason) to onConfirm
-        // We just need to call the parent's onDelete with task.id
-        // event.stopPropagation() is already handled by ConfirmAction
-        onDelete?.(task.id);
-    };
 
     return (
         <div className={styles.learningTaskCard} onClick={() => onView?.(task)}>
@@ -93,23 +84,7 @@ const LearningTaskCard = ({
                                 <FaEdit />
                             </button>
                         )}
-                        {canDeleteTask() && (
-                            <ConfirmAction
-                                title="Delete Learning Task"
-                                message={`Are you sure you want to delete "${task.title}"? This action cannot be undone. Your task credit will be returned.`}
-                                confirmText="Delete Task"
-                                cancelText="Cancel"
-                                onConfirm={handleDelete}
-                                requireReason={false} // Set to true if you want to require a reason
-                            >
-                                <button
-                                    className={styles.deleteBtn}
-                                    title="Delete task"
-                                >
-                                    <FaTrash />
-                                </button>
-                            </ConfirmAction>
-                        )}
+
                     </div>
                 )}
             </div>

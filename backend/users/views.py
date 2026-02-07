@@ -272,54 +272,6 @@ class VerifyCodeView(APIView):
             )
 
 
-# class RegisterView(APIView):
-#     def post(self, request):
-#         serializer = UserSerializer(data=request.data)
-#         email = request.data.get("email", "")
-#         if not email:
-#             return Response(
-#                 {"error": "Email is required."}, status=status.HTTP_400_BAD_REQUEST
-#             )
-#         if User.objects.filter(email=email).exists():
-#             return Response(
-#                 {"error": "User with this email already exists."},
-#                 status=status.HTTP_400_BAD_REQUEST,
-#             )
-
-#         if serializer.is_valid():
-#             with transaction.atomic():
-#                 user = serializer.save()
-#                 if IS_TWOFA_MANDATORY:
-#                     user.is_active = False
-#                     user.twofa_enabled = True
-#                 user.save()
-#                 email_ver = VerifyEmail.objects.create(user=user)
-
-#             try:
-#                 send_mail(
-#                     subject="Verify your email",
-#                     message=f"Your verification code is {email_ver.code}",
-#                     from_email=settings.EMAIL,
-#                     recipient_list=[user.email],
-#                 )
-#             except Exception as e:
-#                 return Response(
-#                     {
-#                         "error": "Unable to send verification email.",
-#                         "email_sent": False,
-#                     },
-#                     status=status.HTTP_400_BAD_REQUEST,
-#                 )
-
-#             return Response(
-#                 {"detail": "User created successfully.", "user": serializer.data},
-#                 status=status.HTTP_201_CREATED,
-#             )
-#         return Response(
-#             {"error": "Invalid user credintals."}, status=status.HTTP_400_BAD_REQUEST
-#         )
-
-
 class LoginView(APIView):
     def post(self, request):
         # Get and clean credentials
@@ -961,4 +913,42 @@ class DisableTwoFaView(APIView):
                 "twofa_enabled": False,
             },
             status=status.HTTP_200_OK,
+        )
+
+
+@method_decorator(csrf_protect, name="dispatch")
+class ToggleNotificationView(APIView):
+    authentication_classes = [JWTCookieAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        is_notif_enabled = user.notif_enabled
+
+        user.notif_enabled = not is_notif_enabled
+        user.save()
+        return Response(
+            {
+                "message": f"Notification {"Enabled" if not is_notif_enabled else "Disabled"} ",
+                "notif_enabled": not is_notif_enabled,
+            }
+        )
+
+
+@method_decorator(csrf_protect, name="dispatch")
+class TogglePushNotificationView(APIView):
+    authentication_classes = [JWTCookieAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        is_push_notif_enabled = user.push_notif_enabled
+
+        user.push_notif_enabled = not is_push_notif_enabled
+        user.save()
+        return Response(
+            {
+                "message": f"Push Notification {"Enabled" if not is_push_notif_enabled else "Disabled"} ",
+                "push_notif_enabled": not is_push_notif_enabled,
+            }
         )

@@ -30,13 +30,26 @@ import { useNotifContext } from "../../../Context/NotifContext";
 export default function LearningTasksList() {
     const { user } = useUser();
     const navigate = useNavigate();
+    const [taskLimit, setTaskLimit] = useState(0)
 
     const { updatePageTitle } = useNotifContext()
     useEffect(() => {
         updatePageTitle("Learning Tasks")
     }, [])
 
-    // State
+    useEffect(() => {
+        const getTaskLimit = async () => {
+            try {
+                const res = await api.get("api/learning-task/limit/")
+                setTaskLimit(res.data?.task_limit.limit)
+                console.log(res)
+            } catch (err) {
+                neonToast.error(err?.data?.error)
+            }
+        }
+        getTaskLimit()
+    }, [])
+
     const [tasks, setTasks] = useState([]);
     const [languages, setLanguages] = useState([]);
     const [frameworks, setFrameworks] = useState([]);
@@ -58,7 +71,6 @@ export default function LearningTasksList() {
         totalLikes: 0
     });
 
-    // Fetch tasks
     useEffect(() => {
         fetchTasks();
         fetchLanguagesAndFrameworks();
@@ -71,7 +83,6 @@ export default function LearningTasksList() {
             const tasksData = response.data.tasks || [];
             setTasks(tasksData);
 
-            // Calculate stats
             const publicTasks = tasksData.filter(t => t.is_public).length;
             const reviewedTasks = tasksData.filter(t => t.reviews && t.reviews.length > 0).length;
             const totalLikes = tasksData.reduce((acc, task) => acc + (task.likes_count || 0), 0);
@@ -110,12 +121,9 @@ export default function LearningTasksList() {
         }
     };
 
-    // Transform API task to card task format
     const transformTaskForCard = (task) => {
-        // Find admin review
         const adminReview = task.reviews?.find(review => review.user?.is_staff || review.is_admin);
 
-        // Determine status for component
         let componentStatus = task.status;
         if (task.status === "rated") componentStatus = "graded";
         if (task.status === "under_review") componentStatus = "submitted";
@@ -123,7 +131,6 @@ export default function LearningTasksList() {
             componentStatus = task.is_public ? "submitted" : "draft";
         }
 
-        // Get language and framework names from the arrays or IDs
         const languageNames = task.languages?.map(lang =>
             typeof lang === 'object' ? lang.name :
                 languages.find(l => l.id === lang)?.name || "Unknown"
@@ -154,11 +161,9 @@ export default function LearningTasksList() {
         };
     };
 
-    // Filter and sort tasks
     const filteredTasks = useMemo(() => {
         let result = [...tasks];
 
-        // Apply search
         if (searchQuery.trim()) {
             const query = searchQuery.toLowerCase().trim();
             result = result.filter(task => {
@@ -175,7 +180,6 @@ export default function LearningTasksList() {
             });
         }
 
-        // Apply filters
         if (filters.visibility) {
             if (filters.visibility === "public") {
                 result = result.filter(task => task.is_public === true);
@@ -202,7 +206,6 @@ export default function LearningTasksList() {
             );
         }
 
-        // Apply sorting
         result.sort((a, b) => {
             let aValue, bValue;
 
@@ -235,13 +238,11 @@ export default function LearningTasksList() {
         return result;
     }, [tasks, searchQuery, filters, languages, frameworks]);
 
-    // Handle task actions
     const handleViewTask = (task) => {
         navigate(`/user/learning-task/${task.id}`);
     };
 
     const handleEditTask = (task) => {
-        // First transform to get the card format status
         const cardTask = transformTaskForCard(task);
         if (cardTask.status === "draft") {
             navigate(`/user/learning-task/edit/${task.id}`);
@@ -251,18 +252,15 @@ export default function LearningTasksList() {
     };
 
     const handleDeleteTask = async (taskId, reason) => {
-        // Find the task from the original tasks array
         const task = tasks.find(t => t.id === taskId);
         const cardTask = task ? transformTaskForCard(task) : null;
 
-        // Check if user is owner
         const isOwner = user.username === task?.user;
         if (!isOwner) {
             neonToast.error("You can only delete your own tasks", "error");
             return;
         }
 
-        // Check if task is draft
         if (cardTask?.status !== "draft") {
             neonToast.error("Only draft tasks can be deleted", "error");
             return;
@@ -277,7 +275,6 @@ export default function LearningTasksList() {
             setTasks(prev => prev.filter(t => t.id !== taskId));
             neonToast.success("Task deleted successfully", "success");
 
-            // Refresh stats
             const newTasks = tasks.filter(t => t.id !== taskId);
             const publicTasks = newTasks.filter(t => t.is_public).length;
             const reviewedTasks = newTasks.filter(t => t.reviews && t.reviews.length > 0).length;
@@ -299,17 +296,10 @@ export default function LearningTasksList() {
         }
     };
 
-    // Check if user owns the task
     const isOwner = (task) => {
         return user.username === task.user;
     };
 
-    // Check if user can create tasks (only non-admin students)
-    const canCreateTask = () => {
-        return user.isAuthenticated && !user.is_staff;
-    };
-
-    // Clear all filters
     const clearFilters = () => {
         setFilters({
             visibility: "",
@@ -322,7 +312,6 @@ export default function LearningTasksList() {
         setShowAdvancedFilters(false);
     };
 
-    // Toggle sort order
     const toggleSort = (field) => {
         setFilters(prev => ({
             ...prev,
@@ -335,7 +324,6 @@ export default function LearningTasksList() {
         <div className={styles.container}>
             <SideBar>
                 <div className={styles.LearningTasksList}>
-                    {/* Header */}
                     <header className={styles.header}>
                         <div className={styles.headerContent}>
                             <div className={styles.headerText}>
@@ -345,21 +333,20 @@ export default function LearningTasksList() {
                                 </p>
                             </div>
                             <div className={styles.headerActions}>
-                                {canCreateTask() && (
-                                    <Link
-                                        to="/user/learning-task/create"
-                                        className={styles.primaryBtn}
-                                    >
-                                        <FaPlus />
-                                        <span className={styles.btnTextFull}>Create Task</span>
-                                        <span className={styles.btnTextShort}>Create</span>
-                                    </Link>
-                                )}
+                                <button
+                                    onClick={() => taskLimit !== 0 && navigate("/user/learning-task/create")}
+                                    className={`${styles.primaryBtn} ${taskLimit === 0 ? styles.disabledBtn : ''}`}
+                                    disabled={taskLimit === 0}
+                                    title={taskLimit === 0 ? "You cannot create tasks" : "Create New Learning Task"}
+                                >
+                                    <FaPlus />
+                                    <span className={styles.btnTextFull}>Create Task ({taskLimit})</span>
+                                    <span className={styles.btnTextShort}>Create</span>
+                                </button>
                             </div>
                         </div>
                     </header>
 
-                    {/* Stats Bar */}
                     <div className={styles.statsGrid}>
                         <div className={styles.statCard}>
                             <div className={styles.statIcon} style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)' }}>
@@ -399,7 +386,6 @@ export default function LearningTasksList() {
                         </div>
                     </div>
 
-                    {/* Search and Filters */}
                     <div className={styles.filtersCard}>
                         <div className={styles.searchSection}>
                             <div className={styles.searchInputWrapper}>
@@ -451,7 +437,6 @@ export default function LearningTasksList() {
                             )}
                         </div>
 
-                        {/* Advanced Filters */}
                         {showAdvancedFilters && (
                             <div className={styles.advancedFilters}>
                                 <div className={styles.filterGrid}>
@@ -521,7 +506,6 @@ export default function LearningTasksList() {
                         )}
                     </div>
 
-                    {/* Results Header */}
                     <div className={styles.resultsHeader}>
                         <div className={styles.resultsInfo}>
                             <h3>Learning Tasks ({filteredTasks.length})</h3>
@@ -544,7 +528,6 @@ export default function LearningTasksList() {
                         </div>
                     </div>
 
-                    {/* Loading State */}
                     {loading ? (
                         <div className={styles.loadingContainer}>
                             <div className={styles.loadingSpinner}></div>
@@ -559,15 +542,15 @@ export default function LearningTasksList() {
                                     ? "No learning tasks available yet."
                                     : "Try adjusting your search or filters"}
                             </p>
-                            {canCreateTask() && tasks.length === 0 && (
-                                <Link
-                                    to="/user/learning-task/create"
-                                    className={styles.createTaskBtn}
-                                >
-                                    <FaPlus />
-                                    Create First Task
-                                </Link>
-                            )}
+                            <button
+                                onClick={() => taskLimit !== 0 && navigate("/user/learning-task/create")}
+                                className={`${styles.createTaskBtn} ${taskLimit === 0 ? styles.disabledBtn : ''}`}
+                                disabled={taskLimit === 0}
+                                title={taskLimit === 0 ? "You cannot create tasks" : "Create First Task"}
+                            >
+                                <FaPlus />
+                                Create First Task
+                            </button>
                         </div>
                     ) : (
                         <div className={styles.tasksGrid}>

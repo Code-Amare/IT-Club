@@ -5,6 +5,7 @@ import api from "../../../Utils/api";
 import { neonToast } from "../../../Components/NeonToast/NeonToast";
 import AsyncButton from "../../../Components/AsyncButton/AsyncButton";
 import SideBar from "../../../Components/SideBar/SideBar";
+import ConfirmAction from "../../../Components/ConfirmAction/ConfirmAction"; // Import ConfirmAction
 import {
     FaArrowLeft,
     FaCode,
@@ -315,10 +316,6 @@ export default function LearningTaskDetail() {
 
     // Handle delete task
     const handleDeleteTask = async () => {
-        if (!window.confirm("Are you sure you want to delete this task? This action cannot be undone.")) {
-            return;
-        }
-
         try {
             await api.delete(`/api/learning-task/delete/${id}/`);
             neonToast.success("Task deleted successfully", "success");
@@ -426,13 +423,20 @@ export default function LearningTaskDetail() {
                                         >
                                             <FaEdit />
                                         </button>
-                                        <button
-                                            className={styles.deleteBtn}
-                                            onClick={handleDeleteTask}
-                                            title="Delete learning task"
+                                        <ConfirmAction
+                                            title="Delete Learning Task"
+                                            message="Are you sure you want to delete this task? This action cannot be undone."
+                                            confirmText="Delete"
+                                            cancelText="Cancel"
+                                            onConfirm={handleDeleteTask}
                                         >
-                                            <FaTrash />
-                                        </button>
+                                            <button
+                                                className={styles.deleteBtn}
+                                                title="Delete learning task"
+                                            >
+                                                <FaTrash />
+                                            </button>
+                                        </ConfirmAction>
                                     </>
                                 )}
                             </div>
