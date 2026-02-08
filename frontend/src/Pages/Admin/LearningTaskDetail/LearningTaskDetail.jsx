@@ -40,7 +40,7 @@ import styles from "./LearningTaskDetail.module.css";
 
 export default function LearningTaskDetail() {
     const navigate = useNavigate();
-    const { id } = useParams();
+    const { taskId } = useParams();
     const { user } = useUser();
 
     const [loading, setLoading] = useState(true);
@@ -63,15 +63,15 @@ export default function LearningTaskDetail() {
 
     // Fetch task data
     useEffect(() => {
-        if (id) {
+        if (taskId) {
             fetchTaskData();
         }
-    }, [id]);
+    }, [taskId]);
 
     const fetchTaskData = async () => {
         setLoading(true);
         try {
-            const taskResponse = await api.get(`/api/learning-task/${id}/`);
+            const taskResponse = await api.get(`/api/learning-task/${taskId}/`);
             const responseData = taskResponse.data;
 
             const taskData = responseData.task || responseData;
@@ -120,7 +120,7 @@ export default function LearningTaskDetail() {
 
         setSettingToRedo(true);
         try {
-            await api.post(`/api/learning-task/redo/${id}/`);
+            await api.post(`/api/learning-task/redo/${taskId}/`);
             neonToast.success("Task set to redo successfully", "success");
             await fetchTaskData(); // Refresh task data
         } catch (error) {
@@ -139,7 +139,7 @@ export default function LearningTaskDetail() {
         }
 
         try {
-            const response = await api.post(`/api/learning-task/like/${id}/`);
+            const response = await api.post(`/api/learning-task/like/${taskId}/`);
             setLiked(response.data.action === "liked");
             setLikeCount(response.data.total_likes || response.data.likes_count);
 
@@ -185,8 +185,8 @@ export default function LearningTaskDetail() {
         setSubmittingReview(true);
         try {
             const endpoint = userReview
-                ? `/api/learning-task/review/edit/${id}/`
-                : `/api/learning-task/review/create/${id}/`;
+                ? `/api/learning-task/review/edit/${taskId}/`
+                : `/api/learning-task/review/create/${taskId}/`;
 
             const method = userReview ? "patch" : "post";
 
@@ -223,7 +223,7 @@ export default function LearningTaskDetail() {
     const handleDeleteReview = async () => {
         setSubmittingDelete(true);
         try {
-            await api.delete(`/api/management/review/delete/${id}/`);
+            await api.delete(`/api/management/review/delete/${taskId}/`);
             neonToast.success("Review deleted successfully!", "success");
             await fetchTaskData();
         } catch (error) {
@@ -276,7 +276,7 @@ export default function LearningTaskDetail() {
     // Handle delete learning task
     const handleDeleteTask = async () => {
         try {
-            await api.delete(`/api/management/task/delete/${id}/`);
+            await api.delete(`/api/management/task/delete/${taskId}/`);
             neonToast.success("Learning task deleted successfully!", "success");
             navigate("/admin");
         } catch (error) {

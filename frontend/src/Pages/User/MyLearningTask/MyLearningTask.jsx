@@ -64,10 +64,8 @@ const MyLearningTask = () => {
                         const grade = adminReview?.rating || 0;
                         const adminFeedback = adminReview?.feedback || "";
 
-                        // Determine status for component
+                        // Determine status for component: only draft, redo, under_review, rated
                         let componentStatus = task.status;
-                        if (task.status === "rated") componentStatus = "graded";
-                        if (task.status === "under_review") componentStatus = "submitted";
 
                         return {
                             id: task.id,
@@ -134,9 +132,6 @@ const MyLearningTask = () => {
 
     // Handle task deletion (only for drafts)
     const handleDeleteTask = async (taskId, reason) => {
-        // reason parameter comes from ConfirmAction component (if requireReason is true)
-        // We don't need to use it here, but the LearningTaskCard passes it
-
         const task = learningTasks.find(t => t.id === taskId);
         if (task?.status !== "draft") {
             neonToast.error("Only draft tasks can be deleted.", "error");
@@ -151,7 +146,6 @@ const MyLearningTask = () => {
                 ...prev,
                 task_count: prev.task_count - 1,
                 task_draft: prev.task_draft - 1,
-                // When deleting a draft, the task_limit should increase by 1 (return the credit)
                 task_limit: prev.task_limit + 1
             }));
             neonToast.success("Task deleted. Credit returned.", "success");

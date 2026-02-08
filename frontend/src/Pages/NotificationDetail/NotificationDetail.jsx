@@ -157,7 +157,7 @@ export default function NotificationDetail() {
                 <div className={styles.stickyHeader}>
                     <button
                         onClick={() => {
-                            navigate(-1)
+                            navigate("/notifications")
                         }}
 
                         className={styles.backButton}

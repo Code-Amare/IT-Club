@@ -124,11 +124,10 @@ export default function LearningTasksList() {
     const transformTaskForCard = (task) => {
         const adminReview = task.reviews?.find(review => review.user?.is_staff || review.is_admin);
 
+        // Keep original four statuses only
         let componentStatus = task.status;
-        if (task.status === "rated") componentStatus = "graded";
-        if (task.status === "under_review") componentStatus = "submitted";
         if (!componentStatus) {
-            componentStatus = task.is_public ? "submitted" : "draft";
+            componentStatus = task.is_public ? "under_review" : "draft";
         }
 
         const languageNames = task.languages?.map(lang =>

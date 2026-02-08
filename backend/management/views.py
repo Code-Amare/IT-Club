@@ -516,7 +516,9 @@ class StudentDetailView(APIView):
                 ),
             }
 
-            tasks_qs = LearningTask.objects.filter(user=user)
+            tasks_qs = LearningTask.objects.filter(user=user).exclude(status="draft")
+            for task in tasks_qs:
+                print(task.title)
 
             total_tasks_created = tasks_qs.count()
 

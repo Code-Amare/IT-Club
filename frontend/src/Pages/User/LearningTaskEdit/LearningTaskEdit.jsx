@@ -162,7 +162,7 @@ export default function LearningTaskEdit() {
             if (err.response?.data?.errors) {
                 setErrors(err.response.data.errors);
             }
-            neonToast.error("Failed to update task");
+            neonToast.error(err.response?.data?.error || "Something went wrong.");
         } finally {
             setLoading(false);
         }

@@ -83,7 +83,7 @@ function App() {
           <Route path="/admin/frameworks/add" element={<FrameworkAdd />} />
           <Route path="/admin/frameworks/edit/:id" element={<FrameworksEdit />} />
           <Route path="/admin/learning-tasks" element={<AdminLearningTasksList />} />
-          <Route path="/admin/learning-task/:id" element={<AdminLearningTaskDetail />} />
+          <Route path="/admin/learning-task/:taskId" element={<AdminLearningTaskDetail />} />
           <Route path="/admin/task-limit" element={<TaskLimitBulk />} />
           <Route path="/admin/attendance" element={<AttendanceList />} />
           <Route path="/admin/attendance/create" element={<CreateAttendanceSession />} />

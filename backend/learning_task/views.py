@@ -166,9 +166,11 @@ class LearningTaskAPIView(APIView):
             task = LearningTask.objects.get(id=task_id, user=request.user)
             task_limit = LearningTaskLimit.objects.get(user=request.user)
 
-            if task.status == "rated":
+            if task.status in ["rated", "redo"]:
                 return Response(
-                    {"error": "Tasks cannot be deleted after being rated."},
+                    {
+                        "error": "Tasks cannot be deleted after being rated or set to redo."
+                    },
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             with transaction.atomic():
@@ -232,7 +234,8 @@ class TaskReviewAPIView(APIView):
                         user=request.user, task=task, is_admin=request.user.is_staff
                     )
                     return Response(serializer.data, status=status.HTTP_201_CREATED)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                print("It doesn't work")
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except LearningTask.DoesNotExist:
             return Response(
                 {"error": "Task not found"}, status=status.HTTP_404_NOT_FOUND
@@ -273,18 +276,23 @@ class TaskReviewAPIView(APIView):
                 )
 
             serializer = TaskReviewSerializer(review, data=request.data, partial=True)
-            if serializer.is_valid():
-                async_to_sync(notify_user)(
-                    recipient=task_owner,
-                    actor=user,
-                    title="Learning task review updated",
-                    description="Your learning task review has been updated.",
-                    code="info",
-                    url=f"/user/learning-task/{task.id}",
-                    is_push_notif=True,
-                )
-                serializer.save()
-                return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
+            with transaction.atomic():
+                if serializer.is_valid():
+                    task.status = "rated"
+                    task.save()
+                    print(task.status)
+                    print("Hey")
+                    async_to_sync(notify_user)(
+                        recipient=task_owner,
+                        actor=user,
+                        title="Learning task review updated",
+                        description="Your learning task review has been updated.",
+                        code="info",
+                        url=f"/user/learning-task/{task.id}",
+                        is_push_notif=True,
+                    )
+                    serializer.save()
+                    return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         except LearningTask.DoesNotExist:
@@ -328,6 +336,7 @@ class TaskToRedoView(APIView):
 
                 task.status = "redo"
                 task.save()
+                print("successfully set to redo")
 
                 async_to_sync(notify_user)(
                     recipient=task_owner,
@@ -558,7 +567,7 @@ class TaskBonusAPIView(APIView):
 
 class StudentLearningTaskView(APIView):
     authentication_classes = [JWTCookieAuthentication]
-    # permission_classes = [IsAuthenticated, IsAdminUser]
+    permission_classes = [IsAuthenticated, IsAdminUser]
 
     def get(self, request, student_id):
         try:

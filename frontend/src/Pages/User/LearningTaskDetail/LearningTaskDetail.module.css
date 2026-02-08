@@ -128,14 +128,26 @@
   border-color: var(--primary);
 }
 
+.likeBtn.liked:hover {
+  background: var(--primary-light);
+}
+
 .editBtn {
   color: var(--info);
   border-color: var(--info);
 }
 
+.editBtn:hover {
+  background: var(--info-light);
+}
+
 .deleteBtn {
   color: var(--danger);
   border-color: var(--danger);
+}
+
+.deleteBtn:hover {
+  background: var(--danger-light);
 }
 
 /* ====== STATUS BANNER ====== */
@@ -170,17 +182,20 @@
   align-items: start;
 }
 
+/* ====== LEFT AND RIGHT COLUMNS ====== */
+.leftColumn,
+.rightColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
 /* ====== SECTIONS (Cards) ====== */
 .section {
   background: var(--bg-surface);
   border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 24px;
-  margin-bottom: 24px;
-}
-
-.section:last-child {
-  margin-bottom: 0;
 }
 
 .sectionHeader {
@@ -197,11 +212,22 @@
   font-weight: 600;
   color: var(--text-primary);
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .sectionHeader svg {
   color: var(--text-primary);
   font-size: 18px;
+}
+
+/* Review stats in section header */
+.reviewStats {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 400;
+  margin-left: auto;
 }
 
 /* ====== DESCRIPTION ====== */
@@ -229,10 +255,12 @@
 
 .githubLink:hover {
   background: var(--bg-surface);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .githubLink svg {
-  color: var(--text-primary);
+  color: var(--text-secondary);
 }
 
 .githubLink span {
@@ -274,6 +302,12 @@
   background: var(--bg-body);
   border: 1px solid var(--border-color);
   border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.techItem:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .techColor {
@@ -327,21 +361,27 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 8px;
+  padding: 12px 8px;
   background: var(--bg-body);
   border: 1px solid var(--border-color);
   border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.statItem:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .statValue {
-  font-size: 16px;
+  font-size: 20px;
   font-weight: 700;
   color: var(--text-primary);
   margin-bottom: 2px;
 }
 
 .statLabel {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -357,9 +397,7 @@
 }
 
 .formGroup label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  display: block;
   font-size: 14px;
   font-weight: 500;
   color: var(--text-primary);
@@ -383,7 +421,8 @@
 }
 
 .starBtn:hover {
-  transform: scale(1.1);
+  transform: scale(1.2);
+  color: #fbbf24;
 }
 
 .starBtn.active {
@@ -393,6 +432,7 @@
 .ratingValue {
   font-size: 13px;
   color: var(--text-secondary);
+  margin-top: 4px;
 }
 
 .errorText {
@@ -413,36 +453,75 @@
   resize: vertical;
   min-height: 100px;
   font-family: inherit;
+  transition: all 0.2s ease;
 }
 
 .feedbackInput:focus {
   outline: none;
   border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
-.errorInput {
+.feedbackInput.errorInput {
   border-color: var(--danger);
 }
 
-.submitReviewBtn {
+.charCount {
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-align: right;
+  margin-top: 4px;
+}
+
+/* Form Actions */
+.formActions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.submitReviewBtn,
+.deleteReviewBtn {
+  flex: 1;
   padding: 12px 20px;
   border-radius: 8px;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
-  border: 1px solid var(--primary);
-  background: var(--primary);
-  color: white;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  width: 100%;
+  min-height: 44px;
 }
 
-.submitReviewBtn:hover {
+.submitReviewBtn {
+  border: 1px solid var(--primary);
+  background: var(--primary);
+  color: white;
+}
+
+.submitReviewBtn:hover:not(:disabled) {
   background: var(--primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+}
+
+.submitReviewBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.deleteReviewBtn {
+  border: 1px solid var(--danger);
+  background: var(--bg-surface);
+  color: var(--danger);
+}
+
+.deleteReviewBtn:hover {
+  background: var(--danger);
+  color: white;
 }
 
 /* ====== REVIEWS LIST ====== */
@@ -457,11 +536,25 @@
   background: var(--bg-body);
   border: 1px solid var(--border-color);
   border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.reviewItem:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .reviewItem.currentUserReview {
   background: var(--bg-surface);
   border-color: var(--primary);
+}
+
+.reviewItem.adminReview {
+  border-left: 4px solid var(--primary);
+}
+
+.reviewItem.userReview {
+  border-left: 4px solid var(--border-color);
 }
 
 .reviewHeader {
@@ -500,7 +593,8 @@
 
 .roleBadgeOwner,
 .roleBadgeAdmin,
-.roleBadgeUser {
+.roleBadgeUser,
+.roleBadgeYou {
   padding: 4px 8px;
   border-radius: 4px;
   font-size: 10px;
@@ -510,21 +604,27 @@
 }
 
 .roleBadgeOwner {
-  background: var(--bg-surface);
+  background: var(--accent-light);
   color: var(--accent);
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--accent);
 }
 
 .roleBadgeAdmin {
-  background: var(--bg-surface);
+  background: var(--primary-light);
   color: var(--primary);
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--primary);
 }
 
 .roleBadgeUser {
   background: var(--bg-surface);
   color: var(--text-secondary);
   border: 1px solid var(--border-color);
+}
+
+.roleBadgeYou {
+  background: var(--info-light);
+  color: var(--info);
+  border: 1px solid var(--info);
 }
 
 .reviewRating {
@@ -562,6 +662,13 @@
   font-size: 12px;
 }
 
+.updatedNote {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-left: 8px;
+  font-style: italic;
+}
+
 .reviewFeedback {
   color: var(--text-primary);
   font-size: 14px;
@@ -574,6 +681,9 @@
   padding: 40px 20px;
   text-align: center;
   color: var(--text-secondary);
+  background: var(--bg-body);
+  border: 1px dashed var(--border-color);
+  border-radius: 8px;
 }
 
 .noReviews svg {
@@ -585,6 +695,8 @@
 .noReviews p {
   margin: 0;
   font-size: 14px;
+  max-width: 300px;
+  margin: 0 auto;
 }
 
 /* ====== TASK INFORMATION ====== */
@@ -617,25 +729,40 @@
   font-size: 13px;
   color: var(--text-primary);
   font-weight: 500;
-}
-
-.ownerInfo {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
 /* Status Colors */
-.status-draft {
+.metaValue.status-draft {
   color: var(--warning);
 }
 
-.status-under_review {
+.metaValue.status-under_review {
   color: var(--info);
 }
 
-.status-rated {
+.metaValue.status-rated {
   color: var(--success);
+}
+
+.metaValue.status-redo {
+  color: var(--danger);
+}
+
+.metaValue.public {
+  color: var(--success);
+}
+
+.metaValue.private {
+  color: var(--danger);
+}
+
+.ownerInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 /* ====== PROFILE PICTURE ====== */
@@ -651,6 +778,11 @@
   height: 32px;
 }
 
+.profilePicMedium {
+  width: 48px;
+  height: 48px;
+}
+
 .profilePicPlaceholder {
   display: flex;
   align-items: center;
@@ -660,9 +792,11 @@
 }
 
 .profilePicPlaceholder.profilePicSmall {
-  width: 32px;
-  height: 32px;
   font-size: 14px;
+}
+
+.profilePicPlaceholder.profilePicMedium {
+  font-size: 18px;
 }
 
 /* ====== LOADING AND ERROR STATES ====== */
@@ -678,7 +812,7 @@
 }
 
 .errorContainer svg {
-  font-size: 36px;
+  font-size: 48px;
   color: var(--danger);
 }
 
@@ -692,6 +826,8 @@
 .errorContainer p {
   color: var(--text-secondary);
   margin: 0;
+  font-size: 14px;
+  max-width: 400px;
 }
 
 .primaryBtn {
@@ -709,10 +845,13 @@
 
 .primaryBtn:hover {
   background: var(--primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
 }
 
 .loadingContainer p {
   color: var(--text-secondary);
+  font-size: 14px;
 }
 
 .loadingSpinner {
@@ -765,18 +904,23 @@
 
   .reviewHeader {
     flex-direction: column;
+    align-items: flex-start;
   }
 
   .reviewerInfo {
     min-width: 100%;
   }
+
+  .reviewRating {
+    align-self: flex-start;
+  }
+
+  .formActions {
+    flex-direction: column;
+  }
 }
 
 @media (max-width: 480px) {
-  .headerMain {
-    flex-direction: column;
-  }
-
   .titleSection h1 {
     font-size: 20px;
   }
@@ -795,5 +939,20 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 4px;
+  }
+
+  .section {
+    padding: 16px;
+  }
+
+  .sectionHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .reviewStats {
+    margin-left: 0;
+    align-self: flex-start;
   }
 }

@@ -5,7 +5,7 @@ const SiteContext = createContext();
 
 const SiteProvider = ({ children }) => {
     const [site, setSite] = useState({
-        brandName: "",
+        brandName: "CSSS IT Club",
         isTwoFaMandatory: false,
     });
 
@@ -25,7 +25,7 @@ const SiteProvider = ({ children }) => {
     };
 
     useEffect(() => {
-        getSiteInfo();
+        // getSiteInfo();
     }, []);
 
     return (

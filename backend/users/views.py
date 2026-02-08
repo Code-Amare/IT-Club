@@ -520,7 +520,7 @@ class RefreshTokenView(APIView):
             return response
         except TokenError:
             return Response(
-                {"detail": "Invalid or expired refresh token"},
+                {"detail": "Invalid or expired refresh token", "refresh": True},
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 
