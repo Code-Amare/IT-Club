@@ -66,7 +66,26 @@ export default function Students() {
         fetchStudents();
     }, [user, navigate]);
 
+    // Extract unique grades and sections from students data
+    useEffect(() => {
+        if (students.length > 0) {
+            // Extract unique grades
+            const grades = [...new Set(students
+                .map(student => student.grade)
+                .filter(grade => grade !== null && grade !== undefined)
+                .sort((a, b) => a - b)
+            )];
+            setAvailableGrades(grades);
 
+            // Extract unique sections
+            const sections = [...new Set(students
+                .map(student => student.section)
+                .filter(section => section !== null && section !== undefined)
+                .sort()
+            )];
+            setAvailableSections(sections);
+        }
+    }, [students]);
 
     const fetchStudents = async (page = 1) => {
         setStudentsLoading(true);
@@ -86,11 +105,9 @@ export default function Students() {
             });
 
             const response = await api.get("/api/management/students/", { params });
-            console.log(response.data)
             const data = response.data;
 
-            setStats(response.data.stats)
-
+            setStats(data.stats || { total: 0, active: 0, inactive: 0, attendance_avg: 0 });
             setStudents(data.students || []);
             setPagination(data.pagination || {
                 current_page: 1,
@@ -99,11 +116,6 @@ export default function Students() {
                 total_pages: 1,
             });
 
-            // Update available filters if returned
-            if (data.filters) {
-                setAvailableGrades(data.filters.available_grades || availableGrades);
-                setAvailableSections(data.filters.available_sections || availableSections);
-            }
         } catch (error) {
             console.error("Error fetching students:", error);
             neonToast.error("Failed to load students", "error");
@@ -199,6 +211,13 @@ export default function Students() {
         }
     };
 
+    // Handle enter key in search
+    const handleKeyPress = (e) => {
+        if (e.key === 'Enter') {
+            handleSearch();
+        }
+    };
+
     if (loading) {
         return (
             <div className={styles.container}>
@@ -248,7 +267,7 @@ export default function Students() {
                         </div>
                         <div className={styles.statContent}>
                             <h3>Total Students</h3>
-                            <p className={styles.statValue}>{stats.total}</p>
+                            <p className={styles.statValue}>{stats.total || 0}</p>
                         </div>
                     </div>
 
@@ -258,7 +277,7 @@ export default function Students() {
                         </div>
                         <div className={styles.statContent}>
                             <h3>Active</h3>
-                            <p className={styles.statValue}>{stats.active}</p>
+                            <p className={styles.statValue}>{stats.active || 0}</p>
                         </div>
                     </div>
 
@@ -268,7 +287,7 @@ export default function Students() {
                         </div>
                         <div className={styles.statContent}>
                             <h3>Inactive</h3>
-                            <p className={styles.statValue}>{stats.inactive}</p>
+                            <p className={styles.statValue}>{stats.inactive || 0}</p>
                         </div>
                     </div>
 
@@ -299,6 +318,7 @@ export default function Students() {
                             <button
                                 onClick={handleClearFilters}
                                 className={styles.clearButton}
+                                disabled={studentsLoading}
                             >
                                 Clear All
                             </button>
@@ -318,7 +338,7 @@ export default function Students() {
                                             placeholder="Search by name, email, grade, etc."
                                             value={filters.search}
                                             onChange={(e) => handleFilterChange("search", e.target.value)}
-                                            onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                                            onKeyPress={handleKeyPress}
                                         />
                                     </div>
                                 </div>
@@ -329,6 +349,7 @@ export default function Students() {
                                     <select
                                         value={filters.grade}
                                         onChange={(e) => handleFilterChange("grade", e.target.value)}
+                                        disabled={availableGrades.length === 0}
                                     >
                                         <option value="">All Grades</option>
                                         {availableGrades.map(grade => (
@@ -341,6 +362,7 @@ export default function Students() {
                                     <select
                                         value={filters.section}
                                         onChange={(e) => handleFilterChange("section", e.target.value)}
+                                        disabled={availableSections.length === 0}
                                     >
                                         <option value="">All Sections</option>
                                         {availableSections.map(section => (
@@ -429,9 +451,10 @@ export default function Students() {
                                                                 className={styles.profileImage}
                                                                 onError={handleImageError}
                                                             />
-                                                        ) : <div className={styles.avatarPlaceholder}>
+                                                        ) : null}
+                                                        <div className={styles.avatarPlaceholder} style={{ display: student.profile_pic_url ? 'none' : 'flex' }}>
                                                             {student.full_name?.charAt(0) || '?'}
-                                                        </div>}
+                                                        </div>
 
                                                         <div className={styles.studentInfo}>
                                                             <span className={styles.studentName}>{student.full_name}</span>
@@ -475,7 +498,6 @@ export default function Students() {
                                                             >
                                                                 {student.attendance?.attendance_rating || 'No data'}
                                                             </span>
-
                                                         </div>
                                                     </div>
                                                 </td>
@@ -496,7 +518,7 @@ export default function Students() {
                         </div>
 
                         {/* Pagination */}
-                        {students.length > 0 && (
+                        {students.length > 0 && pagination.total_count > pagination.page_size && (
                             <div className={styles.pagination}>
                                 <div className={styles.paginationInfo}>
                                     Showing {((pagination.current_page - 1) * pagination.page_size) + 1} to {Math.min(pagination.current_page * pagination.page_size, pagination.total_count)} of {pagination.total_count} students

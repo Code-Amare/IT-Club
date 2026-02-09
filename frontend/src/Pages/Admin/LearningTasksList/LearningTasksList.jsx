@@ -42,6 +42,12 @@ export default function LearningTasksList() {
         sortOrder: "desc"
     });
     const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+    const [stats, setStats] = useState({
+        total: 0,
+        public: 0,
+        reviewed: 0,
+        totalLikes: 0
+    });
 
     // Fetch tasks
     useEffect(() => {
@@ -53,7 +59,20 @@ export default function LearningTasksList() {
         setLoading(true);
         try {
             const response = await api.get("/api/learning-task/all/");
-            setTasks(response.data.tasks || []);
+            const tasksData = response.data.tasks || [];
+            setTasks(tasksData);
+
+            // Calculate stats
+            const publicTasks = tasksData.filter(t => t.is_public).length;
+            const reviewedTasks = tasksData.filter(t => t.is_rated || t.status === "rated").length;
+            const totalLikes = tasksData.reduce((acc, task) => acc + (task.likes_count || 0), 0);
+
+            setStats({
+                total: tasksData.length,
+                public: publicTasks,
+                reviewed: reviewedTasks,
+                totalLikes: totalLikes
+            });
         } catch (error) {
             console.error("Error fetching learning tasks:", error);
             neonToast.error("Failed to load learning tasks", "error");
@@ -78,6 +97,56 @@ export default function LearningTasksList() {
         }
     };
 
+    // Transform task data for LearningTaskCard component
+    const transformTaskForCard = (task) => {
+        const adminReview = getAdminReview(task);
+
+        // Determine status for the card
+        let componentStatus = task.status;
+        if (!componentStatus) {
+            if (task.is_rated || task.status === "rated") {
+                componentStatus = "graded";
+            } else if (task.status === "under_review" || task.is_public) {
+                componentStatus = "under_review";
+            } else {
+                componentStatus = "draft";
+            }
+        }
+
+        const languageNames = task.languages?.map(lang =>
+            typeof lang === 'object' ? lang.name :
+                languages.find(l => l.id === lang)?.name || lang.name || "Unknown"
+        ) || [];
+
+        const frameworkNames = task.frameworks?.map(fw =>
+            typeof fw === 'object' ? fw.name :
+                frameworks.find(f => f.id === fw)?.name || fw.name || "Unknown"
+        ) || [];
+
+        return {
+            id: task.id,
+            title: task.title,
+            description: task.description,
+            githubLink: task.git_link || "",
+            languages: languageNames.filter(Boolean),
+            frameworks: frameworkNames.filter(Boolean),
+            status: componentStatus,
+            grade: adminReview?.rating || 0,
+            adminFeedback: adminReview?.feedback || "",
+            createdAt: formatDate(task.created_at),
+            adminEditable: true, // Admin can edit any task
+            likes_count: task.likes_count || 0,
+            is_public: task.is_public || false,
+            user: {
+                ...task.user,
+                profile_pic_url: getUserProfilePic(task),
+                displayName: getUserDisplayName(task)
+            },
+            profile: task.profile || {},
+            reviews: task.reviews || []
+        };
+    };
+
     // Filter and sort tasks
     const filteredTasks = useMemo(() => {
         let result = [...tasks];
@@ -86,22 +155,18 @@ export default function LearningTasksList() {
         if (searchQuery.trim()) {
             const query = searchQuery.toLowerCase().trim();
             result = result.filter(task => {
-                const languageNames = task.languages ?
-                    task.languages.map(lang => lang.name.toLowerCase()).join(' ') : '';
-                const frameworkNames = task.frameworks ?
-                    task.frameworks.map(fw => fw.name.toLowerCase()).join(' ') : '';
-                const userName = task.user?.full_name || task.user?.username || "";
-                const userEmail = task.user?.email || "";
+                const taskForCard = transformTaskForCard(task);
+                const searchableText = [
+                    task.title?.toLowerCase() || '',
+                    task.description?.toLowerCase() || '',
+                    getUserDisplayName(task).toLowerCase(),
+                    task.user?.email?.toLowerCase() || '',
+                    task.git_link?.toLowerCase() || '',
+                    ...taskForCard.languages.map(lang => lang.toLowerCase()),
+                    ...taskForCard.frameworks.map(fw => fw.toLowerCase())
+                ].join(' ');
 
-                return (
-                    (task.title?.toLowerCase().includes(query)) ||
-                    (task.description?.toLowerCase().includes(query)) ||
-                    (userName.toLowerCase().includes(query)) ||
-                    (userEmail.toLowerCase().includes(query)) ||
-                    (task.git_link?.toLowerCase().includes(query)) ||
-                    languageNames.includes(query) ||
-                    frameworkNames.includes(query)
-                );
+                return searchableText.includes(query);
             });
         }
 
@@ -117,35 +182,42 @@ export default function LearningTasksList() {
         if (filters.language) {
             const languageId = parseInt(filters.language);
             result = result.filter(task =>
-                task.languages && task.languages.some(lang => lang.id === languageId)
+                task.languages?.some(lang =>
+                    (typeof lang === 'object' ? lang.id : lang) === languageId
+                )
             );
         }
 
         if (filters.framework) {
             const frameworkId = parseInt(filters.framework);
             result = result.filter(task =>
-                task.frameworks && task.frameworks.some(fw => fw.id === frameworkId)
+                task.frameworks?.some(fw =>
+                    (typeof fw === 'object' ? fw.id : fw) === frameworkId
+                )
             );
         }
 
         // Apply sorting
         result.sort((a, b) => {
-            let aValue = a[filters.sortBy];
-            let bValue = b[filters.sortBy];
+            let aValue, bValue;
 
-            if (filters.sortBy === "created_at" || filters.sortBy === "updated_at") {
-                aValue = new Date(aValue).getTime();
-                bValue = new Date(bValue).getTime();
-            }
-
-            if (filters.sortBy === "likes_count") {
-                aValue = a.likes_count || 0;
-                bValue = b.likes_count || 0;
-            }
-
-            if (filters.sortBy === "title") {
-                aValue = a.title?.toLowerCase() || "";
-                bValue = b.title?.toLowerCase() || "";
+            switch (filters.sortBy) {
+                case "created_at":
+                case "updated_at":
+                    aValue = new Date(a[filters.sortBy]).getTime();
+                    bValue = new Date(b[filters.sortBy]).getTime();
+                    break;
+                case "likes_count":
+                    aValue = a.likes_count || 0;
+                    bValue = b.likes_count || 0;
+                    break;
+                case "title":
+                    aValue = a.title?.toLowerCase() || "";
+                    bValue = b.title?.toLowerCase() || "";
+                    break;
+                default:
+                    aValue = a[filters.sortBy];
+                    bValue = b[filters.sortBy];
             }
 
             if (filters.sortOrder === "asc") {
@@ -156,18 +228,39 @@ export default function LearningTasksList() {
         });
 
         return result;
-    }, [tasks, searchQuery, filters]);
+    }, [tasks, searchQuery, filters, languages, frameworks]);
 
     // Handle task actions
     const handleViewTask = (task) => {
         navigate(`/admin/learning-task/${task.id}`);
     };
 
+    const handleEditTask = (task) => {
+        navigate(`/admin/learning-task/edit/${task.id}`);
+    };
+
     const handleDeleteTask = async (taskId) => {
+        if (!window.confirm("Are you sure you want to delete this task?")) {
+            return;
+        }
+
         try {
             await api.delete(`/api/learning-task/delete/${taskId}/`);
             setTasks(prev => prev.filter(t => t.id !== taskId));
             neonToast.success("Task deleted successfully", "success");
+
+            // Update stats after deletion
+            const newTasks = tasks.filter(t => t.id !== taskId);
+            const publicTasks = newTasks.filter(t => t.is_public).length;
+            const reviewedTasks = newTasks.filter(t => t.is_rated || t.status === "rated").length;
+            const totalLikes = newTasks.reduce((acc, task) => acc + (task.likes_count || 0), 0);
+
+            setStats({
+                total: newTasks.length,
+                public: publicTasks,
+                reviewed: reviewedTasks,
+                totalLikes: totalLikes
+            });
         } catch (error) {
             console.error("Error deleting task:", error);
             if (error.response?.data?.error) {
@@ -181,11 +274,6 @@ export default function LearningTasksList() {
     // Navigation to Task Limit Bulk Management
     const handleNavigateToTaskLimitBulk = () => {
         navigate("/admin/task-limit");
-    };
-
-    // Check if user owns the task
-    const isOwner = (task) => {
-        return user.id === task.user?.id;
     };
 
     // Clear all filters
@@ -209,17 +297,6 @@ export default function LearningTasksList() {
             month: 'short',
             day: 'numeric'
         });
-    };
-
-    // Get task status
-    const getTaskStatus = (task) => {
-        if (task.is_rated || task.status === "rated") {
-            return "graded";
-        } else if (task.status === "under_review" || task.is_public) {
-            return "submitted";
-        } else {
-            return "draft";
-        }
     };
 
     // Get user profile picture URL
@@ -276,6 +353,38 @@ export default function LearningTasksList() {
                                 <MdSettings />
                                 <span>Manage Task Limits</span>
                             </button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Stats Bar */}
+                <div className={styles.statsBar}>
+                    <div className={styles.statItem}>
+                        <FaTasks className={styles.statIcon} />
+                        <div>
+                            <span className={styles.statNumber}>{stats.total}</span>
+                            <span className={styles.statLabel}>Total Tasks</span>
+                        </div>
+                    </div>
+                    <div className={styles.statItem}>
+                        <FaGlobe className={styles.statIcon} />
+                        <div>
+                            <span className={styles.statNumber}>{stats.public}</span>
+                            <span className={styles.statLabel}>Public</span>
+                        </div>
+                    </div>
+                    <div className={styles.statItem}>
+                        <FaStar className={styles.statIcon} />
+                        <div>
+                            <span className={styles.statNumber}>{stats.reviewed}</span>
+                            <span className={styles.statLabel}>Reviewed</span>
+                        </div>
+                    </div>
+                    <div className={styles.statItem}>
+                        <FaCode className={styles.statIcon} />
+                        <div>
+                            <span className={styles.statNumber}>{stats.totalLikes}</span>
+                            <span className={styles.statLabel}>Total Likes</span>
                         </div>
                     </div>
                 </div>
@@ -399,44 +508,6 @@ export default function LearningTasksList() {
                     )}
                 </div>
 
-                {/* Stats Bar */}
-                <div className={styles.statsBar}>
-                    <div className={styles.statItem}>
-                        <FaTasks className={styles.statIcon} />
-                        <div>
-                            <span className={styles.statNumber}>{tasks.length}</span>
-                            <span className={styles.statLabel}>Total Tasks</span>
-                        </div>
-                    </div>
-                    <div className={styles.statItem}>
-                        <FaGlobe className={styles.statIcon} />
-                        <div>
-                            <span className={styles.statNumber}>
-                                {tasks.filter(t => t.is_public).length}
-                            </span>
-                            <span className={styles.statLabel}>Public</span>
-                        </div>
-                    </div>
-                    <div className={styles.statItem}>
-                        <FaStar className={styles.statIcon} />
-                        <div>
-                            <span className={styles.statNumber}>
-                                {tasks.filter(t => t.is_rated || t.status === "rated").length}
-                            </span>
-                            <span className={styles.statLabel}>Reviewed</span>
-                        </div>
-                    </div>
-                    <div className={styles.statItem}>
-                        <FaCode className={styles.statIcon} />
-                        <div>
-                            <span className={styles.statNumber}>
-                                {tasks.reduce((acc, task) => acc + (task.likes_count || 0), 0)}
-                            </span>
-                            <span className={styles.statLabel}>Total Likes</span>
-                        </div>
-                    </div>
-                </div>
-
                 {/* Tasks Grid */}
                 <div className={styles.tasksCard}>
                     <div className={styles.tasksHeader}>
@@ -464,37 +535,17 @@ export default function LearningTasksList() {
                     ) : (
                         <div className={styles.tasksGrid}>
                             {filteredTasks.map((task) => {
-                                const adminReview = getAdminReview(task);
-                                const cardTask = {
-                                    id: task.id,
-                                    title: task.title,
-                                    description: task.description,
-                                    githubLink: task.git_link,
-                                    languages: task.languages?.map(lang => lang.name) || [],
-                                    frameworks: task.frameworks?.map(fw => fw.name) || [],
-                                    status: getTaskStatus(task),
-                                    grade: adminReview ? adminReview.rating : null,
-                                    adminFeedback: adminReview ? adminReview.feedback : null,
-                                    createdAt: formatDate(task.created_at),
-                                    likes_count: task.likes_count || 0,
-                                    reviews: task.reviews || [],
-                                    is_public: task.is_public,
-                                    is_rated: task.is_rated,
-                                    user: {
-                                        ...task.user,
-                                        profile_pic_url: getUserProfilePic(task),
-                                        displayName: getUserDisplayName(task)
-                                    },
-                                    profile: task.profile
-                                };
+                                const cardTask = transformTaskForCard(task);
 
                                 return (
                                     <LearningTaskCard
                                         key={task.id}
                                         task={cardTask}
-                                        isOwner={isOwner(task)}
+                                        isOwner={false} // Admin is not the task owner
                                         onView={() => handleViewTask(task)}
+                                        onEdit={() => handleEditTask(task)}
                                         onDelete={() => handleDeleteTask(task.id)}
+                                        loadingDelete={false}
                                         isAdmin={true}
                                     />
                                 );
