@@ -43,6 +43,7 @@ import CreateAttendanceSession from './Pages/Admin/CreateAttendanceSession/Creat
 import SessionDetail from './Pages/Admin/SessionDetail/SessionDetail'
 import MarkAttendance from "./Pages/Admin/MarkAttendance/MarkAttendance"
 import StudentLearningTasks from './Pages/Admin/StudentLearningTasks/StudentLearningTasks'
+import UserAttendance from './Pages/User/UserAttendance/UserAttendance'
 
 function App() {
   return (
@@ -98,6 +99,7 @@ function App() {
           <Route path='/user/learning-task/create' element={<LearningTaskCreate />} />
           <Route path='/user/learning-task/:id' element={<UserLearningTaskDetail />} />
           <Route path='/user/learning-task/edit/:id' element={<LearningTaskEdit />} />
+          <Route path='/user/attendance' element={<UserAttendance />} />
         </Route>
         <Route path='*' element={<NotFound />} />
       </Routes>

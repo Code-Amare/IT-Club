@@ -3,19 +3,12 @@ import SideBar from "../../../Components/SideBar/SideBar";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-    BarChart,
-    Bar,
     PieChart,
     Pie,
     Cell,
-    XAxis,
-    YAxis,
-    CartesianGrid,
     Tooltip,
     Legend,
     ResponsiveContainer,
-    LineChart,
-    Line,
 } from "recharts";
 import {
     FaTasks,
@@ -26,185 +19,153 @@ import {
     FaStar,
     FaExclamationTriangle,
     FaArrowRight,
-    FaGraduationCap,
     FaChartLine,
     FaCalendarAlt,
     FaPercentage,
+    FaRegCalendarCheck,
+    FaRegClock,
+    FaRegTimesCircle,
+    FaUserMd,
+    FaPencilAlt,
+    FaRedo,
+    FaSearch,
+    FaThumbsUp,
 } from "react-icons/fa";
 import { FiTrendingUp, FiUser, FiCalendar } from "react-icons/fi";
 import { useUser } from "../../../Context/UserContext";
 import { useNotifContext } from "../../../Context/NotifContext";
+import api from "../../../Utils/api";
 
 const UserDashboard = () => {
     const navigate = useNavigate();
     const { user } = useUser()
-    
     const { updatePageTitle } = useNotifContext()
-    useEffect(() => {
-        updatePageTitle("User Dashboard")
-    }, [])
 
-
-    // User stats
-    const [userStats] = useState({
-        attendance: 92.5,
-        attendanceTrend: "+5.2%",
-        totalLearningTasks: 4,
-        completedTasks: 2,
-        averageGrade: 4.65,
-        taskCompletion: 50,
-        pendingReview: 1,
-        certificatesEarned: 1,
-    });
-
-    // Attendance data for the month
-    const attendanceData = [
-        { day: "Mon", present: 1, absent: 0 },
-        { day: "Tue", present: 1, absent: 0 },
-        { day: "Wed", present: 0, absent: 1 },
-        { day: "Thu", present: 1, absent: 0 },
-        { day: "Fri", present: 1, absent: 0 },
-        { day: "Sat", present: 1, absent: 0 },
-        { day: "Sun", present: 1, absent: 0 },
-    ];
-
-    // Task status distribution
-    const taskStatusData = [
-        { name: "Completed", value: 2, color: "#10b981" },
-        { name: "In Progress", value: 1, color: "#3b82f6" },
-        { name: "Pending", value: 1, color: "#f59e0b" },
-    ];
-
-    // Grade progress data
-    const gradeProgressData = [
-        { month: "Jan", grade: 4.2 },
-        { month: "Feb", grade: 4.5 },
-        { month: "Mar", grade: 4.3 },
-        { month: "Apr", grade: 4.7 },
-        { month: "May", grade: 4.8 },
-        { month: "Jun", grade: 4.9 },
-    ];
-
-    // Recently reviewed learning tasks (last 5)
-    const [recentlyReviewedTasks] = useState([
-        {
-            id: 3,
-            title: "Authentication System",
-            description: "JWT-based authentication with refresh tokens and role-based access",
-            languages: ["Python", "JavaScript"],
-            frameworks: ["Django", "Django REST", "PostgreSQL"],
-            status: "graded",
-            grade: 4.5,
-            adminFeedback: "Great implementation! Consider adding rate limiting for security.",
-            reviewedDate: "2024-01-25",
-            reviewer: "Admin - Dr. Johnson",
-        },
-        {
-            id: 4,
-            title: "Real-time Chat Application",
-            description: "WebSocket-based chat with rooms, user presence, and file sharing",
-            languages: ["JavaScript"],
-            frameworks: ["Socket.io", "Express", "React"],
-            status: "locked",
-            grade: 4.8,
-            adminFeedback: "Excellent real-time implementation! Production ready.",
-            reviewedDate: "2024-01-20",
-            reviewer: "Admin - Prof. Wilson",
-        },
-        {
-            id: 6,
-            title: "Mobile App Development",
-            description: "Cross-platform mobile app with React Native",
-            languages: ["JavaScript", "TypeScript"],
-            frameworks: ["React Native", "Redux", "Firebase"],
-            status: "graded",
-            grade: 4.9,
-            adminFeedback: "Perfect implementation with great UX design.",
-            reviewedDate: "2024-01-18",
-            reviewer: "Admin - Dr. Chen",
-        },
-        {
-            id: 8,
-            title: "E-commerce Backend",
-            description: "REST API for e-commerce platform with payment integration",
-            languages: ["JavaScript"],
-            frameworks: ["Node.js", "Express", "MongoDB"],
-            status: "graded",
-            grade: 4.3,
-            adminFeedback: "Good structure, needs more error handling.",
-            reviewedDate: "2024-01-15",
-            reviewer: "Admin - Prof. Brown",
-        },
-        {
-            id: 10,
-            title: "Data Visualization Dashboard",
-            description: "Interactive dashboard with real-time data visualization",
-            languages: ["Python", "JavaScript"],
-            frameworks: ["Django", "React", "D3.js"],
-            status: "graded",
-            grade: 4.6,
-            adminFeedback: "Excellent visualization techniques and user interface.",
-            reviewedDate: "2024-01-12",
-            reviewer: "Admin - Dr. Martinez",
-        },
-    ]);
-
-    // Upcoming events/sessions
-    const [upcomingEvents] = useState([
-        {
-            id: 1,
-            title: "Advanced React Workshop",
-            date: "2024-02-05",
-            time: "14:00 - 16:00",
-            type: "workshop",
-            instructor: "Sarah Johnson",
-        },
-        {
-            id: 2,
-            title: "Database Design Seminar",
-            date: "2024-02-08",
-            time: "10:00 - 12:00",
-            type: "seminar",
-            instructor: "Dr. Michael Chen",
-        },
-        {
-            id: 3,
-            title: "Project Review Session",
-            date: "2024-02-10",
-            time: "15:00 - 17:00",
-            type: "review",
-            instructor: "Your Mentor",
-        },
-    ]);
-
-    // Get CSS variables for chart styling
-    const [cssVars, setCssVars] = useState({
-        borderColor: "#e5e7eb",
-        textSecondary: "#4b5563"
-    });
+    const [dashboardData, setDashboardData] = useState(null);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const getCssVariable = (name) => {
-            return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-        };
-
-        setCssVars({
-            borderColor: getCssVariable('--border-color'),
-            textSecondary: getCssVariable('--text-secondary')
-        });
+        updatePageTitle("User Dashboard");
     }, []);
 
-    // Custom tooltip for charts
-    const CustomTooltip = ({ active, payload, label }) => {
+    useEffect(() => {
+        const userData = async () => {
+            try {
+                setLoading(true);
+                const res = await api.get("api/users/data/");
+                setDashboardData(res.data);
+            } catch (err) {
+                console.log(err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        userData();
+    }, []);
+
+    // Map backend data to frontend format
+    const userStats = dashboardData?.stats ? {
+        attendanceRate: dashboardData.stats.attendance_rate,
+        attendanceDistribution: dashboardData.stats.attendance_distribution,
+        totalLearningTasks: dashboardData.stats.total_learning_tasks,
+        averageGrade: dashboardData.stats.average_grade,
+        taskCompletion: dashboardData.stats.task_completion_percent,
+        totalBonus: dashboardData.stats.total_bonus,
+        taskScore: dashboardData.stats.task_score
+    } : null;
+
+    // Calculate completed tasks and pending review from task_status_distribution
+    const completedTasks = dashboardData?.task_status_distribution?.rated || 0;
+    const pendingReview = dashboardData?.task_status_distribution?.under_review || 0;
+
+    // Prepare attendance distribution data for pie chart
+    const attendanceDistributionData = userStats?.attendanceDistribution ? [
+        { name: "Present", value: userStats.attendanceDistribution.present, color: "#10b981", icon: <FaRegCalendarCheck /> },
+        { name: "Late", value: userStats.attendanceDistribution.late, color: "#f59e0b", icon: <FaRegClock /> },
+        { name: "Absent", value: userStats.attendanceDistribution.absent, color: "#ef4444", icon: <FaRegTimesCircle /> },
+        { name: "Special Case", value: userStats.attendanceDistribution.special_case, color: "#8b5cf6", icon: <FaUserMd /> }
+    ].filter(item => item.value > 0) : [];
+
+    // Calculate total attendance sessions
+    const totalAttendanceSessions = userStats?.attendanceDistribution ?
+        Object.values(userStats.attendanceDistribution).reduce((sum, value) => sum + value, 0) : 0;
+
+    // Prepare task status data with colors (from the object structure)
+    const taskStatusData = dashboardData?.task_status_distribution ? [
+        { name: "Draft", value: dashboardData.task_status_distribution.draft || 0, color: "#6b7280", icon: <FaPencilAlt /> },
+        { name: "Redo", value: dashboardData.task_status_distribution.redo || 0, color: "#ef4444", icon: <FaRedo /> },
+        { name: "Under Review", value: dashboardData.task_status_distribution.under_review || 0, color: "#f59e0b", icon: <FaSearch /> },
+        { name: "Rated", value: dashboardData.task_status_distribution.rated || 0, color: "#10b981", icon: <FaThumbsUp /> }
+    ].filter(item => item.value > 0) : [];
+
+    // Map attendance sessions to upcoming events
+    const upcomingEvents = dashboardData?.attendance_sessions ?
+        dashboardData.attendance_sessions
+            .filter(session => !session.is_ended)
+            .map(session => ({
+                id: session.id,
+                title: session.title,
+                date: session.date,
+                time: "To be scheduled",
+                type: "session",
+                instructor: "System",
+                isEnded: session.is_ended
+            }))
+            .slice(0, 3) : [];
+
+    // Calculate attendance trend (placeholder - you might want real calculation)
+    const calculateAttendanceTrend = () => {
+        if (!userStats?.attendanceRate) return "+0.0%";
+        return userStats.attendanceRate > 80 ? "+5.2%" : userStats.attendanceRate < 70 ? "-2.1%" : "+0.0%";
+    };
+
+    // Custom tooltip for pie charts
+    const CustomPieTooltip = ({ active, payload }) => {
         if (active && payload && payload.length) {
+            const data = payload[0].payload;
+            const percentage = totalAttendanceSessions > 0
+                ? ((data.value / totalAttendanceSessions) * 100).toFixed(1)
+                : 0;
+
             return (
                 <div className={styles.tooltip}>
-                    <p className={styles.tooltipLabel}>{label}</p>
-                    {payload.map((entry, index) => (
-                        <p key={index} style={{ color: entry.color }}>
-                            {entry.name}: {entry.value}
-                        </p>
-                    ))}
+                    <div className={styles.tooltipHeader}>
+                        <span className={styles.tooltipIcon} style={{ color: data.color }}>
+                            {data.icon}
+                        </span>
+                        <span className={styles.tooltipLabel}>{data.name}</span>
+                    </div>
+                    <div className={styles.tooltipContent}>
+                        <p className={styles.tooltipValue}>{data.value} sessions</p>
+                        <p className={styles.tooltipPercentage}>{percentage}% of total</p>
+                    </div>
+                </div>
+            );
+        }
+        return null;
+    };
+
+    // Custom tooltip for task status chart
+    const CustomTaskTooltip = ({ active, payload }) => {
+        if (active && payload && payload.length) {
+            const data = payload[0].payload;
+            const totalTasks = taskStatusData.reduce((sum, item) => sum + item.value, 0);
+            const percentage = totalTasks > 0
+                ? ((data.value / totalTasks) * 100).toFixed(1)
+                : 0;
+
+            return (
+                <div className={styles.tooltip}>
+                    <div className={styles.tooltipHeader}>
+                        <span className={styles.tooltipIcon} style={{ color: data.color }}>
+                            {data.icon}
+                        </span>
+                        <span className={styles.tooltipLabel}>{data.name}</span>
+                    </div>
+                    <div className={styles.tooltipContent}>
+                        <p className={styles.tooltipValue}>{data.value} tasks</p>
+                        <p className={styles.tooltipPercentage}>{percentage}% of total</p>
+                    </div>
                 </div>
             );
         }
@@ -230,7 +191,30 @@ const UserDashboard = () => {
         navigate("/user/learning-task/create");
     };
 
-    const COLORS = ["#10b981", "#3b82f6", "#f59e0b"];
+    if (loading) {
+        return (
+            <div className={styles.UserDashboardContainer}>
+                <SideBar>
+                    <div className={styles.loadingContainer}>
+                        <div className={styles.spinner}></div>
+                        <p>Loading dashboard data...</p>
+                    </div>
+                </SideBar>
+            </div>
+        );
+    }
+
+    if (!dashboardData) {
+        return (
+            <div className={styles.UserDashboardContainer}>
+                <SideBar>
+                    <div className={styles.errorContainer}>
+                        <p>Failed to load dashboard data. Please try again.</p>
+                    </div>
+                </SideBar>
+            </div>
+        );
+    }
 
     return (
         <div className={styles.UserDashboardContainer}>
@@ -275,10 +259,52 @@ const UserDashboard = () => {
                             </div>
                             <div className={styles.statContent}>
                                 <h3>Attendance Rate</h3>
-                                <p className={styles.statValue}>{userStats.attendance}%</p>
+                                <p className={styles.statValue}>{userStats?.attendanceRate || 0}%</p>
                                 <span className={styles.statTrend}>
-                                    <FiTrendingUp /> {userStats.attendanceTrend} this month
+                                    <FiTrendingUp /> {calculateAttendanceTrend()} this period
                                 </span>
+                                <div className={styles.attendanceBreakdown}>
+                                    <div className={styles.breakdownItem}>
+                                        <span className={styles.breakdownLabel}>Total Sessions:</span>
+                                        <span className={styles.breakdownValue}>{totalAttendanceSessions}</span>
+                                    </div>
+                                    {userStats?.attendanceDistribution && (
+                                        <>
+                                            {userStats.attendanceDistribution.present > 0 && (
+                                                <div className={styles.breakdownItem}>
+                                                    <span className={styles.breakdownLabel}>Present:</span>
+                                                    <span className={styles.breakdownValue} style={{ color: "#10b981" }}>
+                                                        {userStats.attendanceDistribution.present}
+                                                    </span>
+                                                </div>
+                                            )}
+                                            {userStats.attendanceDistribution.late > 0 && (
+                                                <div className={styles.breakdownItem}>
+                                                    <span className={styles.breakdownLabel}>Late:</span>
+                                                    <span className={styles.breakdownValue} style={{ color: "#f59e0b" }}>
+                                                        {userStats.attendanceDistribution.late}
+                                                    </span>
+                                                </div>
+                                            )}
+                                            {userStats.attendanceDistribution.absent > 0 && (
+                                                <div className={styles.breakdownItem}>
+                                                    <span className={styles.breakdownLabel}>Absent:</span>
+                                                    <span className={styles.breakdownValue} style={{ color: "#ef4444" }}>
+                                                        {userStats.attendanceDistribution.absent}
+                                                    </span>
+                                                </div>
+                                            )}
+                                            {userStats.attendanceDistribution.special_case > 0 && (
+                                                <div className={styles.breakdownItem}>
+                                                    <span className={styles.breakdownLabel}>Special:</span>
+                                                    <span className={styles.breakdownValue} style={{ color: "#8b5cf6" }}>
+                                                        {userStats.attendanceDistribution.special_case}
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </>
+                                    )}
+                                </div>
                             </div>
                         </div>
 
@@ -288,10 +314,24 @@ const UserDashboard = () => {
                             </div>
                             <div className={styles.statContent}>
                                 <h3>Learning Tasks</h3>
-                                <p className={styles.statValue}>{userStats.totalLearningTasks}</p>
+                                <p className={styles.statValue}>{userStats?.totalLearningTasks || 0}</p>
                                 <span className={styles.statTrend}>
-                                    {userStats.completedTasks} completed • {userStats.taskCompletion}% done
+                                    {completedTasks} rated • {userStats?.taskCompletion || 0}% done
                                 </span>
+                                <div className={styles.taskBreakdown}>
+                                    <div className={styles.breakdownItem}>
+                                        <span className={styles.breakdownLabel}>Score:</span>
+                                        <span className={styles.breakdownValue}>{userStats?.taskScore || 0} points</span>
+                                    </div>
+                                    {userStats?.totalBonus > 0 && (
+                                        <div className={styles.breakdownItem}>
+                                            <span className={styles.breakdownLabel}>Bonus:</span>
+                                            <span className={styles.breakdownValue} style={{ color: "#10b981" }}>
+                                                +{userStats.totalBonus} points
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
 
@@ -301,10 +341,27 @@ const UserDashboard = () => {
                             </div>
                             <div className={styles.statContent}>
                                 <h3>Average Grade</h3>
-                                <p className={styles.statValue}>{userStats.averageGrade}/5</p>
+                                <p className={styles.statValue}>{userStats?.averageGrade || 0}%</p>
                                 <span className={styles.statTrend}>
-                                    <FaChartLine /> {userStats.certificatesEarned} certificate earned
+                                    <FaChartLine /> Based on rated tasks
                                 </span>
+                                <div className={styles.gradeBreakdown}>
+                                    <div className={styles.breakdownItem}>
+                                        <span className={styles.breakdownLabel}>Scale:</span>
+                                        <span className={styles.breakdownValue}>0-100%</span>
+                                    </div>
+                                    <div className={styles.breakdownItem}>
+                                        <span className={styles.breakdownLabel}>Performance:</span>
+                                        <span className={`${styles.breakdownValue} ${userStats?.averageGrade >= 90 ? styles.excellent :
+                                            userStats?.averageGrade >= 80 ? styles.good :
+                                                userStats?.averageGrade >= 70 ? styles.average : styles.poor
+                                            }`}>
+                                            {userStats?.averageGrade >= 90 ? "Excellent" :
+                                                userStats?.averageGrade >= 80 ? "Good" :
+                                                    userStats?.averageGrade >= 70 ? "Average" : "Needs Improvement"}
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -313,61 +370,84 @@ const UserDashboard = () => {
                                 <FaClock className={styles.statIconSvg} />
                             </div>
                             <div className={styles.statContent}>
-                                <h3>Pending Review</h3>
-                                <p className={styles.statValue}>{userStats.pendingReview}</p>
+                                <h3>Under Review</h3>
+                                <p className={styles.statValue}>{pendingReview}</p>
                                 <span className={styles.statTrend}>
                                     Awaiting admin evaluation
                                 </span>
+                                <div className={styles.reviewBreakdown}>
+                                    <div className={styles.breakdownItem}>
+                                        <span className={styles.breakdownLabel}>Total Tasks:</span>
+                                        <span className={styles.breakdownValue}>{userStats?.totalLearningTasks || 0}</span>
+                                    </div>
+                                    <div className={styles.breakdownItem}>
+                                        <span className={styles.breakdownLabel}>Rated:</span>
+                                        <span className={styles.breakdownValue}>
+                                            {completedTasks}
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
 
                     {/* Charts Section */}
                     <div className={styles.chartsSection}>
-                        {/* Attendance Chart */}
+                        {/* Attendance Distribution Chart */}
                         <div className={styles.chartCard}>
                             <div className={styles.chartHeader}>
                                 <h2>
-                                    <FaCalendarAlt className={styles.chartIcon} /> Weekly Attendance
+                                    <FaCalendarCheck className={styles.chartIcon} /> Attendance Distribution
                                 </h2>
-                                <p className={styles.chartSubtitle}>Your attendance record for the current week</p>
+                                <p className={styles.chartSubtitle}>Breakdown of your attendance status</p>
                             </div>
                             <div className={styles.chartContainer}>
-                                <ResponsiveContainer width="100%" height={300}>
-                                    <BarChart
-                                        data={attendanceData}
-                                        margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
-                                    >
-                                        <CartesianGrid
-                                            strokeDasharray="3 3"
-                                            stroke={cssVars.borderColor}
-                                        />
-                                        <XAxis
-                                            dataKey="day"
-                                            stroke={cssVars.textSecondary}
-                                            tick={{ fill: cssVars.textSecondary }}
-                                        />
-                                        <YAxis
-                                            stroke={cssVars.textSecondary}
-                                            tick={{ fill: cssVars.textSecondary }}
-                                            tickFormatter={(value) => `${value}h`}
-                                        />
-                                        <Tooltip content={<CustomTooltip />} />
-                                        <Legend />
-                                        <Bar
-                                            dataKey="present"
-                                            name="Present"
-                                            fill="#10b981"
-                                            radius={[4, 4, 0, 0]}
-                                        />
-                                        <Bar
-                                            dataKey="absent"
-                                            name="Absent"
-                                            fill="#ef4444"
-                                            radius={[4, 4, 0, 0]}
-                                        />
-                                    </BarChart>
-                                </ResponsiveContainer>
+                                {attendanceDistributionData.length > 0 ? (
+                                    <>
+                                        <ResponsiveContainer width="100%" height={300}>
+                                            <PieChart>
+                                                <Pie
+                                                    data={attendanceDistributionData}
+                                                    cx="50%"
+                                                    cy="50%"
+                                                    labelLine={false}
+                                                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                                                    outerRadius={100}
+                                                    innerRadius={60}
+                                                    fill="#8884d8"
+                                                    dataKey="value"
+                                                    paddingAngle={5}
+                                                >
+                                                    {attendanceDistributionData.map((entry, index) => (
+                                                        <Cell key={`cell-${index}`} fill={entry.color} />
+                                                    ))}
+                                                </Pie>
+                                                <Tooltip content={<CustomPieTooltip />} />
+                                                <Legend />
+                                            </PieChart>
+                                        </ResponsiveContainer>
+                                        <div className={styles.chartLegend}>
+                                            {attendanceDistributionData.map((item, index) => (
+                                                <div key={item.name} className={styles.legendItem}>
+                                                    <div className={styles.legendIcon}>
+                                                        {item.icon}
+                                                    </div>
+                                                    <div
+                                                        className={styles.legendColorBox}
+                                                        style={{ backgroundColor: item.color }}
+                                                    ></div>
+                                                    <span className={styles.legendLabel}>{item.name}</span>
+                                                    <span className={styles.legendValue}>{item.value}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className={styles.noDataMessage}>
+                                        <FaCalendarCheck className={styles.noDataIcon} />
+                                        <p>No attendance data available</p>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -377,45 +457,55 @@ const UserDashboard = () => {
                                 <h2>
                                     <FaPercentage className={styles.chartIcon} /> Task Status Distribution
                                 </h2>
-                                <p className={styles.chartSubtitle}>Overview of your learning tasks progress</p>
+                                <p className={styles.chartSubtitle}>Overview of your learning tasks status</p>
                             </div>
                             <div className={styles.chartContainer}>
-                                <ResponsiveContainer width="100%" height={300}>
-                                    <PieChart>
-                                        <Pie
-                                            data={taskStatusData}
-                                            cx="50%"
-                                            cy="50%"
-                                            labelLine={false}
-                                            label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                                            outerRadius={100}
-                                            innerRadius={60}
-                                            fill="#8884d8"
-                                            dataKey="value"
-                                            paddingAngle={5}
-                                        >
-                                            {taskStatusData.map((entry, index) => (
-                                                <Cell key={`cell-${index}`} fill={entry.color} />
+                                {taskStatusData.length > 0 ? (
+                                    <>
+                                        <ResponsiveContainer width="100%" height={300}>
+                                            <PieChart>
+                                                <Pie
+                                                    data={taskStatusData}
+                                                    cx="50%"
+                                                    cy="50%"
+                                                    labelLine={false}
+                                                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                                                    outerRadius={100}
+                                                    innerRadius={60}
+                                                    fill="#8884d8"
+                                                    dataKey="value"
+                                                    paddingAngle={5}
+                                                >
+                                                    {taskStatusData.map((entry, index) => (
+                                                        <Cell key={`cell-${index}`} fill={entry.color} />
+                                                    ))}
+                                                </Pie>
+                                                <Tooltip content={<CustomTaskTooltip />} />
+                                                <Legend />
+                                            </PieChart>
+                                        </ResponsiveContainer>
+                                        <div className={styles.chartLegend}>
+                                            {taskStatusData.map((item, index) => (
+                                                <div key={item.name} className={styles.legendItem}>
+                                                    <div className={styles.legendIcon}>
+                                                        {item.icon}
+                                                    </div>
+                                                    <div
+                                                        className={styles.legendColorBox}
+                                                        style={{ backgroundColor: item.color }}
+                                                    ></div>
+                                                    <span className={styles.legendLabel}>{item.name}</span>
+                                                    <span className={styles.legendValue}>{item.value} tasks</span>
+                                                </div>
                                             ))}
-                                        </Pie>
-                                        <Tooltip
-                                            content={<CustomTooltip />}
-                                            formatter={(value) => [`${value} tasks`, 'Count']}
-                                        />
-                                    </PieChart>
-                                </ResponsiveContainer>
-                                <div className={styles.chartLegend}>
-                                    {taskStatusData.map((item, index) => (
-                                        <div key={item.name} className={styles.legendItem}>
-                                            <div
-                                                className={styles.legendColorBox}
-                                                style={{ backgroundColor: item.color }}
-                                            ></div>
-                                            <span className={styles.legendLabel}>{item.name}</span>
-                                            <span className={styles.legendValue}>{item.value} tasks</span>
                                         </div>
-                                    ))}
-                                </div>
+                                    </>
+                                ) : (
+                                    <div className={styles.noDataMessage}>
+                                        <FaTasks className={styles.noDataIcon} />
+                                        <p>No task data available</p>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -428,7 +518,7 @@ const UserDashboard = () => {
                                 <h2>
                                     <FaCheckCircle className={styles.tableIcon} /> Recently Reviewed Tasks
                                 </h2>
-                                <span className={styles.badge}>Last 5</span>
+                                <span className={styles.badge}>Last {dashboardData.recently_reviewed_tasks.length}</span>
                             </div>
                             <div className={styles.tableWrapper}>
                                 <div className={styles.tableContainer}>
@@ -443,67 +533,75 @@ const UserDashboard = () => {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {recentlyReviewedTasks.map((task) => (
-                                                <tr key={task.id}>
-                                                    <td>
-                                                        <div className={styles.taskCell}>
-                                                            <span className={styles.taskName}>{task.title}</span>
-                                                            <div className={styles.taskDescription}>
-                                                                {task.description.substring(0, 50)}...
+                                            {dashboardData.recently_reviewed_tasks.map((task) => {
+                                                const gradePercentage = task.grade;
+                                                const starRating = gradePercentage / 20; // Convert to 5-star scale
+
+                                                return (
+                                                    <tr key={task.id}>
+                                                        <td>
+                                                            <div className={styles.taskCell}>
+                                                                <span className={styles.taskName}>{task.title}</span>
+                                                                <div className={styles.taskDescription}>
+                                                                    {task.description.substring(0, 50)}...
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                    </td>
-                                                    <td className={styles.hideOnMobile}>
-                                                        <div className={styles.techCell}>
-                                                            <div className={styles.techTags}>
-                                                                {task.languages.slice(0, 2).map((lang, idx) => (
-                                                                    <span key={idx} className={styles.techTag}>
-                                                                        {lang}
+                                                        </td>
+                                                        <td className={styles.hideOnMobile}>
+                                                            <div className={styles.techCell}>
+                                                                <div className={styles.techTags}>
+                                                                    {[...task.languages, ...task.frameworks].slice(0, 2).map((tech, idx) => (
+                                                                        <span key={idx} className={styles.techTag}>
+                                                                            {tech}
+                                                                        </span>
+                                                                    ))}
+                                                                    {[...task.languages, ...task.frameworks].length > 2 && (
+                                                                        <span className={styles.moreTag}>
+                                                                            +{[...task.languages, ...task.frameworks].length - 2}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        <td>
+                                                            <div className={styles.gradeCell}>
+                                                                <div className={styles.gradeValue}>
+                                                                    {task.grade}%
+                                                                </div>
+                                                                <div className={styles.stars}>
+                                                                    {[...Array(5)].map((_, i) => (
+                                                                        <FaStar
+                                                                            key={i}
+                                                                            className={`${styles.star} ${i < Math.floor(starRating) ? styles.starFilled : ""}`}
+                                                                        />
+                                                                    ))}
+                                                                    <span className={styles.gradePercentage}>
+                                                                        ({gradePercentage}%)
                                                                     </span>
-                                                                ))}
-                                                                {task.languages.length > 2 && (
-                                                                    <span className={styles.moreTag}>
-                                                                        +{task.languages.length - 2}
-                                                                    </span>
-                                                                )}
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                    </td>
-                                                    <td>
-                                                        <div className={styles.gradeCell}>
-                                                            <div className={styles.gradeValue}>
-                                                                {task.grade}/5
+                                                        </td>
+                                                        <td>
+                                                            <div className={styles.dateCell}>
+                                                                <div className={styles.reviewDate}>
+                                                                    {task.reviewed_date}
+                                                                </div>
+                                                                <div className={styles.reviewer}>
+                                                                    {task.reviewer}
+                                                                </div>
                                                             </div>
-                                                            <div className={styles.stars}>
-                                                                {[...Array(5)].map((_, i) => (
-                                                                    <FaStar
-                                                                        key={i}
-                                                                        className={`${styles.star} ${i < Math.floor(task.grade) ? styles.starFilled : ""}`}
-                                                                    />
-                                                                ))}
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                    <td>
-                                                        <div className={styles.dateCell}>
-                                                            <div className={styles.reviewDate}>
-                                                                {task.reviewedDate}
-                                                            </div>
-                                                            <div className={styles.reviewer}>
-                                                                {task.reviewer}
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                    <td>
-                                                        <button
-                                                            className={styles.viewButton}
-                                                            onClick={() => navigate(`/learning-task/${task.id}`)}
-                                                        >
-                                                            View Details
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            ))}
+                                                        </td>
+                                                        <td>
+                                                            <button
+                                                                className={styles.viewButton}
+                                                                onClick={() => navigate(`/learning-task/${task.id}`)}
+                                                            >
+                                                                View Details
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
                                         </tbody>
                                     </table>
                                 </div>
@@ -521,35 +619,45 @@ const UserDashboard = () => {
                                 <h2>
                                     <FaCalendarAlt className={styles.tableIcon} /> Upcoming Sessions
                                 </h2>
-                                <span className={styles.badge}>3 events</span>
+                                <span className={styles.badge}>{upcomingEvents.length} sessions</span>
                             </div>
                             <div className={styles.eventsList}>
-                                {upcomingEvents.map((event) => (
-                                    <div key={event.id} className={styles.eventItem}>
-                                        <div className={styles.eventDate}>
-                                            <div className={styles.eventDay}>
-                                                {new Date(event.date).getDate()}
+                                {upcomingEvents.length > 0 ? (
+                                    upcomingEvents.map((event) => (
+                                        <div key={event.id} className={styles.eventItem}>
+                                            <div className={styles.eventDate}>
+                                                <div className={styles.eventDay}>
+                                                    {new Date(event.date).getDate()}
+                                                </div>
+                                                <div className={styles.eventMonth}>
+                                                    {new Date(event.date).toLocaleString('default', { month: 'short' })}
+                                                </div>
                                             </div>
-                                            <div className={styles.eventMonth}>
-                                                {new Date(event.date).toLocaleString('default', { month: 'short' })}
+                                            <div className={styles.eventDetails}>
+                                                <div className={styles.eventTitle}>{event.title}</div>
+                                                <div className={styles.eventTime}>
+                                                    <FiCalendar /> {event.date}
+                                                </div>
+                                                <div className={styles.eventStatus}>
+                                                    <span className={styles.statusBadge}>
+                                                        {event.isEnded ? "Ended" : "Upcoming"}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div className={styles.eventType}>
+                                                <span className={`${styles.eventTypeBadge} ${styles[event.type]}`}>
+                                                    {event.type}
+                                                </span>
                                             </div>
                                         </div>
-                                        <div className={styles.eventDetails}>
-                                            <div className={styles.eventTitle}>{event.title}</div>
-                                            <div className={styles.eventTime}>
-                                                <FiCalendar /> {event.date} • {event.time}
-                                            </div>
-                                            <div className={styles.eventInstructor}>
-                                                Instructor: {event.instructor}
-                                            </div>
-                                        </div>
-                                        <div className={styles.eventType}>
-                                            <span className={`${styles.eventTypeBadge} ${styles[event.type]}`}>
-                                                {event.type}
-                                            </span>
-                                        </div>
+                                    ))
+                                ) : (
+                                    <div className={styles.noEvents}>
+                                        <FaCalendarAlt className={styles.noEventsIcon} />
+                                        <p>No upcoming sessions scheduled</p>
+                                        <p className={styles.noEventsSub}>Check back later for new sessions</p>
                                     </div>
-                                ))}
+                                )}
                             </div>
                             <div className={styles.tableFooter}>
                                 <div className={styles.eventNote}>

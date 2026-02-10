@@ -58,7 +58,7 @@ export default function SideBar({ children }) {
         { icon: <MdAssignment />, text: "My Learning Task", to: "/user/my-learning-task" },
         { icon: <MdSchool />, text: "Learning Tasks", to: "/user/learning-tasks" },
         // { icon: <MdWork />, text: "Projects", to: "/user/projects" },
-        // { icon: <MdAnalytics />, text: "Analytics", to: "/user/analytics" },
+        { icon: <MdAnalytics />, text: "Attendance", to: "/user/attendance" },
     ];
 
     const menuItems = user.role === "admin" ? adminMenuItems : userMenuItems;

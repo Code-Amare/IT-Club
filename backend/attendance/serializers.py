@@ -18,6 +18,12 @@ class AttendanceSessionSerializer(serializers.ModelSerializer):
         )
 
 
+class AttendanceSessionNoUsersSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AttendanceSession
+        fields = ["id", "title", "is_ended", "created_at"]
+
+
 class UpdateSessionSerializer(serializers.Serializer):
     title = serializers.CharField(max_length=150, required=False)
     users = serializers.ListField(
@@ -43,3 +49,11 @@ class AttendanceSerializer(serializers.ModelSerializer):
             )
 
         return attrs
+
+
+class AttendanceWithSessionSerializer(serializers.ModelSerializer):
+    session = AttendanceSessionNoUsersSerializer(read_only=True)
+
+    class Meta:
+        model = Attendance
+        fields = ["id", "session", "user", "attended_at", "status", "note"]

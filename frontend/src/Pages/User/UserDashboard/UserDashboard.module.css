@@ -1,3 +1,5 @@
+/* UserDashboard.module.css */
+
 .UserDashboardContainer {
   min-height: 100vh;
 }
@@ -115,7 +117,9 @@
   display: flex;
   align-items: center;
   gap: 16px;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
   box-shadow: 0 1px 3px var(--card-shadow);
 }
 
@@ -140,6 +144,10 @@
   color: var(--primary);
 }
 
+.statContent {
+  flex: 1;
+}
+
 .statContent h3 {
   font-size: 14px;
   font-weight: 500;
@@ -161,6 +169,50 @@
   display: flex;
   align-items: center;
   gap: 4px;
+  margin-bottom: 8px;
+}
+
+/* Breakdown Styles */
+.attendanceBreakdown,
+.taskBreakdown,
+.gradeBreakdown,
+.reviewBreakdown {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-color);
+}
+
+.breakdownItem {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+  font-size: 0.8rem;
+}
+
+.breakdownLabel {
+  color: var(--text-secondary);
+}
+
+.breakdownValue {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* Performance Rating Colors */
+.excellent {
+  color: #10b981 !important;
+}
+
+.good {
+  color: #3b82f6 !important;
+}
+
+.average {
+  color: #f59e0b !important;
+}
+
+.poor {
+  color: #ef4444 !important;
 }
 
 /* Charts Section */
@@ -216,22 +268,30 @@
   position: relative;
 }
 
+/* Chart Legend */
 .chartLegend {
   display: flex;
-  justify-content: center;
-  gap: 24px;
+  flex-direction: column;
+  gap: 8px;
   margin-top: 20px;
-  flex-wrap: wrap;
 }
 
 .legendItem {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 14px;
-  padding: 4px 12px;
+  padding: 6px 10px;
   background: var(--bg-body);
   border-radius: 8px;
+}
+
+.legendIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  font-size: 12px;
 }
 
 .legendColorBox {
@@ -241,14 +301,18 @@
 }
 
 .legendLabel {
+  flex: 1;
+  font-size: 14px;
   color: var(--text-secondary);
 }
 
 .legendValue {
   font-weight: 600;
   color: var(--text-primary);
+  font-size: 14px;
 }
 
+/* Tooltip */
 .tooltip {
   background: var(--bg-surface);
   border: 1px solid var(--border-color);
@@ -258,15 +322,53 @@
   max-width: 200px;
 }
 
+.tooltipHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.tooltipIcon {
+  font-size: 14px;
+}
+
 .tooltipLabel {
   font-weight: 600;
-  margin-bottom: 8px;
   color: var(--text-primary);
 }
 
-.tooltip p {
-  margin: 4px 0;
+.tooltipContent {
   font-size: 14px;
+}
+
+.tooltipValue {
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 4px 0;
+}
+
+.tooltipPercentage {
+  color: var(--text-secondary);
+  margin: 4px 0;
+  font-size: 12px;
+}
+
+/* No Data Message */
+.noDataMessage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 300px;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.noDataIcon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.5;
 }
 
 /* Tables Section */
@@ -437,7 +539,8 @@
 
 .stars {
   display: flex;
-  gap: 2px;
+  align-items: center;
+  gap: 4px;
 }
 
 .star {
@@ -447,6 +550,12 @@
 
 .starFilled {
   color: #fbbf24;
+}
+
+.gradePercentage {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-left: 4px;
 }
 
 /* Date Cell */
@@ -585,6 +694,21 @@
   color: var(--text-secondary);
 }
 
+.eventStatus {
+  margin-top: 4px;
+}
+
+.statusBadge {
+  display: inline-block;
+  padding: 2px 8px;
+  background: var(--primary);
+  color: white;
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
 .eventType {
   flex-shrink: 0;
 }
@@ -598,22 +722,10 @@
   letter-spacing: 0.05em;
 }
 
-.eventTypeBadge.workshop {
+.eventTypeBadge.session {
   background: rgba(79, 70, 229, 0.1);
   color: #4f46e5;
   border: 1px solid rgba(79, 70, 229, 0.2);
-}
-
-.eventTypeBadge.seminar {
-  background: rgba(16, 185, 129, 0.1);
-  color: #10b981;
-  border: 1px solid rgba(16, 185, 129, 0.2);
-}
-
-.eventTypeBadge.review {
-  background: rgba(245, 158, 11, 0.1);
-  color: #f59e0b;
-  border: 1px solid rgba(245, 158, 11, 0.2);
 }
 
 .eventNote {
@@ -630,6 +742,63 @@
 
 .noteIcon {
   flex-shrink: 0;
+}
+
+/* No Events State */
+.noEvents {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-secondary);
+}
+
+.noEventsIcon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.noEventsSub {
+  font-size: 0.9rem;
+  margin-top: 8px;
+  opacity: 0.7;
+}
+
+/* Loading and Error States */
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 500px;
+  gap: 20px;
+}
+
+.spinner {
+  width: 50px;
+  height: 50px;
+  border: 5px solid #f3f3f3;
+  border-top: 5px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.errorContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 500px;
+  color: #ef4444;
+  text-align: center;
+  padding: 40px;
 }
 
 /* Responsive Design */
@@ -751,5 +920,33 @@
   .dataTable td {
     padding: 10px 12px;
     font-size: 13px;
+  }
+
+  .legendItem {
+    padding: 4px 8px;
+  }
+
+  .legendLabel,
+  .legendValue {
+    font-size: 12px;
+  }
+}
+
+/* Additional adjustments for better mobile experience */
+@media (max-width: 640px) {
+  .statContent h3 {
+    font-size: 13px;
+  }
+
+  .statValue {
+    font-size: 18px;
+  }
+
+  .breakdownItem {
+    font-size: 0.75rem;
+  }
+
+  .chartLegend {
+    gap: 6px;
   }
 }

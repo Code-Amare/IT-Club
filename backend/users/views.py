@@ -19,6 +19,14 @@ from django.core import signing
 from axes.utils import reset as axes_reset
 from asgiref.sync import async_to_sync
 from utils.notif import notify_user
+from django.db.models import Avg, Sum
+from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework import status
+from attendance.serializers import AttendanceSerializer, AttendanceWithSessionSerializer
+from learning_task.models import LearningTask, TaskBonus
+from attendance.models import Attendance, AttendanceSession
 
 
 IS_TWOFA_MANDATORY = settings.IS_TWOFA_MANDATORY
@@ -952,3 +960,128 @@ class TogglePushNotificationView(APIView):
                 "push_notif_enabled": not is_push_notif_enabled,
             }
         )
+
+
+# User View
+
+
+class UserDashboardView(APIView):
+    authentication_classes = [JWTCookieAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+
+        tasks = LearningTask.objects.filter(user=user)
+        total_tasks = tasks.count()
+        rated_tasks = tasks.filter(status="rated").count()
+        under_review_tasks = tasks.filter(status="under_review").count()
+        draft_tasks = tasks.filter(status="draft").count()
+        redo_tasks = tasks.filter(status="redo").count()
+
+        avg_grade = (
+            tasks.filter(status="rated")
+            .aggregate(avg=Avg("reviews__rating"))
+            .get("avg")
+            or 0
+        )
+
+        task_completion = (
+            round((rated_tasks / total_tasks) * 100, 1) if total_tasks else 0
+        )
+
+        total_bonus = (
+            TaskBonus.objects.filter(task__user=user)
+            .aggregate(total=Sum("score"))
+            .get("total")
+            or 0
+        )
+
+        # Attendance stats
+        attendance_qs = Attendance.objects.filter(user=user)
+        present_count = attendance_qs.filter(status="present").count()
+        late_count = attendance_qs.filter(status="late").count()
+        absent_count = attendance_qs.filter(status="absent").count()
+        special_case_count = attendance_qs.filter(status="special_case").count()
+        total_attendance = attendance_qs.count()
+        attendance_rate = (
+            round(((present_count + late_count) / total_attendance) * 100, 1)
+            if total_attendance
+            else 0
+        )
+
+        # Task status distribution for frontend chart
+        task_status_distribution = {
+            "draft": draft_tasks,
+            "redo": redo_tasks,
+            "under_review": under_review_tasks,
+            "rated": rated_tasks,
+        }
+
+        # Recently reviewed tasks
+        recent_tasks = tasks.filter(status="rated").order_by("-updated_at")[:5]
+        recently_reviewed_tasks = []
+        for task in recent_tasks:
+            review = task.reviews.order_by("-created_at").first()
+            recently_reviewed_tasks.append(
+                {
+                    "id": task.id,
+                    "title": task.title,
+                    "description": task.description,
+                    "languages": [l.name for l in task.languages.all()],
+                    "frameworks": [f.name for f in task.frameworks.all()],
+                    "grade": review.rating if review else None,
+                    "admin_feedback": review.feedback if review else "",
+                    "reviewed_date": task.updated_at.date(),
+                    "reviewer": review.user.full_name if review else "Admin",
+                }
+            )
+
+        # Upcoming sessions
+        upcoming_sessions = [
+            {
+                "id": s.id,
+                "title": s.title,
+                "date": s.created_at.date(),
+                "is_ended": s.is_ended,
+            }
+            for s in AttendanceSession.objects.filter(targets=user, is_ended=False)[:3]
+        ]
+
+        return Response(
+            {
+                "stats": {
+                    "attendance_rate": attendance_rate,
+                    "attendance_distribution": {
+                        "present": present_count,
+                        "late": late_count,
+                        "absent": absent_count,
+                        "special_case": special_case_count,
+                    },
+                    "total_learning_tasks": total_tasks,
+                    "average_grade": round(avg_grade, 2),
+                    "task_completion_percent": task_completion,
+                    "total_bonus": total_bonus,
+                    "task_score": rated_tasks * 5,
+                },
+                "task_status_distribution": task_status_distribution,
+                "recently_reviewed_tasks": recently_reviewed_tasks,
+                "attendance_sessions": upcoming_sessions,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class UserAttendanceView(APIView):
+    authentication_classes = [JWTCookieAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        attendances = Attendance.objects.filter(user=user)
+        if not attendances:
+            return Response(
+                {"error": "No attendance yet."}, status=status.HTTP_404_NOT_FOUND
+            )
+        serializer = AttendanceWithSessionSerializer(attendances, many=True)
+        return Response({"attendances": serializer.data}, status=status.HTTP_200_OK)

@@ -17,6 +17,8 @@ from .views import (
     DisableTwoFaView,
     ToggleNotificationView,
     TogglePushNotificationView,
+    UserAttendanceView,
+    UserDashboardView,
 )
 
 urlpatterns = [
@@ -53,4 +55,6 @@ urlpatterns = [
     path("twofa/disable/", DisableTwoFaView.as_view(), name="disable-twofa"),
     path("notif/", ToggleNotificationView.as_view(), name="toggle-notif"),
     path("push-notif/", TogglePushNotificationView.as_view(), name="toggle-push-notif"),
+    path("data/", UserDashboardView.as_view(), name="user-data"),
+    path("attendance/", UserAttendanceView.as_view(), name="user-attendance"),
 ]
