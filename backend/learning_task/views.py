@@ -86,6 +86,10 @@ class LearningTaskAPIView(APIView):
             task = LearningTask.objects.get(id=task_id)
             user_liked = task.likes.filter(id=user.id).exists()
             serializer = LearningTaskSerializer(task)
+            task_bonus = TaskBonus.objects.filter(task=task).first()
+            bonus_serializer = None
+            if task_bonus:
+                bonus_serializer = TaskBonusSerializer(task_bonus)
             is_admin = user.is_staff
 
             if (
@@ -99,7 +103,11 @@ class LearningTaskAPIView(APIView):
                 )
 
             return Response(
-                {"task": serializer.data, "user_liked": user_liked},
+                {
+                    "task": serializer.data,
+                    "user_liked": user_liked,
+                    "bonus": bonus_serializer.data if task_bonus else None,
+                },
                 status=status.HTTP_200_OK,
             )
 
@@ -438,6 +446,8 @@ class LearningTaskLimitView(APIView):
 class TaskBonusAPIView(APIView):
     authentication_classes = [JWTCookieAuthentication]
     permission_classes = [IsAuthenticated, IsAdminUser]
+
+    # Field name `updated_at` is not valid for model `TaskBonus` in `learning_task.serializers.TaskBonusSerializer`.
 
     def get(self, request, task_id):
         try:

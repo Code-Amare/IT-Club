@@ -87,6 +87,7 @@ class TaskBonus(models.Model):
     )
     reason = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         constraints = [

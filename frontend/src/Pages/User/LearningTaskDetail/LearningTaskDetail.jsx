@@ -25,7 +25,12 @@ import {
     FaExclamationTriangle,
     FaEye,
     FaExternalLinkAlt,
-    FaClock
+    FaClock,
+    FaGift,
+    FaCrown,
+    FaAward,
+    FaStickyNote,
+    FaHashtag
 } from "react-icons/fa";
 import {
     MdLanguage,
@@ -45,6 +50,13 @@ export default function LearningTaskDetail() {
     const [task, setTask] = useState(null);
     const [liked, setLiked] = useState(false);
     const [likeCount, setLikeCount] = useState(0);
+    const [bonus, setBonus] = useState({
+        id: null,
+        score: 0,
+        created_at: null,
+        updated_at: null,
+        admin: {},
+    });
 
     useEffect(() => {
         if (!task) return;
@@ -85,9 +97,13 @@ export default function LearningTaskDetail() {
             setTask(taskData);
             setLikeCount(taskData.likes_count || 0);
 
+            // Set bonus data if it exists
+            if (responseData.bonus) {
+                setBonus(responseData.bonus);
+            }
+
             // Check if current user has already reviewed this task
             if (user.isAuthenticated && taskData.reviews) {
-                // Find user's review (could be admin or regular user review)
                 const existingReview = taskData.reviews.find(
                     review => review.user?.id === user.id
                 );
@@ -346,22 +362,45 @@ export default function LearningTaskDetail() {
 
     // Calculate average rating
     const calculateAverageRating = () => {
-        if (!task.reviews || task.reviews.length === 0) return 0;
+        if (!task?.reviews || task.reviews.length === 0) return 0;
         const total = task.reviews.reduce((sum, review) => sum + review.rating, 0);
         return (total / task.reviews.length).toFixed(1);
     };
 
     // Get user reviews count (non-admin reviews)
     const getUserReviewsCount = () => {
-        if (!task.reviews) return 0;
+        if (!task?.reviews) return 0;
         return task.reviews.filter(review => !isUserAdminOrStaff(review.user)).length;
     };
 
     // Get admin reviews count
     const getAdminReviewsCount = () => {
-        if (!task.reviews) return 0;
+        if (!task?.reviews) return 0;
         return task.reviews.filter(review => isUserAdminOrStaff(review.user)).length;
     };
+
+    // Get formatted bonus score display - SIMPLIFIED like in the example
+    const getBonusScoreDisplay = () => {
+        const score = bonus?.score || 0;
+        return score > 0 ? `+${score}` : `${score}`;
+    };
+
+    // Check if bonus exists - SIMPLIFIED like in the example
+    const hasBonus = () => {
+        return bonus && bonus.score !== 0;
+    };
+
+    // Check if user is admin/staff for the current task
+    const isOwner = user.isAuthenticated && user.id === task?.user?.id;
+
+    // Users can review any public task except their own
+    const canReview = user.isAuthenticated && !isOwner && task?.is_public;
+
+    // Calculate values only when task exists
+    const totalReviews = task?.reviews?.length || 0;
+    const userReviewsCount = task ? getUserReviewsCount() : 0;
+    const adminReviewsCount = task ? getAdminReviewsCount() : 0;
+    const averageRating = task ? calculateAverageRating() : 0;
 
     if (loading) {
         return (
@@ -395,14 +434,6 @@ export default function LearningTaskDetail() {
             </div>
         );
     }
-
-    const isOwner = user.isAuthenticated && user.id === task.user?.id;
-    // Users can review any public task except their own
-    const canReview = user.isAuthenticated && !isOwner && task.is_public;
-    const totalReviews = task.reviews?.length || 0;
-    const userReviewsCount = getUserReviewsCount();
-    const adminReviewsCount = getAdminReviewsCount();
-    const averageRating = calculateAverageRating();
 
     return (
         <div className={styles.container}>
@@ -632,12 +663,73 @@ export default function LearningTaskDetail() {
                                     </div>
                                     <div className={styles.statLabel}>Public</div>
                                 </div>
+                                {/* Bonus Score Stat */}
+                                <div className={styles.statItem}>
+                                    <div className={styles.statValue}>
+                                        {getBonusScoreDisplay()}
+                                    </div>
+                                    <div className={styles.statLabel}>Bonus Score</div>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    {/* Right Column - Reviews */}
+                    {/* Right Column - Reviews & Bonus */}
                     <div className={styles.rightColumn}>
+                        {/* Bonus Section - SIMPLIFIED like in the example */}
+                        {hasBonus() && (
+                            <div className={styles.section}>
+                                <div className={styles.sectionHeader}>
+                                    <FaGift />
+                                    <h3>Bonus Awarded</h3>
+                                </div>
+                                <div className={styles.bonusCard}>
+                                    <div className={styles.bonusMain}>
+                                        <div className={styles.bonusScoreDisplay}>
+                                            <span className={styles.bonusScoreValue}>{getBonusScoreDisplay()}</span>
+                                            <span className={styles.bonusScoreLabel}>Points</span>
+                                        </div>
+                                        <div className={styles.bonusDescription}>
+                                            <FaStar />
+                                            <div>
+                                                <h4>Exceptional Work!</h4>
+                                                <p>Admin awarded bonus points</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Admin who gave the bonus - from bonus.admin */}
+                                    {bonus.admin && (
+                                        <div className={styles.bonusAdminInfo}>
+                                            <div className={styles.bonusAdminLabel}>Awarded by:</div>
+                                            <div className={styles.bonusAdminDetails}>
+                                                <ProfilePicture user={bonus.admin} size="small" />
+                                                <div className={styles.bonusAdminText}>
+                                                    <div className={styles.bonusAdminName}>
+                                                        {getUserDisplayName(bonus.admin)}
+                                                    </div>
+                                                    <div className={styles.bonusAdminRole}>
+                                                        {bonus.admin?.role || 'Administrator'}
+                                                    </div>
+                                                    <div className={styles.bonusAdminEmail}>
+                                                        {bonus.admin?.email || ''}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Bonus Date */}
+                                    {bonus.created_at && (
+                                        <div className={styles.bonusDate}>
+                                            <FaCalendar />
+                                            <span>Awarded on: {formatDate(bonus.created_at)}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
                         {/* Review Form (for users except task owner) */}
                         {canReview && (
                             <div className={styles.section}>
@@ -831,6 +923,14 @@ export default function LearningTaskDetail() {
                                         {task.is_public ? "Public" : "Private"}
                                     </span>
                                 </div>
+                                {hasBonus() && (
+                                    <div className={styles.metaItem}>
+                                        <span className={styles.metaLabel}>Bonus Awarded:</span>
+                                        <span className={styles.metaValue}>
+                                            {getBonusScoreDisplay()} points
+                                        </span>
+                                    </div>
+                                )}
                                 <div className={styles.metaItem}>
                                     <span className={styles.metaLabel}>Task Owner:</span>
                                     <div className={styles.ownerInfo}>

@@ -26,10 +26,13 @@ import {
     FaShieldAlt,
     FaCrown,
     FaEye,
-    FaRedo, // Added for redo
-    FaCheckCircle, // Added for marking as complete
-    FaChartBar, // Added for stats
-    FaLightbulb // Added for ideas
+    FaRedo,
+    FaCheckCircle,
+    FaChartBar,
+    FaLightbulb,
+    FaGift,
+    FaLock as FaLockIcon,
+    FaExclamationCircle
 } from "react-icons/fa";
 import {
     MdLanguage,
@@ -48,7 +51,7 @@ export default function LearningTaskDetail() {
     const [showReviewMenu, setShowReviewMenu] = useState(null);
     const [liked, setLiked] = useState(false);
     const [likeCount, setLikeCount] = useState(0);
-    const [settingToRedo, setSettingToRedo] = useState(false); // New state for redo
+    const [settingToRedo, setSettingToRedo] = useState(false);
 
     // Review form state
     const [reviewForm, setReviewForm] = useState({
@@ -61,10 +64,22 @@ export default function LearningTaskDetail() {
     const [userReview, setUserReview] = useState(null);
     const [editingReview, setEditingReview] = useState(false);
 
+    // Bonus form state
+    const [bonusData, setBonusData] = useState(null);
+    const [loadingBonus, setLoadingBonus] = useState(false);
+    const [bonusForm, setBonusForm] = useState({
+        score: 0
+    });
+    const [bonusErrors, setBonusErrors] = useState({});
+    const [submittingBonus, setSubmittingBonus] = useState(false);
+    const [deletingBonus, setDeletingBonus] = useState(false);
+    const [editingBonus, setEditingBonus] = useState(false);
+
     // Fetch task data
     useEffect(() => {
         if (taskId) {
             fetchTaskData();
+            fetchBonusData();
         }
     }, [taskId]);
 
@@ -111,6 +126,31 @@ export default function LearningTaskDetail() {
         }
     };
 
+    // Fetch bonus data
+    const fetchBonusData = async () => {
+        setLoadingBonus(true);
+        try {
+            const response = await api.get(`/api/learning-task/bonus/${taskId}/`);
+            if (response.data.task_bonus) {
+                setBonusData(response.data.task_bonus);
+                setBonusForm({
+                    score: response.data.task_bonus.score
+                });
+            } else {
+                setBonusData(null);
+                setBonusForm({ score: 0 });
+            }
+        } catch (error) {
+            if (error.response?.status !== 404) {
+                console.error("Error fetching bonus data:", error);
+            }
+            setBonusData(null);
+            setBonusForm({ score: 0 });
+        } finally {
+            setLoadingBonus(false);
+        }
+    };
+
     // Handle set to redo
     const handleSetToRedo = async () => {
         if (!task || task.status !== "rated") {
@@ -122,7 +162,7 @@ export default function LearningTaskDetail() {
         try {
             await api.post(`/api/learning-task/redo/${taskId}/`);
             neonToast.success("Task set to redo successfully", "success");
-            await fetchTaskData(); // Refresh task data
+            await fetchTaskData();
         } catch (error) {
             console.error("Error setting task to redo:", error);
             neonToast.error(error.response?.data?.error || "Failed to set task to redo", "error");
@@ -273,6 +313,79 @@ export default function LearningTaskDetail() {
         }
     };
 
+    // Handle bonus form changes
+    const handleBonusChange = (e) => {
+        const { name, value } = e.target;
+        const numValue = parseInt(value) || 0;
+        setBonusForm(prev => ({ ...prev, [name]: numValue }));
+        if (bonusErrors[name]) {
+            setBonusErrors(prev => {
+                const newErrors = { ...prev };
+                delete newErrors[name];
+                return newErrors;
+            });
+        }
+    };
+
+    // Handle bonus score change via increment/decrement
+    const handleBonusScoreChange = (increment) => {
+        const newScore = Math.max(0, Math.min(30, bonusForm.score + increment));
+        setBonusForm(prev => ({ ...prev, score: newScore }));
+    };
+
+    // Submit bonus
+    const handleSubmitBonus = async (e) => {
+        e.preventDefault();
+
+        if (bonusForm.score < 0 || bonusForm.score > 30) {
+            neonToast.error("Bonus score must be between 0 and 30", "error");
+            return;
+        }
+
+        setSubmittingBonus(true);
+        try {
+            if (bonusData) {
+                // Update existing bonus
+                await api.patch(`/api/learning-task/bonus/${taskId}/`, {
+                    score: bonusForm.score
+                });
+                neonToast.success("Bonus score updated successfully!", "success");
+            } else {
+                // Create new bonus
+                await api.post(`/api/learning-task/bonus/${taskId}/`, {
+                    score: bonusForm.score
+                });
+                neonToast.success("Bonus score added successfully!", "success");
+            }
+            await fetchBonusData();
+            setEditingBonus(false);
+        } catch (error) {
+            console.error("Error submitting bonus:", error);
+            if (error.response?.data?.error) {
+                neonToast.error(error.response.data.error, "error");
+            } else {
+                neonToast.error("Failed to submit bonus", "error");
+            }
+        } finally {
+            setSubmittingBonus(false);
+        }
+    };
+
+    // Delete bonus
+    const handleDeleteBonus = async () => {
+        setDeletingBonus(true);
+        try {
+            await api.delete(`/api/learning-task/bonus/${taskId}/`);
+            neonToast.success("Bonus score removed successfully!", "success");
+            await fetchBonusData();
+        } catch (error) {
+            console.error("Error deleting bonus:", error);
+            neonToast.error(error.response?.data?.error || "Failed to delete bonus", "error");
+        } finally {
+            setDeletingBonus(false);
+        }
+    };
+
     // Handle delete learning task
     const handleDeleteTask = async () => {
         try {
@@ -374,6 +487,11 @@ export default function LearningTaskDetail() {
         }
     };
 
+    // Check if current user is the admin who created the bonus
+    const isBonusCreator = () => {
+        return bonusData && bonusData.admin && bonusData.admin.id === user.id;
+    };
+
     if (loading) {
         return (
             <div className={styles.container}>
@@ -411,6 +529,7 @@ export default function LearningTaskDetail() {
     const isRated = task.status === "rated";
     const isRedo = task.status === "redo";
     const isCurrentlyEditing = editingReview && userReview;
+    const userIsBonusCreator = isBonusCreator();
 
     return (
         <div className={styles.container}>
@@ -675,12 +794,243 @@ export default function LearningTaskDetail() {
                                     <div className={styles.statNumber}>{averageRating}</div>
                                     <div className={styles.statLabel}>Avg</div>
                                 </div>
+                                {/* Bonus Score Stat */}
+                                <div className={styles.statItem}>
+                                    <div className={styles.statIcon}>
+                                        <FaGift />
+                                    </div>
+                                    <div className={styles.statNumber}>
+                                        {bonusData ? `+${bonusData.score}` : "0"}
+                                    </div>
+                                    <div className={styles.statLabel}>Bonus</div>
+                                </div>
+                                <div className={styles.statItem}>
+                                    <div className={styles.statIcon}>
+                                        <FaCheckCircle />
+                                    </div>
+                                    <div className={styles.statNumber}>
+                                        {bonusData ? "Yes" : "No"}
+                                    </div>
+                                    <div className={styles.statLabel}>Has Bonus</div>
+                                </div>
                             </div>
                         </div>
                     </div>
 
                     {/* Right Column - Reviews & Admin Functions */}
                     <div className={styles.rightColumn}>
+                        {/* Bonus Score Section */}
+                        <div className={styles.card}>
+                            <div className={styles.cardHeader}>
+                                <FaGift />
+                                <h3>Bonus Score</h3>
+                                {bonusData && (
+                                    <span className={`${styles.bonusBadge} ${userIsBonusCreator ? styles.bonusCreator : styles.bonusLocked}`}>
+                                        {userIsBonusCreator ? (
+                                            <>
+                                                <FaCrown /> You set this bonus
+                                            </>
+                                        ) : (
+                                            <>
+                                                <FaLockIcon /> Set by {getUserDisplayName(bonusData.admin)}
+                                            </>
+                                        )}
+                                    </span>
+                                )}
+                            </div>
+
+                            {loadingBonus ? (
+                                <div className={styles.loadingBonus}>
+                                    <div className={styles.loadingSpinner}></div>
+                                    <p>Loading bonus data...</p>
+                                </div>
+                            ) : bonusData ? (
+                                <div className={styles.bonusDisplay}>
+                                    <div className={styles.bonusInfo}>
+                                        <div className={styles.bonusScore}>
+                                            <span className={styles.bonusValue}>+{bonusData.score}</span>
+                                            <span className={styles.bonusLabel}>Bonus Points</span>
+                                        </div>
+                                        <div className={styles.bonusDetails}>
+                                            <div className={styles.bonusDetailItem}>
+                                                <FaUser className={styles.bonusDetailIcon} />
+                                                <div>
+                                                    <div className={styles.bonusDetailLabel}>Set by</div>
+                                                    <div className={styles.bonusDetailValue}>
+                                                        {getUserDisplayName(bonusData.admin)}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className={styles.bonusDetailItem}>
+                                                <FaCalendar className={styles.bonusDetailIcon} />
+                                                <div>
+                                                    <div className={styles.bonusDetailLabel}>Date</div>
+                                                    <div className={styles.bonusDetailValue}>
+                                                        {formatDate(bonusData.created_at)}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {userIsBonusCreator ? (
+                                        <div className={styles.bonusActions}>
+                                            {!editingBonus ? (
+                                                <>
+                                                    <button
+                                                        className={styles.editBonusBtn}
+                                                        onClick={() => setEditingBonus(true)}
+                                                    >
+                                                        <FaEdit /> Edit Bonus
+                                                    </button>
+                                                    <ConfirmAction
+                                                        title="Remove Bonus"
+                                                        message="Are you sure you want to remove this bonus score? This action cannot be undone."
+                                                        confirmText="Remove Bonus"
+                                                        cancelText="Cancel"
+                                                        onConfirm={handleDeleteBonus}
+                                                    >
+                                                        <AsyncButton
+                                                            className={styles.deleteBonusBtn}
+                                                            loading={deletingBonus}
+                                                            disabled={deletingBonus}
+                                                        >
+                                                            <FaTrash /> Remove Bonus
+                                                        </AsyncButton>
+                                                    </ConfirmAction>
+                                                </>
+                                            ) : (
+                                                <form onSubmit={handleSubmitBonus} className={styles.bonusForm}>
+                                                    <div className={styles.bonusFormGroup}>
+                                                        <label className={styles.bonusFormLabel}>
+                                                            <FaGift /> Bonus Score (0-30)
+                                                        </label>
+                                                        <div className={styles.bonusScoreInput}>
+                                                            <button
+                                                                type="button"
+                                                                className={styles.scoreControlBtn}
+                                                                onClick={() => handleBonusScoreChange(-1)}
+                                                                disabled={bonusForm.score <= 0}
+                                                            >
+                                                                -
+                                                            </button>
+                                                            <input
+                                                                type="number"
+                                                                name="score"
+                                                                value={bonusForm.score}
+                                                                onChange={handleBonusChange}
+                                                                min="0"
+                                                                max="30"
+                                                                className={styles.scoreInput}
+                                                            />
+                                                            <button
+                                                                type="button"
+                                                                className={styles.scoreControlBtn}
+                                                                onClick={() => handleBonusScoreChange(1)}
+                                                                disabled={bonusForm.score >= 30}
+                                                            >
+                                                                +
+                                                            </button>
+                                                        </div>
+                                                        <div className={styles.scoreHelp}>
+                                                            <span className={styles.scoreValue}>Current: {bonusForm.score} points</span>
+                                                            <span className={styles.scoreMax}>Max: 30 points</span>
+                                                        </div>
+                                                    </div>
+                                                    <div className={styles.bonusFormActions}>
+                                                        <AsyncButton
+                                                            type="submit"
+                                                            className={styles.saveBonusBtn}
+                                                            loading={submittingBonus}
+                                                            disabled={submittingBonus}
+                                                        >
+                                                            <FaCheck /> Save Changes
+                                                        </AsyncButton>
+                                                        <button
+                                                            type="button"
+                                                            className={styles.cancelBonusBtn}
+                                                            onClick={() => {
+                                                                setEditingBonus(false);
+                                                                setBonusForm({ score: bonusData.score });
+                                                            }}
+                                                            disabled={submittingBonus}
+                                                        >
+                                                            <FaTimes /> Cancel
+                                                        </button>
+                                                    </div>
+                                                </form>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <div className={styles.bonusLockedMessage}>
+                                            <FaExclamationCircle />
+                                            <p>
+                                                This bonus was set by another administrator. Only the creator can modify or remove it.
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className={styles.noBonus}>
+                                    <div className={styles.noBonusContent}>
+                                        <FaGift className={styles.noBonusIcon} />
+                                        <div className={styles.noBonusText}>
+                                            <h4>No Bonus Score Yet</h4>
+                                            <p>You can add a bonus score to reward exceptional work on this task.</p>
+                                        </div>
+                                    </div>
+                                    <form onSubmit={handleSubmitBonus} className={styles.bonusForm}>
+                                        <div className={styles.bonusFormGroup}>
+                                            <label className={styles.bonusFormLabel}>
+                                                <FaGift /> Bonus Score (0-30)
+                                            </label>
+                                            <div className={styles.bonusScoreInput}>
+                                                <button
+                                                    type="button"
+                                                    className={styles.scoreControlBtn}
+                                                    onClick={() => handleBonusScoreChange(-1)}
+                                                    disabled={bonusForm.score <= 0}
+                                                >
+                                                    -
+                                                </button>
+                                                <input
+                                                    type="number"
+                                                    name="score"
+                                                    value={bonusForm.score}
+                                                    onChange={handleBonusChange}
+                                                    min="0"
+                                                    max="30"
+                                                    className={styles.scoreInput}
+                                                />
+                                                <button
+                                                    type="button"
+                                                    className={styles.scoreControlBtn}
+                                                    onClick={() => handleBonusScoreChange(1)}
+                                                    disabled={bonusForm.score >= 30}
+                                                >
+                                                    +
+                                                </button>
+                                            </div>
+                                            <div className={styles.scoreHelp}>
+                                                <span className={styles.scoreValue}>Selected: {bonusForm.score} points</span>
+                                                <span className={styles.scoreMax}>Max: 30 points</span>
+                                            </div>
+                                        </div>
+                                        <div className={styles.bonusFormActions}>
+                                            <AsyncButton
+                                                type="submit"
+                                                className={styles.addBonusBtn}
+                                                loading={submittingBonus}
+                                                disabled={submittingBonus}
+                                            >
+                                                <FaCheck /> Add Bonus Score
+                                            </AsyncButton>
+                                        </div>
+                                    </form>
+                                </div>
+                            )}
+                        </div>
+
                         {/* Admin Review & Rating Section */}
                         <div className={styles.adminSection}>
                             <div className={styles.adminHeader}>
