@@ -18,7 +18,9 @@ import {
     FaUnlock,
     FaEdit,
     FaTrash,
-    FaChartBar
+    FaChartBar,
+    FaFileExport,
+    FaDownload
 } from "react-icons/fa";
 import styles from "./SessionDetail.module.css";
 
@@ -31,6 +33,8 @@ export default function SessionDetail() {
     const [attendances, setAttendances] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    const [exporting, setExporting] = useState(false);
+    const [exportError, setExportError] = useState("");
 
     // Filter states
     const [filters, setFilters] = useState({
@@ -79,6 +83,93 @@ export default function SessionDetail() {
             hour: '2-digit',
             minute: '2-digit'
         });
+    };
+
+    const handleExportSession = async () => {
+        if (!session || !session.is_ended) return;
+
+        try {
+            setExporting(true);
+            setExportError("");
+
+            // Make the API call with responseType: 'blob' to handle binary data
+            const response = await api.get(`/api/attendance/session/export/${sessionId}/`, {
+                responseType: 'blob',
+                headers: {
+                    'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel, text/csv'
+                }
+            });
+
+            // Create a blob from the response
+            const blob = new Blob([response.data], {
+                type: response.headers['content-type'] || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            });
+
+            // Create a URL for the blob
+            const url = window.URL.createObjectURL(blob);
+
+            // Create a temporary anchor element to trigger download
+            const link = document.createElement('a');
+            link.href = url;
+
+            // Extract filename from Content-Disposition header or create a default one
+            const contentDisposition = response.headers['content-disposition'];
+            let filename = `attendance_session_${sessionId}_${session.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}`;
+
+            if (contentDisposition) {
+                const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/i);
+                if (filenameMatch && filenameMatch[1]) {
+                    filename = filenameMatch[1];
+                }
+            }
+
+            // Add appropriate extension based on content type
+            if (response.headers['content-type']?.includes('csv')) {
+                filename += '.csv';
+            } else if (response.headers['content-type']?.includes('spreadsheetml')) {
+                filename += '.xlsx';
+            } else if (response.headers['content-type']?.includes('excel')) {
+                filename += '.xls';
+            } else {
+                filename += '.xlsx'; // default to xlsx
+            }
+
+            link.download = filename;
+
+            // Append to body, click, and remove
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            // Clean up the URL object
+            window.URL.revokeObjectURL(url);
+
+        } catch (error) {
+            console.error("Error exporting session:", error);
+            setExportError("Failed to export attendance data. Please try again.");
+
+            // If the error response contains a message, show it
+            if (error.response?.data) {
+                // Try to read the error message from the blob
+                if (error.response.data instanceof Blob) {
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                        try {
+                            const errorText = reader.result;
+                            const errorObj = JSON.parse(errorText);
+                            setExportError(errorObj.message || "Export failed");
+                        } catch {
+                            setExportError("Export failed: Unknown error");
+                        }
+                    };
+                    reader.readAsText(error.response.data);
+                } else if (error.response.data.message) {
+                    setExportError(error.response.data.message);
+                }
+            }
+        } finally {
+            setExporting(false);
+        }
     };
 
     const handleCloseSession = async () => {
@@ -302,6 +393,27 @@ export default function SessionDetail() {
                         </div>
 
                         <div className={styles.headerActions}>
+                            {/* Export button - only shown when session is ended */}
+                            {session.is_ended && (
+                                <button
+                                    className={styles.exportBtn}
+                                    onClick={handleExportSession}
+                                    disabled={exporting}
+                                >
+                                    {exporting ? (
+                                        <>
+                                            <span className={styles.spinnerSmall}></span>
+                                            <span>Exporting...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <FaFileExport />
+                                            <span>Export</span>
+                                        </>
+                                    )}
+                                </button>
+                            )}
+
                             {!session.is_ended ? (
                                 <ConfirmAction
                                     title="Close Session"
@@ -352,6 +464,32 @@ export default function SessionDetail() {
                     <div className={styles.errorAlert}>
                         <span>{error}</span>
                         <button onClick={() => setError("")}>×</button>
+                    </div>
+                )}
+
+                {/* Export Error */}
+                {exportError && (
+                    <div className={styles.errorAlert}>
+                        <span>{exportError}</span>
+                        <button onClick={() => setExportError("")}>×</button>
+                    </div>
+                )}
+
+                {/* Export Info Banner */}
+                {session.is_ended && (
+                    <div className={styles.exportInfo}>
+                        <FaFileExport className={styles.exportInfoIcon} />
+                        <div className={styles.exportInfoContent}>
+                            <strong>Session is closed</strong>
+                            <p>You can now export attendance data for this session.</p>
+                        </div>
+                        <button
+                            className={styles.exportInfoBtn}
+                            onClick={handleExportSession}
+                            disabled={exporting}
+                        >
+                            {exporting ? 'Exporting...' : 'Export Now'}
+                        </button>
                     </div>
                 )}
 
@@ -456,6 +594,12 @@ export default function SessionDetail() {
                 <div className={styles.participantsSection}>
                     <div className={styles.sectionHeader}>
                         <h3>Participants ({filteredUsers.length})</h3>
+                        {session.is_ended && (
+                            <div className={styles.exportNote}>
+                                <FaFileExport className={styles.exportNoteIcon} />
+                                <span>Session closed. Export available.</span>
+                            </div>
+                        )}
                     </div>
 
                     {filteredUsers.length === 0 ? (

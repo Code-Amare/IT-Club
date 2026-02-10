@@ -37,5 +37,9 @@ urlpatterns = [
         OpenAttendanceSessionAPIView.as_view(),
         name="open_attendance_session",
     ),
-    path("session/export/", SessionExportExcelView.as_view(), "export-session"),
+    path(
+        "session/export/<int:session_id>/",
+        SessionExportExcelView.as_view(),
+        name="export-session",
+    ),
 ]
