@@ -2,13 +2,10 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../../Context/UserContext";
 import api from "../../../Utils/api";
-import SideBar from "../../../Components/SideBar/SideBar"; // <-- now using SideBar
+import SideBar from "../../../Components/SideBar/SideBar";
+import AnnouncementCard from "../../../Components/AnnouncementCard/AnnouncementCard"; // <-- reuse the card
 import {
     FaBullhorn,
-    FaStar,
-    FaRegStar,
-    FaUser,
-    FaCalendarAlt,
     FaExclamationTriangle
 } from "react-icons/fa";
 import styles from "./UserAnnouncements.module.css";
@@ -35,7 +32,6 @@ export default function UserAnnouncements() {
             setLoading(true);
             const res = await api.get("/api/announcement/user/");
             const data = res.data.announcements || [];
-            console.log(data)
             setAnnouncements(data);
         } catch (err) {
             console.error("Error fetching announcements:", err);
@@ -49,24 +45,7 @@ export default function UserAnnouncements() {
         }
     };
 
-    const formatDate = (dateString) => {
-        if (!dateString) return "N/A";
-        const date = new Date(dateString);
-        return date.toLocaleDateString("en-US", {
-            month: "short",
-            day: "numeric",
-            year: "numeric",
-        });
-    };
-
-    const getProfilePic = (creator) => {
-        return creator?.profile_pic_url || null;
-    };
-
-    const getCreatorName = (creator) => {
-        return creator?.full_name || creator?.username || creator?.email || "Unknown";
-    };
-
+    // Sort by date (newest first)
     const sortedAnnouncements = [...announcements].sort((a, b) => {
         const dateA = new Date(a.announcement_date || a.created_at);
         const dateB = new Date(b.announcement_date || b.created_at);
@@ -107,57 +86,11 @@ export default function UserAnnouncements() {
                 ) : (
                     <div className={styles.grid}>
                         {sortedAnnouncements.map((announcement) => (
-                            <div
+                            <AnnouncementCard
                                 key={announcement.id}
-                                className={`${styles.card} ${announcement.is_important ? styles.importantCard : ""
-                                    }`}
-                            >
-                                <div className={styles.cardHeader}>
-                                    <div className={styles.titleWrapper}>
-                                        <h3 className={styles.title}>{announcement.title}</h3>
-                                        {announcement.is_important ? (
-                                            <FaStar className={styles.starIcon} />
-                                        ) : (
-                                            <FaRegStar className={styles.starOutline} />
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div className={styles.cardBody}>
-                                    <div className={styles.metaItem}>
-                                        <FaCalendarAlt />
-                                        <span>{formatDate(announcement.announcement_date)}</span>
-                                    </div>
-
-                                    <div className={styles.creator}>
-                                        <div className={styles.creatorAvatar}>
-                                            {getProfilePic(announcement.created_by) ? (
-                                                <img
-                                                    src={getProfilePic(announcement.created_by)}
-                                                    alt={getCreatorName(announcement.created_by)}
-                                                    className={styles.avatarImage}
-                                                />
-                                            ) : (
-                                                <div className={styles.avatarPlaceholder}>
-                                                    <FaUser />
-                                                </div>
-                                            )}
-                                        </div>
-                                        <div className={styles.creatorInfo}>
-                                            <span className={styles.creatorLabel}>Posted by</span>
-                                            <span className={styles.creatorName}>
-                                                {getCreatorName(announcement.created_by)}
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    {announcement.created_at !== announcement.updated_at && (
-                                        <div className={styles.updatedAt}>
-                                            Updated: {formatDate(announcement.updated_at)}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
+                                announcement={announcement}
+                                onUpdate={fetchAnnouncements} // optional – never called for users, but safe to pass
+                            />
                         ))}
                     </div>
                 )}

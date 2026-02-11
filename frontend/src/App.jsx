@@ -46,7 +46,8 @@ import StudentLearningTasks from './Pages/Admin/StudentLearningTasks/StudentLear
 import UserAttendance from './Pages/User/UserAttendance/UserAttendance'
 import AnnouncementList from './Pages/Admin/AnnouncementList/AnnouncementList'
 import CreateAnnouncement from './Pages/Admin/CreateAnnouncement/CreateAnnouncement'
-import AnnouncementDetail from "./Pages/Admin/AnnouncementDetail/AnnouncementDetail"
+import AdminAnnouncementDetail from "./Pages/Admin/AnnouncementDetail/AnnouncementDetail"
+import UserAnnouncementDetail from "./Pages/User/AnnouncementDetail/AnnouncementDetail"
 import EditAnnouncement from "./Pages/Admin/EditAnnouncement/EditAnnouncement"
 import UserAnnouncements from './Pages/User/UserAnnouncements/UserAnnouncements'
 
@@ -98,7 +99,7 @@ function App() {
           <Route path="/admin/student/task/:id" element={<StudentLearningTasks />} />
           <Route path="/admin/announcements" element={<AnnouncementList />} />
           <Route path="/admin/announcement/create" element={<CreateAnnouncement />} />
-          <Route path="/admin/announcement/:announcementId" element={<AnnouncementDetail />} />
+          <Route path="/admin/announcement/:announcementId" element={<AdminAnnouncementDetail />} />
           <Route path="/admin/announcement/edit/:announcementId" element={<EditAnnouncement />} />
         </Route>
         <Route element={<ProtectedRoute requiredRole={["user"]} />}>
@@ -110,6 +111,7 @@ function App() {
           <Route path='/user/learning-task/edit/:id' element={<LearningTaskEdit />} />
           <Route path='/user/attendance' element={<UserAttendance />} />
           <Route path='/user/announcements' element={<UserAnnouncements />} />
+          <Route path='/user/announcement/:announcementId' element={<UserAnnouncementDetail />} />
         </Route>
         <Route path='*' element={<NotFound />} />
       </Routes>

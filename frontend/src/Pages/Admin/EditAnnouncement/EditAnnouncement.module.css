@@ -557,3 +557,50 @@
   scrollbar-width: thin;
   scrollbar-color: var(--border-color) var(--bg-body);
 }
+/* Textarea for announcement content */
+.textArea {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-body);
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1.6;
+  resize: vertical;
+  min-height: 120px;
+  font-family: inherit;
+  transition: border-color 0.1s ease;
+}
+
+.textArea:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.textArea:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Character counter */
+.charCounter {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-align: right;
+}
+
+/* Importance checkbox with exclamation icon */
+.importanceLabel {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.importanceIcon {
+  font-size: 18px;
+  transition: color 0.1s ease;
+}

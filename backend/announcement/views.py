@@ -121,8 +121,20 @@ class UserAnnouncementView(APIView):
     authentication_classes = [JWTCookieAuthentication]
     permission_classes = [IsAuthenticated]
 
-    def get(self, request):
+    def get(self, request, pk=None):
+
         user = request.user
+        if pk:
+            try:
+                announcement = Announcement.objects.get(pk=pk, targets=user)
+            except Announcement.DoesNotExist:
+                return Response(
+                    {"error": f"Announcement with id {pk} not found."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+            serializer = AnnouncementSerializer(announcement)
+            return Response(serializer.data)
+
         announcements = user.announcements.all()
         serializer = AnnouncementMinimalSerializer(announcements, many=True)
         if not announcements.exists():

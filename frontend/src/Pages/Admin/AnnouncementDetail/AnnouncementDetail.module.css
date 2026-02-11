@@ -77,14 +77,25 @@
   border-radius: 4px;
   font-weight: 600;
 }
-
 .importantBadge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
   color: #ffc107;
   background: rgba(255, 193, 7, 0.1);
   border: 1px solid rgba(255, 193, 7, 0.3);
 }
 
 .normalBadge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
   color: var(--text-secondary);
   background: rgba(107, 114, 128, 0.1);
   border: 1px solid rgba(107, 114, 128, 0.3);
@@ -702,4 +713,56 @@
   .titleSection h1 {
     font-size: 18px;
   }
+}
+/* Content Card */
+.contentCard {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.contentHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 16px;
+}
+
+.contentHeader svg {
+  color: var(--primary);
+  font-size: 18px;
+}
+
+.contentHeader h3 {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+  flex: 1;
+}
+
+.contentBody {
+  min-height: 80px;
+}
+
+.contentText {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.contentEmpty {
+  font-size: 14px;
+  color: var(--text-secondary);
+  font-style: italic;
+  padding: 20px;
+  text-align: center;
+  background: var(--bg-body);
+  border-radius: 6px;
 }

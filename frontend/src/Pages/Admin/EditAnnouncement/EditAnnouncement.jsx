@@ -14,7 +14,7 @@ import {
     FaExclamationCircle,
     FaCheckCircle,
     FaCalendarAlt,
-    FaStar
+    FaFileAlt
 } from "react-icons/fa";
 import styles from "./EditAnnouncement.module.css";
 import { neonToast } from "../../../Components/NeonToast/NeonToast";
@@ -24,9 +24,10 @@ export default function EditAnnouncement() {
     const navigate = useNavigate();
     const { announcementId } = useParams();
 
-    // Form state
+    // Form state – now includes 'content'
     const [formData, setFormData] = useState({
         title: "",
+        content: "",
         announcement_date: "",
         is_important: false,
         targets: [] // array of user IDs
@@ -68,9 +69,10 @@ export default function EditAnnouncement() {
                 setAllUsers(usersData);
                 setFilteredUsers(usersData);
 
-                // Pre-populate form
+                // Pre-populate form – now includes content
                 setFormData({
                     title: announcementData.title || "",
+                    content: announcementData.content || "",
                     announcement_date: announcementData.announcement_date || "",
                     is_important: announcementData.is_important || false,
                     targets: announcementData.users?.map(u => u.id) || []
@@ -154,6 +156,11 @@ export default function EditAnnouncement() {
         setError("");
     };
 
+    const handleContentChange = (e) => {
+        setFormData({ ...formData, content: e.target.value });
+        setError("");
+    };
+
     const handleDateChange = (e) => {
         setFormData({ ...formData, announcement_date: e.target.value });
     };
@@ -206,6 +213,11 @@ export default function EditAnnouncement() {
             return;
         }
 
+        if (!formData.content.trim()) {
+            setError("Please enter announcement content");
+            return;
+        }
+
         if (!formData.announcement_date) {
             setError("Please select an announcement date");
             return;
@@ -221,6 +233,7 @@ export default function EditAnnouncement() {
         try {
             const payload = {
                 title: formData.title,
+                content: formData.content,
                 announcement_date: formData.announcement_date,
                 targets: formData.targets,
                 is_important: formData.is_important
@@ -348,6 +361,26 @@ export default function EditAnnouncement() {
                             />
                         </div>
 
+                        {/* Announcement Content */}
+                        <div className={styles.formSection}>
+                            <label className={styles.inputLabel}>
+                                <FaFileAlt style={{ marginRight: "6px" }} />
+                                Announcement Content *
+                            </label>
+                            <textarea
+                                value={formData.content}
+                                onChange={handleContentChange}
+                                placeholder="Write the full announcement here..."
+                                className={styles.textArea}
+                                rows="6"
+                                required
+                                disabled={submitting}
+                            />
+                            <div className={styles.charCounter}>
+                                {formData.content.length} characters
+                            </div>
+                        </div>
+
                         {/* Date & Importance */}
                         <div className={styles.formSection}>
                             <div style={{ display: "flex", gap: "24px", flexWrap: "wrap" }}>
@@ -367,7 +400,7 @@ export default function EditAnnouncement() {
                                 </div>
 
                                 <div style={{ display: "flex", alignItems: "center", marginTop: "24px" }}>
-                                    <label className={styles.checkboxLabel}>
+                                    <label className={styles.importanceLabel}>
                                         <input
                                             type="checkbox"
                                             checked={formData.is_important}
@@ -375,7 +408,13 @@ export default function EditAnnouncement() {
                                             disabled={submitting}
                                             className={styles.checkbox}
                                         />
-                                        <FaStar style={{ color: formData.is_important ? "#ffc107" : "#adb5bd", marginLeft: "8px" }} />
+                                        <FaExclamationCircle
+                                            className={styles.importanceIcon}
+                                            style={{
+                                                color: formData.is_important ? "#ffc107" : "#adb5bd",
+                                                marginLeft: "8px"
+                                            }}
+                                        />
                                         <span style={{ marginLeft: "8px" }}>Mark as important</span>
                                     </label>
                                 </div>

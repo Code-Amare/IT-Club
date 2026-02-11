@@ -12,12 +12,13 @@ import {
     FaExclamationCircle
 } from "react-icons/fa";
 import styles from "./AnnouncementCard.module.css";
+import ConfirmAction from "../ConfirmAction/ConfirmAction"; // adjust path as needed
+import { neonToast } from "../NeonToast/NeonToast";
 
 export default function AnnouncementCard({ announcement, onUpdate }) {
     const { user } = useUser();
     const navigate = useNavigate();
     const [deleting, setDeleting] = useState(false);
-    const [showConfirm, setShowConfirm] = useState(false);
 
     // Determine if current user is admin/staff
     const isAdmin =
@@ -48,11 +49,11 @@ export default function AnnouncementCard({ announcement, onUpdate }) {
         try {
             await api.delete(`/api/announcement/${announcement.id}/`);
             onUpdate();
+            neonToast.success("Announcement deleted successfully.")
         } catch (error) {
             console.error("Delete failed:", error);
         } finally {
             setDeleting(false);
-            setShowConfirm(false);
         }
     };
 
@@ -93,16 +94,24 @@ export default function AnnouncementCard({ announcement, onUpdate }) {
                         >
                             <FaEdit />
                         </Link>
-                        <button
-                            onClick={(e) => {
-                                handleActionClick(e);
-                                setShowConfirm(true);
-                            }}
-                            className={styles.deleteBtn}
-                            disabled={deleting}
-                        >
-                            <FaTrash />
-                        </button>
+
+                        {/* Delete button with reusable ConfirmAction */}
+                        <span onClick={handleActionClick}>
+                            <ConfirmAction
+                                title="Delete announcement?"
+                                message="This action cannot be undone."
+                                confirmText="Delete"
+                                cancelText="Cancel"
+                                onConfirm={handleDelete}
+                            >
+                                <button
+                                    className={styles.deleteBtn}
+                                    disabled={deleting}
+                                >
+                                    <FaTrash />
+                                </button>
+                            </ConfirmAction>
+                        </span>
                     </div>
                 )}
             </div>
@@ -136,20 +145,6 @@ export default function AnnouncementCard({ announcement, onUpdate }) {
                     </div>
                 </div>
             </div>
-
-            {showConfirm && (
-                <div className={styles.confirmOverlay} onClick={handleActionClick}>
-                    <div className={styles.confirmDialog} onClick={(e) => e.stopPropagation()}>
-                        <p>Delete this announcement?</p>
-                        <div className={styles.confirmActions}>
-                            <button onClick={handleDelete} disabled={deleting}>
-                                {deleting ? "Deleting..." : "Yes"}
-                            </button>
-                            <button onClick={() => setShowConfirm(false)}>No</button>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 }

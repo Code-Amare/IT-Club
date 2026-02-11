@@ -11,12 +11,12 @@ import {
     FaCheckCircle,
     FaTimesCircle,
     FaCalendarAlt,
-    FaStar,
-    FaRegStar,
+    FaExclamationCircle,
     FaFilter,
     FaSearch,
     FaEdit,
-    FaTrash
+    FaTrash,
+    FaFileAlt      // icon for content
 } from "react-icons/fa";
 import styles from "./AnnouncementDetail.module.css";
 
@@ -54,7 +54,7 @@ export default function AnnouncementDetail() {
             const data = res.data;
 
             setAnnouncement(data);
-            setRecipients(data.users || []); // users = targeted users
+            setRecipients(data.users || []);
         } catch (error) {
             console.error("Error fetching announcement:", error);
             setError("Failed to load announcement details.");
@@ -114,7 +114,6 @@ export default function AnnouncementDetail() {
         return recipients.filter(recipient => {
             const profile = recipient.profile || {};
 
-            // Apply search filter
             if (searchTerm.trim()) {
                 const searchLower = searchTerm.toLowerCase();
                 const matchesSearch =
@@ -124,13 +123,8 @@ export default function AnnouncementDetail() {
                 if (!matchesSearch) return false;
             }
 
-            // Apply field filter
             if (filters.field && profile.field !== filters.field) return false;
-
-            // Apply grade filter
             if (filters.grade && profile.grade != filters.grade) return false;
-
-            // Apply section filter
             if (filters.section && profile.section !== filters.section) return false;
 
             return true;
@@ -149,7 +143,6 @@ export default function AnnouncementDetail() {
         setSearchTerm("");
     };
 
-    // Compute simple stats
     const stats = useMemo(() => {
         return {
             total: recipients.length,
@@ -208,12 +201,10 @@ export default function AnnouncementDetail() {
                                     <span className={announcement.is_important ? styles.importantBadge : styles.normalBadge}>
                                         {announcement.is_important ? (
                                             <>
-                                                <FaStar /> Important
+                                                <FaExclamationCircle /> Important
                                             </>
                                         ) : (
-                                            <>
-                                                <FaRegStar /> Normal
-                                            </>
+                                            "Normal"
                                         )}
                                     </span>
                                 </p>
@@ -276,6 +267,25 @@ export default function AnnouncementDetail() {
                             <span className={styles.infoLabel}>Total Recipients</span>
                             <span className={styles.infoValue}>{stats.total}</span>
                         </div>
+                    </div>
+                </div>
+
+                {/* Announcement Content Card */}
+                <div className={styles.contentCard}>
+                    <div className={styles.contentHeader}>
+                        <FaFileAlt />
+                        <h3>Content</h3>
+                    </div>
+                    <div className={styles.contentBody}>
+                        {announcement.content ? (
+                            <div className={styles.contentText}>
+                                {announcement.content}
+                            </div>
+                        ) : (
+                            <div className={styles.contentEmpty}>
+                                No content provided.
+                            </div>
+                        )}
                     </div>
                 </div>
 

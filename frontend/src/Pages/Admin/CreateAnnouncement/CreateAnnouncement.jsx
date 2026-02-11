@@ -14,18 +14,24 @@ import {
     FaExclamationCircle,
     FaCheckCircle,
     FaCalendarAlt,
-    FaStar
+    FaFileAlt          // icon for content
 } from "react-icons/fa";
 import styles from "./CreateAnnouncement.module.css";
 import { neonToast } from "../../../Components/NeonToast/NeonToast";
+import { useNotifContext } from "../../../Context/NotifContext";
 
 export default function CreateAnnouncement() {
-    const { user } = useUser();
     const navigate = useNavigate();
+    const { updatePageTitle } = useNotifContext();
 
-    // Form state
+    useEffect(() => {
+        updatePageTitle("Create Announcement");
+    }, []);
+
+    // Form state – now includes 'content'
     const [formData, setFormData] = useState({
         title: "",
+        content: "",
         announcement_date: "",
         is_important: false,
         targets: []      // array of user IDs
@@ -94,7 +100,6 @@ export default function CreateAnnouncement() {
 
         let filtered = allUsers;
 
-        // Text search
         if (searchTerm.trim()) {
             const searchLower = searchTerm.toLowerCase();
             filtered = filtered.filter(user => {
@@ -107,17 +112,14 @@ export default function CreateAnnouncement() {
             });
         }
 
-        // Field filter
         if (filters.field) {
             filtered = filtered.filter(user => user.field === filters.field);
         }
 
-        // Grade filter
         if (filters.grade) {
             filtered = filtered.filter(user => user.grade == filters.grade);
         }
 
-        // Section filter
         if (filters.section) {
             filtered = filtered.filter(user => user.section === filters.section);
         }
@@ -128,6 +130,11 @@ export default function CreateAnnouncement() {
     // Handlers
     const handleTitleChange = (e) => {
         setFormData({ ...formData, title: e.target.value });
+        setError("");
+    };
+
+    const handleContentChange = (e) => {
+        setFormData({ ...formData, content: e.target.value });
         setError("");
     };
 
@@ -183,6 +190,11 @@ export default function CreateAnnouncement() {
             return;
         }
 
+        if (!formData.content.trim()) {
+            setError("Please enter announcement content");
+            return;
+        }
+
         if (!formData.announcement_date) {
             setError("Please select an announcement date");
             return;
@@ -198,6 +210,7 @@ export default function CreateAnnouncement() {
         try {
             const payload = {
                 title: formData.title,
+                content: formData.content,
                 announcement_date: formData.announcement_date,
                 targets: formData.targets,
                 is_important: formData.is_important
@@ -209,10 +222,9 @@ export default function CreateAnnouncement() {
             setSuccess("Announcement created successfully! Redirecting...");
             neonToast.success("Announcement published");
 
-            // Redirect to announcement list (adjust route as needed)
             setTimeout(() => navigate("/admin/announcements"), 1500);
         } catch (error) {
-            console.log(error.response)
+            console.log(error.response);
             console.error("Error creating announcement:", error);
             setError(
                 error.response?.data?.error ||
@@ -313,6 +325,26 @@ export default function CreateAnnouncement() {
                             />
                         </div>
 
+                        {/* Announcement Content */}
+                        <div className={styles.formSection}>
+                            <label className={styles.inputLabel}>
+                                <FaFileAlt style={{ marginRight: "6px" }} />
+                                Announcement Content *
+                            </label>
+                            <textarea
+                                value={formData.content}
+                                onChange={handleContentChange}
+                                placeholder="Write the full announcement here..."
+                                className={styles.textArea}
+                                rows="6"
+                                required
+                                disabled={submitting}
+                            />
+                            <div className={styles.charCounter}>
+                                {formData.content.length} characters
+                            </div>
+                        </div>
+
                         {/* Date & Importance */}
                         <div className={styles.formSection}>
                             <div style={{ display: "flex", gap: "24px", flexWrap: "wrap" }}>
@@ -332,7 +364,7 @@ export default function CreateAnnouncement() {
                                 </div>
 
                                 <div style={{ display: "flex", alignItems: "center", marginTop: "24px" }}>
-                                    <label className={styles.checkboxLabel}>
+                                    <label className={styles.importanceLabel}>
                                         <input
                                             type="checkbox"
                                             checked={formData.is_important}
@@ -340,7 +372,13 @@ export default function CreateAnnouncement() {
                                             disabled={submitting}
                                             className={styles.checkbox}
                                         />
-                                        <FaStar style={{ color: formData.is_important ? "#ffc107" : "#adb5bd", marginLeft: "8px" }} />
+                                        <FaExclamationCircle
+                                            className={styles.importanceIcon}
+                                            style={{
+                                                color: formData.is_important ? "#ffc107" : "#adb5bd",
+                                                marginLeft: "8px"
+                                            }}
+                                        />
                                         <span style={{ marginLeft: "8px" }}>Mark as important</span>
                                     </label>
                                 </div>
