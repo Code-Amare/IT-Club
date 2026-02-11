@@ -14,6 +14,7 @@ class AnnoucementSerializer(serializers.ModelSerializer):
             "title",
             "announcement_date",
             "targets",
+            "users",
             "created_by",
             "created_at",
             "updated_at",
