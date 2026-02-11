@@ -45,10 +45,10 @@ class AnnouncementView(APIView):
         if serializer.is_valid():
             with transaction.atomic():
                 announcement = serializer.save(created_by=request.user)
-                users = announcement.targets
-                users_list = list(users)
+                users = list(announcement.targets.all())
+
                 async_to_sync(notify_users_bulk)(
-                    recipients=users_list,
+                    recipients=users,
                     actor=request.user,
                     title="Annoucement",
                     description="You have a new annoucement.",
@@ -81,10 +81,10 @@ class AnnouncementView(APIView):
 
             with transaction.atomic():
                 announcement = serializer.save()
-                users = announcement.targets
-                users_list = list(users)
+                users = list(announcement.targets.all())
+
                 async_to_sync(notify_users_bulk)(
-                    recipients=users_list,
+                    recipients=users,
                     actor=request.user,
                     title="Annoucement updated",
                     description=f"The announcement '{announcement.title}' has been updated.",
