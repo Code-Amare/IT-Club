@@ -4,12 +4,14 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
-
+from django.db import transaction
 from .models import Announcement
 from .serializers import AnnoucementSerializer
 from users.serializers import UserInverseSerializer
 from utils.auth import RolePermissionFactory
 from utils.auth import JWTCookieAuthentication
+from asgiref.sync import async_to_sync
+from utils.notif import notify_users_bulk
 
 
 @method_decorator(csrf_protect, name="dispatch")
@@ -41,7 +43,19 @@ class AnnouncementView(APIView):
 
         serializer = AnnoucementSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save(created_by=request.user)
+            with transaction.atomic():
+                announcement = serializer.save(created_by=request.user)
+                users = announcement.targets
+                users_list = list(users)
+                async_to_sync(notify_users_bulk)(
+                    recipients=users_list,
+                    actor=request.user,
+                    title="Annoucement",
+                    description="You have a new annoucement.",
+                    code="info",
+                    url=f"/user/announcement/{announcement.id}",
+                    is_push_notif=True,
+                )
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -64,7 +78,21 @@ class AnnouncementView(APIView):
             announcement, data=request.data, partial=True
         )
         if serializer.is_valid():
-            serializer.save()
+
+            with transaction.atomic():
+                announcement = serializer.save()
+                users = announcement.targets
+                users_list = list(users)
+                async_to_sync(notify_users_bulk)(
+                    recipients=users_list,
+                    actor=request.user,
+                    title="Annoucement updated",
+                    description=f"The announcement '{announcement.title}' has been updated.",
+                    code="info",
+                    url=f"/user/announcement/{announcement.id}",
+                    is_push_notif=True,
+                )
+
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
