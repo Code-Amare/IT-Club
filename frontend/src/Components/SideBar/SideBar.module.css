@@ -316,6 +316,7 @@
 
 .notificationItem:hover {
   background-color: var(--border-color);
+  cursor: pointer;
 }
 
 .notificationContent {

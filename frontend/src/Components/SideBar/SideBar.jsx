@@ -163,10 +163,6 @@ export default function SideBar({ children }) {
         navigate("/login");
     };
 
-    // Function to clear all notifications
-    const handleClearAllNotifications = async () => {
-
-    };
 
     // Truncate text function
     const truncateText = (text, maxLength = 40) => {
@@ -273,7 +269,9 @@ export default function SideBar({ children }) {
                                             <div className={styles.notificationList}>
                                                 {notificationPreview && notificationPreview.length > 0 ? (
                                                     notificationPreview.map(notification => (
-                                                        <div key={notification.id} className={styles.notificationItem}>
+                                                        <div key={notification.id} className={styles.notificationItem} onClick={() => {
+                                                            navigate(`/notification/${notification.id}`)
+                                                        }}>
                                                             <div className={styles.notificationContent}>
                                                                 <div className={styles.notificationTitle}>
                                                                     {notification.title}
