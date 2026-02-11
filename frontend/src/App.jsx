@@ -44,6 +44,7 @@ import SessionDetail from './Pages/Admin/SessionDetail/SessionDetail'
 import MarkAttendance from "./Pages/Admin/MarkAttendance/MarkAttendance"
 import StudentLearningTasks from './Pages/Admin/StudentLearningTasks/StudentLearningTasks'
 import UserAttendance from './Pages/User/UserAttendance/UserAttendance'
+import AnnouncementList from './Pages/Admin/AnnouncementList/AnnouncementList'
 
 function App() {
   return (
@@ -91,6 +92,7 @@ function App() {
           <Route path="/admin/session/:sessionId" element={<SessionDetail />} />
           <Route path="/admin/session/edit/:sessionId" element={<MarkAttendance />} />
           <Route path="/admin/student/task/:id" element={<StudentLearningTasks />} />
+          <Route path="/admin/announcements" element={<AnnouncementList />} />
         </Route>
         <Route element={<ProtectedRoute requiredRole={["user"]} />}>
           <Route path='/user' element={<UserDashboard />} />

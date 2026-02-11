@@ -20,7 +20,8 @@ import {
     MdWork,
     MdCode,
     MdAccountTree,
-    MdChecklist
+    MdChecklist,
+    MdAnnouncement
 } from "react-icons/md";
 import { useUser } from "../../Context/UserContext";
 import { useNotifContext } from "../../Context/NotifContext";
@@ -49,7 +50,7 @@ export default function SideBar({ children }) {
         { icon: <MdSchool />, text: "Learning Tasks", to: "/admin/learning-tasks" },
         { icon: <MdCode />, text: "Languages", to: "/admin/languages" },
         { icon: <MdAccountTree />, text: "Frameworks", to: "/admin/frameworks" },
-        // { icon: <MdAssignment />, text: "Projects", to: "/admin/projects" },
+        { icon: <MdAnnouncement />, text: "Announcements", to: "/admin/announcements" },
         { icon: <MdChecklist />, text: "Attendance", to: "/admin/attendance" },
     ];
 

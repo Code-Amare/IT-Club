@@ -1,0 +1,226 @@
+.card {
+  display: block;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  text-decoration: none;
+  transition: all 0.2s ease;
+  overflow: hidden;
+}
+
+.card:hover {
+  border-color: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px var(--card-shadow);
+}
+
+/* Important announcement indicator - subtle left border */
+.card.important {
+  border-left: 4px solid #ffc107;
+}
+
+/* Card Header */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.titleWrapper {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.starIcon,
+.starOutline {
+  margin-left: 8px;
+  flex-shrink: 0;
+  font-size: 16px;
+}
+
+.starIcon {
+  color: #ffc107;
+}
+
+.starOutline {
+  color: var(--text-secondary);
+}
+
+/* Actions (edit/delete) */
+.actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+  margin-left: 12px;
+}
+
+.editBtn,
+.deleteBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-body);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+  font-size: 14px;
+}
+
+.editBtn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--badge-bg);
+}
+
+.deleteBtn:hover {
+  border-color: var(--toast-error);
+  color: var(--toast-error);
+  background: var(--toast-bg-error);
+}
+
+.deleteBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Card Body */
+.details {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.detailItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.detailItem svg {
+  color: var(--text-secondary);
+  width: 14px;
+  opacity: 0.8;
+  flex-shrink: 0;
+}
+
+/* Confirmation Overlay (Delete confirmation) */
+.confirmOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.confirmDialog {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 300px;
+  width: 100%;
+  box-shadow: 0 8px 24px var(--card-shadow);
+}
+
+.confirmDialog p {
+  margin: 0 0 20px 0;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-primary);
+  text-align: center;
+}
+
+.confirmActions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.confirmActions button {
+  padding: 8px 20px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid var(--border-color);
+  background: var(--bg-body);
+  color: var(--text-primary);
+  transition: all 0.2s ease;
+}
+
+.confirmActions button:first-child {
+  background: var(--toast-error);
+  color: var(--toast-error-contrast, white);
+  border-color: var(--toast-error);
+}
+
+.confirmActions button:first-child:hover {
+  background: var(--toast-error-dark, #c82333);
+  border-color: var(--toast-error-dark, #c82333);
+}
+
+.confirmActions button:last-child:hover {
+  background: var(--bg-surface);
+  border-color: var(--text-secondary);
+}
+
+/* Responsive */
+@media (max-width: 576px) {
+  .header,
+  .details {
+    padding: 12px 16px;
+  }
+
+  .title {
+    font-size: 15px;
+  }
+
+  .actions {
+    gap: 6px;
+  }
+
+  .editBtn,
+  .deleteBtn {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+  }
+
+  .detailItem {
+    font-size: 13px;
+  }
+
+  .confirmDialog {
+    padding: 20px;
+  }
+}
