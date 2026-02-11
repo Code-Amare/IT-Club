@@ -5,7 +5,7 @@ from .views import (
     CloseAttendanceSessionAPIView,
     OpenAttendanceSessionAPIView,
     AttendanceSessionAllView,
-    SessionExportExcelView,
+    SessionExportPdfView,
 )
 
 urlpatterns = [
@@ -39,7 +39,7 @@ urlpatterns = [
     ),
     path(
         "session/export/<int:session_id>/",
-        SessionExportExcelView.as_view(),
+        SessionExportPdfView.as_view(),
         name="export-session",
     ),
 ]

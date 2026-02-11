@@ -84,7 +84,6 @@ export default function SessionDetail() {
             minute: '2-digit'
         });
     };
-
     const handleExportSession = async () => {
         if (!session || !session.is_ended) return;
 
@@ -92,17 +91,14 @@ export default function SessionDetail() {
             setExporting(true);
             setExportError("");
 
-            // Make the API call with responseType: 'blob' to handle binary data
+            // Make the API call - backend returns HttpResponse with Excel file
             const response = await api.get(`/api/attendance/session/export/${sessionId}/`, {
-                responseType: 'blob',
-                headers: {
-                    'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel, text/csv'
-                }
+                responseType: 'blob'  // Important for binary file download
             });
 
             // Create a blob from the response
             const blob = new Blob([response.data], {
-                type: response.headers['content-type'] || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                type: response.headers['content-type']
             });
 
             // Create a URL for the blob
@@ -114,24 +110,13 @@ export default function SessionDetail() {
 
             // Extract filename from Content-Disposition header or create a default one
             const contentDisposition = response.headers['content-disposition'];
-            let filename = `attendance_session_${sessionId}_${session.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}`;
+            let filename = `attendance_session_${sessionId}_${session.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`;
 
             if (contentDisposition) {
                 const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/i);
                 if (filenameMatch && filenameMatch[1]) {
                     filename = filenameMatch[1];
                 }
-            }
-
-            // Add appropriate extension based on content type
-            if (response.headers['content-type']?.includes('csv')) {
-                filename += '.csv';
-            } else if (response.headers['content-type']?.includes('spreadsheetml')) {
-                filename += '.xlsx';
-            } else if (response.headers['content-type']?.includes('excel')) {
-                filename += '.xls';
-            } else {
-                filename += '.xlsx'; // default to xlsx
             }
 
             link.download = filename;
@@ -146,32 +131,24 @@ export default function SessionDetail() {
 
         } catch (error) {
             console.error("Error exporting session:", error);
-            setExportError("Failed to export attendance data. Please try again.");
 
-            // If the error response contains a message, show it
-            if (error.response?.data) {
-                // Try to read the error message from the blob
-                if (error.response.data instanceof Blob) {
-                    const reader = new FileReader();
-                    reader.onload = () => {
-                        try {
-                            const errorText = reader.result;
-                            const errorObj = JSON.parse(errorText);
-                            setExportError(errorObj.message || "Export failed");
-                        } catch {
-                            setExportError("Export failed: Unknown error");
-                        }
-                    };
-                    reader.readAsText(error.response.data);
-                } else if (error.response.data.message) {
-                    setExportError(error.response.data.message);
+            if (error.response?.status === 400) {
+                if (error.response.data?.detail?.includes("not ended")) {
+                    setExportError("Session is not ended. Close the session first before exporting.");
+                } else {
+                    setExportError(error.response.data?.detail || "Bad request");
                 }
+            } else if (error.response?.status === 404) {
+                setExportError("Session not found");
+            } else if (error.response?.status === 403) {
+                setExportError("You don't have permission to export this session");
+            } else {
+                setExportError("Failed to export attendance data. Please try again.");
             }
         } finally {
             setExporting(false);
         }
     };
-
     const handleCloseSession = async () => {
         try {
             await api.post(`/api/attendance/sessions/close/${sessionId}/`);

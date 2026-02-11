@@ -947,3 +947,148 @@
     min-width: 100%;
   }
 }
+/* Export Button Styles */
+.exportBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  border: 1px solid var(--success);
+  background: var(--success);
+  color: var(--primary-contrast);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.exportBtn:hover:not(:disabled) {
+  background: var(--success-hover);
+  border-color: var(--success-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 201, 80, 0.3);
+}
+
+.exportBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.spinnerSmall {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  display: inline-block;
+}
+
+/* Export Info Banner */
+.exportInfo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  background: rgba(0, 201, 80, 0.1);
+  border: 1px solid rgba(0, 201, 80, 0.3);
+  border-radius: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.exportInfoIcon {
+  color: var(--success);
+  flex-shrink: 0;
+  font-size: 18px;
+}
+
+.exportInfoContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.exportInfoContent strong {
+  display: block;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+  font-size: 14px;
+}
+
+.exportInfoContent p {
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.4;
+  margin: 0;
+  word-wrap: break-word;
+}
+
+.exportInfoBtn {
+  padding: 6px 12px;
+  background: var(--success);
+  color: var(--primary-contrast);
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.exportInfoBtn:hover:not(:disabled) {
+  background: var(--success-hover);
+  transform: translateY(-1px);
+}
+
+.exportInfoBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Export Note in Section Header */
+.exportNote {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: rgba(0, 201, 80, 0.1);
+  border: 1px solid rgba(0, 201, 80, 0.2);
+  border-radius: 12px;
+  font-size: 12px;
+  color: var(--success);
+  font-weight: 500;
+}
+
+.exportNoteIcon {
+  font-size: 11px;
+}
+
+/* Responsive adjustments for export button */
+@media (max-width: 768px) {
+  .exportInfo {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+    gap: 12px;
+  }
+
+  .exportInfoIcon {
+    align-self: center;
+  }
+
+  .exportInfoBtn {
+    align-self: center;
+  }
+
+  .exportNote {
+    margin-top: 8px;
+    align-self: flex-start;
+  }
+}
