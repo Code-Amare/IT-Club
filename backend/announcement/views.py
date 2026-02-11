@@ -6,7 +6,7 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from django.db import transaction
 from .models import Announcement
-from .serializers import AnnoucementSerializer
+from .serializers import AnnouncementSerializer, AnnouncementMinimalSerializer
 from users.serializers import UserInverseSerializer
 from utils.auth import RolePermissionFactory
 from utils.auth import JWTCookieAuthentication
@@ -29,19 +29,19 @@ class AnnouncementView(APIView):
                     {"error": f"Announcement with id {pk} not found."},
                     status=status.HTTP_404_NOT_FOUND,
                 )
-            serializer = AnnoucementSerializer(announcement)
+            serializer = AnnouncementSerializer(announcement)
             return Response(serializer.data)
 
         # list all announcements
         announcements = Announcement.objects.all().order_by(
             "-announcement_date", "-created_at"
         )
-        serializer = AnnoucementSerializer(announcements, many=True)
+        serializer = AnnouncementSerializer(announcements, many=True)
         return Response(serializer.data)
 
     def post(self, request):
 
-        serializer = AnnoucementSerializer(data=request.data)
+        serializer = AnnouncementSerializer(data=request.data)
         if serializer.is_valid():
             with transaction.atomic():
                 announcement = serializer.save(created_by=request.user)
@@ -74,7 +74,7 @@ class AnnouncementView(APIView):
                 {"error": "Announcement not found"}, status=status.HTTP_404_NOT_FOUND
             )
 
-        serializer = AnnoucementSerializer(
+        serializer = AnnouncementSerializer(
             announcement, data=request.data, partial=True
         )
         if serializer.is_valid():
@@ -115,3 +115,18 @@ class AnnouncementView(APIView):
         return Response(
             {"message": "Announcement deleted successfully"}, status=status.HTTP_200_OK
         )
+
+
+class UserAnnouncementView(APIView):
+    authentication_classes = [JWTCookieAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        announcements = user.announcements.all()
+        serializer = AnnouncementMinimalSerializer(announcements, many=True)
+        if not announcements.exists():
+            return Response(
+                {"error": "No announcements yet"}, status=status.HTTP_404_NOT_FOUND
+            )
+        return Response({"announcements": serializer.data}, status=status.HTTP_200_OK)

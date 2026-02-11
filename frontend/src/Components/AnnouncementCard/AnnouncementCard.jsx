@@ -1,20 +1,29 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useUser } from "../../Context/UserContext";
 import api from "../../Utils/api";
 import {
-    FaStar,
-    FaRegStar,
     FaEdit,
     FaTrash,
     FaUser,
     FaCalendarAlt,
-    FaUsers
+    FaUsers,
+    FaFileAlt,
+    FaExclamationCircle
 } from "react-icons/fa";
 import styles from "./AnnouncementCard.module.css";
 
 export default function AnnouncementCard({ announcement, onUpdate }) {
+    const { user } = useUser();
+    const navigate = useNavigate();
     const [deleting, setDeleting] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
+
+    // Determine if current user is admin/staff
+    const isAdmin =
+        user?.role === "admin" ||
+        user?.role === "staff" ||
+        user?.is_staff === true;
 
     const formattedDate = (dateString) => {
         const date = new Date(dateString);
@@ -25,11 +34,20 @@ export default function AnnouncementCard({ announcement, onUpdate }) {
         });
     };
 
+    // Strip HTML tags and truncate to ~120 characters
+    const getContentPreview = (content) => {
+        if (!content) return "No content";
+        const plainText = content.replace(/<[^>]*>?/gm, "");
+        return plainText.length > 120
+            ? plainText.substring(0, 120) + "…"
+            : plainText;
+    };
+
     const handleDelete = async () => {
         setDeleting(true);
         try {
             await api.delete(`/api/announcement/${announcement.id}/`);
-            onUpdate(); // refresh list
+            onUpdate();
         } catch (error) {
             console.error("Delete failed:", error);
         } finally {
@@ -38,52 +56,90 @@ export default function AnnouncementCard({ announcement, onUpdate }) {
         }
     };
 
+    const handleCardClick = () => {
+        if (isAdmin) {
+            navigate(`/admin/announcement/${announcement.id}/`);
+        } else {
+            navigate(`/user/announcement/${announcement.id}/`);
+        }
+    };
+
+    const handleActionClick = (e) => {
+        e.stopPropagation(); // Prevent card click when interacting with buttons
+    };
+
     return (
-        <div className={`${styles.card} ${announcement.is_important ? styles.important : ""}`}>
+        <div
+            className={`${styles.card} ${announcement.is_important ? styles.important : ""}`}
+            onClick={handleCardClick}
+        >
             <div className={styles.header}>
                 <div className={styles.titleWrapper}>
                     <h3 className={styles.title}>{announcement.title}</h3>
-                    {announcement.is_important ? (
-                        <FaStar className={styles.starIcon} />
-                    ) : (
-                        <FaRegStar className={styles.starOutline} />
+                    {announcement.is_important && (
+                        <span className={styles.importantBadge} title="Important announcement">
+                            <FaExclamationCircle />
+                        </span>
                     )}
                 </div>
-                <div className={styles.actions}>
-                    <Link
-                        to={`/admin/announcement/edit/${announcement.id}/`}
-                        className={styles.editBtn}
-                    >
-                        <FaEdit />
-                    </Link>
-                    <button
-                        onClick={() => setShowConfirm(true)}
-                        className={styles.deleteBtn}
-                        disabled={deleting}
-                    >
-                        <FaTrash />
-                    </button>
-                </div>
+
+                {/* Admin actions – only shown for admin/staff */}
+                {isAdmin && (
+                    <div className={styles.actions} onClick={handleActionClick}>
+                        <Link
+                            to={`/admin/announcement/edit/${announcement.id}/`}
+                            className={styles.editBtn}
+                            onClick={handleActionClick}
+                        >
+                            <FaEdit />
+                        </Link>
+                        <button
+                            onClick={(e) => {
+                                handleActionClick(e);
+                                setShowConfirm(true);
+                            }}
+                            className={styles.deleteBtn}
+                            disabled={deleting}
+                        >
+                            <FaTrash />
+                        </button>
+                    </div>
+                )}
             </div>
 
             <div className={styles.details}>
-                <div className={styles.detailItem}>
-                    <FaCalendarAlt />
-                    <span>{formattedDate(announcement.announcement_date)}</span>
+                {/* Content preview – always visible */}
+                <div className={styles.contentPreview}>
+                    <FaFileAlt className={styles.contentIcon} />
+                    <p className={styles.contentText}>
+                        {getContentPreview(announcement.content)}
+                    </p>
                 </div>
-                <div className={styles.detailItem}>
-                    <FaUser />
-                    <span>{announcement.created_by?.full_name || announcement.created_by?.username || "Unknown"}</span>
-                </div>
-                <div className={styles.detailItem}>
-                    <FaUsers />
-                    <span>{announcement.users?.length || 0} recipients</span>
+
+                {/* Meta information in a responsive grid */}
+                <div className={styles.metaGrid}>
+                    <div className={styles.detailItem}>
+                        <FaCalendarAlt />
+                        <span>{formattedDate(announcement.announcement_date)}</span>
+                    </div>
+                    <div className={styles.detailItem}>
+                        <FaUser />
+                        <span>
+                            {announcement.created_by?.full_name ||
+                                announcement.created_by?.username ||
+                                "Unknown"}
+                        </span>
+                    </div>
+                    <div className={styles.detailItem}>
+                        <FaUsers />
+                        <span>{announcement.users?.length || 0} recipients</span>
+                    </div>
                 </div>
             </div>
 
             {showConfirm && (
-                <div className={styles.confirmOverlay}>
-                    <div className={styles.confirmDialog}>
+                <div className={styles.confirmOverlay} onClick={handleActionClick}>
+                    <div className={styles.confirmDialog} onClick={(e) => e.stopPropagation()}>
                         <p>Delete this announcement?</p>
                         <div className={styles.confirmActions}>
                             <button onClick={handleDelete} disabled={deleting}>

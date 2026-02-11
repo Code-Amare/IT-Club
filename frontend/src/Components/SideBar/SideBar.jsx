@@ -58,7 +58,7 @@ export default function SideBar({ children }) {
         { icon: <MdDashboard />, text: "Dashboard", to: `/${role}` },
         { icon: <MdAssignment />, text: "My Learning Task", to: "/user/my-learning-task" },
         { icon: <MdSchool />, text: "Learning Tasks", to: "/user/learning-tasks" },
-        // { icon: <MdWork />, text: "Projects", to: "/user/projects" },
+        { icon: <MdAnnouncement />, text: "Announcements", to: "/user/announcements" },
         { icon: <MdAnalytics />, text: "Attendance", to: "/user/attendance" },
     ];
 
