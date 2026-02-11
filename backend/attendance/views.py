@@ -318,33 +318,37 @@ class SessionExportPdfView(APIView):
     authentication_classes = [JWTCookieAuthentication]
     permission_classes = [IsAdminUser]
 
-    def get(self, request, session_id):
+    MAX_TEXT_LENGTH = 30  # max chars for name and notes
 
+    def truncate(self, text):
+        if not text:
+            return ""
+        return (
+            text
+            if len(text) <= self.MAX_TEXT_LENGTH
+            else text[: self.MAX_TEXT_LENGTH - 3] + "..."
+        )
+
+    def get(self, request, session_id):
         if not session_id:
-            return Response(
-                {"detail": "session_id is required"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            return Response({"detail": "session_id is required"}, status=400)
 
         try:
             session = AttendanceSession.objects.get(pk=session_id)
         except AttendanceSession.DoesNotExist:
-            return Response(
-                {"detail": "AttendanceSession not found"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            return Response({"detail": "AttendanceSession not found"}, status=404)
 
         if not session.is_ended:
             return Response(
                 {
                     "detail": "Session is not ended/closed yet. Export allowed only for ended sessions."
                 },
-                status=status.HTTP_400_BAD_REQUEST,
+                status=400,
             )
 
+        # Query data
         students_qs = session.targets.select_related("profile").all()
         total_students = students_qs.count()
-
         attendance_qs = Attendance.objects.filter(session=session).select_related(
             "user", "user__profile"
         )
@@ -357,52 +361,37 @@ class SessionExportPdfView(APIView):
             "special_case": attendance_qs.filter(status="special_case").count(),
         }
 
-        # ---------------------------
-        # Build Attendance Table Data
-        # ---------------------------
+        # Build attendance rows with index
         table_data = [
-            ["Full Name", "Email", "Grade", "Section", "Status", "Attended At", "Note"]
+            ["#", "Full Name", "Grade", "Section", "Status", "Attended At", "Note"]
         ]
-
-        for user in students_qs:
+        for i, user in enumerate(students_qs, start=1):
             att = attendance_map.get(user.id)
-
-            grade = getattr(getattr(user, "profile", None), "grade", "")
-            section = getattr(getattr(user, "profile", None), "section", "")
+            profile = getattr(user, "profile", None)
+            full_name = self.truncate(getattr(user, "full_name", user.email))
+            grade = getattr(profile, "grade", "")
+            section = getattr(profile, "section", "")
             status_val = att.status if att else "absent"
-
             attended_at = (
                 att.attended_at.strftime("%Y-%m-%d %H:%M:%S")
                 if att and att.attended_at
                 else ""
             )
-
-            note = att.note if att and att.note else ""
+            note = self.truncate(att.note if att and att.note else "")
 
             table_data.append(
-                [
-                    getattr(user, "full_name", user.email),
-                    user.email,
-                    grade,
-                    section,
-                    status_val,
-                    attended_at,
-                    note,
-                ]
+                [str(i), full_name, grade, section, status_val, attended_at, note]
             )
 
-        # ---------------------------
-        # Create PDF
-        # ---------------------------
+        # Create PDF buffer
         buffer = io.BytesIO()
-
         doc = SimpleDocTemplate(
             buffer,
-            pagesize=landscape(A4),
-            rightMargin=40,
-            leftMargin=40,
-            topMargin=40,
-            bottomMargin=40,
+            pagesize=A4,  # Portrait
+            rightMargin=30,
+            leftMargin=30,
+            topMargin=30,
+            bottomMargin=30,
         )
 
         elements = []
@@ -412,66 +401,72 @@ class SessionExportPdfView(APIView):
         elements.append(
             Paragraph(f"<b>Attendance Report: {session.title}</b>", styles["Title"])
         )
-        elements.append(Spacer(1, 0.4 * inch))
+        elements.append(Spacer(1, 0.2 * inch))
 
-        # ---------------------------
-        # Metadata as Paragraphs (Clean)
-        # ---------------------------
+        # Metadata Section
         metadata_lines = [
-            f"<b>Session ID:</b> {session.id}",
-            f"<b>Created At:</b> {session.created_at.strftime('%Y-%m-%d %H:%M:%S')}",
-            f"<b>Total Students:</b> {total_students}",
-            f"<b>Present:</b> {status_counts['present']}",
-            f"<b>Late:</b> {status_counts['late']}",
-            f"<b>Absent:</b> {status_counts['absent']}",
-            f"<b>Special Case:</b> {status_counts['special_case']}",
-            f"<b>Exported At:</b> {timezone.now().strftime('%Y-%m-%d %H:%M:%S')}",
+            f"Session ID: {session.id}",
+            f"Created At: {session.created_at.strftime('%Y-%m-%d %H:%M:%S')}",
+            f"Total Students: {total_students}",
+            f"Present: {status_counts['present']}",
+            f"Late: {status_counts['late']}",
+            f"Absent: {status_counts['absent']}",
+            f"Special Case: {status_counts['special_case']}",
+            f"Exported At: {timezone.now().strftime('%Y-%m-%d %H:%M:%S')}",
         ]
 
         for line in metadata_lines:
             elements.append(Paragraph(line, styles["Normal"]))
-            elements.append(Spacer(1, 0.15 * inch))
-
         elements.append(Spacer(1, 0.4 * inch))
 
-        # ---------------------------
-        # Attendance Table (80% Width)
-        # ---------------------------
+        # Table width: 90% of page width
         available_width = doc.width
-        table_width = available_width * 0.8
-        col_count = len(table_data[0])
-        col_width = table_width / col_count
-        col_widths = [col_width] * col_count
+        table_width = available_width * 0.9
+        col_widths = [
+            table_width * 0.05,  # Index
+            table_width * 0.25,  # Full Name
+            table_width * 0.12,  # Grade
+            table_width * 0.12,  # Section
+            table_width * 0.12,  # Status
+            table_width * 0.18,  # Attended At
+            table_width * 0.16,  # Note
+        ]
 
-        attendance_table = Table(
-            table_data,
-            repeatRows=1,
-            colWidths=col_widths,
-        )
+        # Wrap strings in Paragraphs
+        table_data_wrapped = []
+        normal_style = styles["Normal"]
+        for row in table_data:
+            table_data_wrapped.append(
+                [Paragraph(str(cell), normal_style) for cell in row]
+            )
 
+        attendance_table = Table(table_data_wrapped, repeatRows=1, colWidths=col_widths)
+        attendance_table.hAlign = "CENTER"
+
+        # Table style
         attendance_table.setStyle(
             TableStyle(
                 [
                     ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#e0e0e0")),
-                    ("TEXTCOLOR", (0, 0), (-1, 0), colors.black),
                     ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
                     ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-                    ("ALIGN", (4, 1), (4, -1), "CENTER"),  # Status column center
-                    ("LEFTPADDING", (0, 0), (-1, -1), 6),
-                    ("RIGHTPADDING", (0, 0), (-1, -1), 6),
-                    ("TOPPADDING", (0, 0), (-1, -1), 4),
-                    ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+                    ("ALIGN", (0, 1), (0, -1), "CENTER"),  # index center
+                    ("ALIGN", (4, 1), (4, -1), "CENTER"),  # Status center
+                    ("LEFTPADDING", (0, 0), (-1, -1), 4),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+                    ("TOPPADDING", (0, 0), (-1, -1), 3),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
                 ]
             )
         )
 
         elements.append(attendance_table)
 
+        # Build PDF
         doc.build(elements)
         buffer.seek(0)
 
         filename = f"{session.title.replace(' ', '_')}_attendance_{session.id}.pdf"
-
         response = HttpResponse(buffer.read(), content_type="application/pdf")
         response["Content-Disposition"] = f'attachment; filename="{filename}"'
 
