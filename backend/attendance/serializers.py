@@ -38,17 +38,43 @@ class AttendanceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Attendance
         fields = ["id", "session", "user", "attended_at", "status", "note"]
+        read_only_fields = ["id", "attended_at"]
 
     def validate(self, attrs):
-        status = attrs.get("status", getattr(self.instance, "status", None))
-        note = attrs.get("note", getattr(self.instance, "note", None))
+        instance = self.instance
+        new_status = attrs.get("status", getattr(instance, "status", None))
+        note = attrs.get("note", getattr(instance, "note", None))
 
-        if status == "special_case" and (note is None or note.strip() == ""):
+        # If status is special_case → note is required
+        if new_status == "special_case":
+            if not note or note.strip() == "":
+                raise serializers.ValidationError(
+                    {"note": "This field is required for special_case status."}
+                )
+
+        # If status is NOT special_case → note must be empty
+        if new_status != "special_case" and note:
             raise serializers.ValidationError(
-                {"note": "This field is required for special_case status."}
+                {"note": "Note is only allowed when status is 'special_case'."}
             )
 
         return attrs
+
+    def update(self, instance, validated_data):
+        new_status = validated_data.get("status", instance.status)
+
+        # If changing FROM special_case to something else → clear note
+        if instance.status == "special_case" and new_status != "special_case":
+            validated_data["note"] = None
+
+        return super().update(instance, validated_data)
+
+    def create(self, validated_data):
+        # If created with non-special_case → remove note
+        if validated_data.get("status") != "special_case":
+            validated_data["note"] = None
+
+        return super().create(validated_data)
 
 
 class AttendanceWithSessionSerializer(serializers.ModelSerializer):
