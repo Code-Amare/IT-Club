@@ -248,7 +248,10 @@ export default function EditAnnouncement() {
             // Redirect to announcement detail
             setTimeout(() => navigate(`/admin/announcement/${announcementId}`), 1500);
         } catch (error) {
-            console.error("Error updating announcement:", error);
+            const warning = error.response?.data?.warning
+            if (warning) {
+                neonToast.warning(warning)
+            }
             setError(
                 error.response?.data?.error ||
                 error.response?.data?.message ||

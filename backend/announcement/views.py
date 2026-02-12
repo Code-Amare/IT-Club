@@ -60,7 +60,6 @@ class AnnouncementView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def patch(self, request, pk=None):
-
         if not pk:
             return Response(
                 {"error": "Announcement ID is required"},
@@ -77,16 +76,43 @@ class AnnouncementView(APIView):
         serializer = AnnouncementSerializer(
             announcement, data=request.data, partial=True
         )
+
         if serializer.is_valid():
-
             with transaction.atomic():
-                announcement = serializer.save()
-                users = list(announcement.targets.all())
+                # Capture original state
+                original_data = {
+                    "title": announcement.title,
+                    "content": announcement.content,
+                    "announcement_date": announcement.announcement_date,
+                    "is_important": announcement.is_important,
+                    "targets": list(announcement.targets.values_list("id", flat=True)),
+                }
 
+                # Save updated instance
+                announcement = serializer.save()
+
+                # Capture updated state
+                updated_data = {
+                    "title": announcement.title,
+                    "content": announcement.content,
+                    "announcement_date": announcement.announcement_date,
+                    "is_important": announcement.is_important,
+                    "targets": list(announcement.targets.values_list("id", flat=True)),
+                }
+
+                # Check if anything changed
+                if original_data == updated_data:
+                    return Response(
+                        {"warning": "No changes were made to the announcement."},
+                        status=status.HTTP_406_NOT_ACCEPTABLE,
+                    )
+
+                # Notify users because something changed
+                users = list(announcement.targets.all())
                 async_to_sync(notify_users_bulk)(
                     recipients=users,
                     actor=request.user,
-                    title="Annoucement updated",
+                    title="Announcement updated",
                     description=f"The announcement '{announcement.title}' has been updated.",
                     code="info",
                     url=f"/user/announcement/{announcement.id}",
@@ -94,6 +120,7 @@ class AnnouncementView(APIView):
                 )
 
             return Response(serializer.data, status=status.HTTP_200_OK)
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, pk=None):

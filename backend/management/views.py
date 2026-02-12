@@ -782,7 +782,7 @@ class StudentsBulkUploadView(APIView):
 
     # Constants
     LEARNING_TASK_LIMIT_DEFAULT = 20
-    FIELD_LIST = ["ai", "other", "backend", "frontend", "embedded"]
+    FIELD_LIST = ["ai", "other", "backend", "frontend", "embedded", "cyber"]
 
     def post(self, request):
         try:
@@ -849,7 +849,7 @@ class StudentsBulkUploadView(APIView):
                 full_name = str(row.get("full_name", "")).strip()
                 grade_str = str(row.get("grade", "")).strip()
                 section = str(row.get("section", "")).strip().upper()
-                field = str(row.get("field", "")).strip()
+                field = str(row.get("field", "")).strip().lower()
                 phone_number = str(row.get("phone_number", "")).strip()
                 account = str(row.get("account", "")).strip()
 

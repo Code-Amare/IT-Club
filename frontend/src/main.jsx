@@ -21,17 +21,17 @@ const AppWithAxios = () => {
 };
 
 createRoot(document.getElementById("root")).render(
-  <StrictMode>
-        <NotifProvider>
+  // <StrictMode>
+  <NotifProvider>
     <BrowserRouter>
       <UserProvider>
-          <SiteProvider >
-            <LoadingProvider>
-              <AppWithAxios />
-            </LoadingProvider>
-          </SiteProvider>
+        <SiteProvider >
+          <LoadingProvider>
+            <AppWithAxios />
+          </LoadingProvider>
+        </SiteProvider>
       </UserProvider>
     </BrowserRouter>
-        </NotifProvider>
-  </StrictMode>
+  </NotifProvider>
+  // </StrictMode>
 );
