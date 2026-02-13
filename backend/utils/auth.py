@@ -18,6 +18,7 @@ def RolePermissionFactory(allowed_roles):
 
     return CustomRolePermission
 
+
 class JWTCookieAuthentication(JWTAuthentication):
     cookie_name = "access"
 
@@ -32,3 +33,8 @@ class JWTCookieAuthentication(JWTAuthentication):
             return (user, validated_token)
         except (InvalidToken, TokenError):
             raise AuthenticationFailed("Invalid or expired token")
+
+
+class IsSuperUser(BasePermission):
+    def has_permission(self, request, view):
+        return request.user and request.user.is_superuser
