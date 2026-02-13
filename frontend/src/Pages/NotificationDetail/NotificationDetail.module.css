@@ -16,7 +16,7 @@
   color: var(--text-primary) !important;
   border-bottom: 1px solid var(--border-color);
 }
-.stickyHeader > button{
+.stickyHeader > button {
   color: var(--text-primary);
 }
 
@@ -120,6 +120,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
+  cursor: pointer;
 }
 
 .cardContent {
@@ -163,7 +164,7 @@
   background: var(--bg-body);
 }
 
-.cardActions a {
+.cardActions span {
   display: inline-flex;
   align-items: center;
   gap: 8px;

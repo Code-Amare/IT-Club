@@ -7,7 +7,6 @@ import {
     FaUpload,
     FaDownload,
     FaFileExcel,
-    FaFileCsv,
     FaCheckCircle,
     FaExclamationTriangle,
     FaSpinner,
@@ -30,27 +29,29 @@ const StudentsBulk = () => {
     const fileInputRef = useRef(null);
     const resultsRef = useRef(null);
 
+    // Updated columns: gender must be 'male' or 'female'
     const requiredColumns = [
         "full_name",
         "email",
         "grade",
         "section",
         "field",
-        "phone_number"
+        "phone_number",
+        "gender"
     ];
 
     const optionalColumns = ["account"];
-    const fieldOptions = ["ai", "other", "backend", "frontend", "embbaded"];
+    const fieldOptions = ["frontend", "backend", "ai", "embadded", "cyber", "other"];
 
     const handleFileSelect = (e) => {
         const selectedFile = e.target.files[0];
         if (!selectedFile) return;
 
         const fileExtension = selectedFile.name.split('.').pop().toLowerCase();
-        const allowedExtensions = ['csv', 'xlsx', 'xls'];
+        const allowedExtensions = ['xlsx', 'xls']; // Only Excel files allowed
 
         if (!allowedExtensions.includes(fileExtension)) {
-            neonToast.error('Invalid file format. Please upload CSV or Excel files.', 'error');
+            neonToast.error('Invalid file format. Please upload Excel files (.xlsx or .xls).', 'error');
             e.target.value = '';
             return;
         }
@@ -122,47 +123,25 @@ const StudentsBulk = () => {
         }
     };
 
-    const downloadTemplate = (format = 'csv') => {
-        const headers = [...requiredColumns, ...optionalColumns];
-        let content = '';
-
-        if (format === 'csv') {
-            content = headers.join(',') + '\n';
-            const exampleRow = [
-                'John Doe',
-                'john.doe@example.com',
-                '10',
-                'A',
-                'ai',
-                '+1234567890',
-                'optional_account_id'
-            ];
-            content += exampleRow.join(',');
-        } else {
-            content = headers.join('\t') + '\n';
-            const exampleRow = [
-                'John Doe',
-                'john.doe@example.com',
-                '10',
-                'A',
-                'ai',
-                '+1234567890',
-                'optional_account_id'
-            ];
-            content += exampleRow.join('\t');
+    // Download Excel template from backend
+    const downloadTemplate = async () => {
+        try {
+            const response = await api.get('/api/management/students/template/', {
+                responseType: 'blob',
+            });
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', 'student_template.xlsx');
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+            neonToast.info('Excel template downloaded', 'info');
+        } catch (error) {
+            console.error('Error downloading template:', error);
+            neonToast.error('Failed to download template', 'error');
         }
-
-        const blob = new Blob([content], { type: format === 'csv' ? 'text/csv' : 'application/vnd.ms-excel' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `students_template.${format}`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-
-        neonToast.info(`Template downloaded as ${format.toUpperCase()}`, 'info');
     };
 
     const togglePasswordVisibility = (studentId) => {
@@ -214,7 +193,7 @@ const StudentsBulk = () => {
                                 Bulk Student Upload
                             </h1>
                             <p className={styles.subtitle}>
-                                Upload CSV or Excel files to create multiple student accounts at once
+                                Upload Excel files to create multiple student accounts at once
                             </p>
                         </div>
 
@@ -227,104 +206,86 @@ const StudentsBulk = () => {
                                 Template Info
                             </button>
 
-                            <div className={styles.templateButtons}>
-                                <button
-                                    className={`${styles.actionButton} ${styles.templateButton}`}
-                                    onClick={() => downloadTemplate('csv')}
-                                >
-                                    <FaFileCsv />
-                                    CSV Template
-                                </button>
-                                <button
-                                    className={`${styles.actionButton} ${styles.templateButton}`}
-                                    onClick={() => downloadTemplate('xlsx')}
-                                >
-                                    <FaFileExcel />
-                                    Excel Template
-                                </button>
-                            </div>
+                            <button
+                                className={`${styles.actionButton} ${styles.templateButton}`}
+                                onClick={downloadTemplate}
+                            >
+                                <FaDownload />
+                                Download Excel Template
+                            </button>
                         </div>
                     </header>
 
-                    {/* Template Info Modal */}
+                    {/* Template Info Modal with backdrop */}
                     {showTemplateInfo && (
-                        <div className={styles.templateInfoModal}>
-                            <div className={styles.modalContent}>
-                                <div className={styles.modalHeader}>
-                                    <h3>File Template Requirements</h3>
-                                    <button
-                                        className={styles.closeButton}
-                                        onClick={() => setShowTemplateInfo(false)}
-                                    >
-                                        <FaTimes />
-                                    </button>
-                                </div>
-
-                                <div className={styles.modalBody}>
-                                    <div className={styles.infoSection}>
-                                        <h4>Required Columns:</h4>
-                                        <div className={styles.columnsGrid}>
-                                            {requiredColumns.map((col, index) => (
-                                                <div key={index} className={styles.columnItem}>
-                                                    <span className={styles.columnName}>{col}</span>
-                                                    <span className={styles.columnDescription}>
-                                                        {col === 'grade' ? 'Number between 1-12' :
-                                                            col === 'section' ? 'Single letter (A-Z)' :
-                                                                col === 'field' ? `One of: ${fieldOptions.join(', ')}` :
-                                                                    col === 'email' ? 'Valid email address' :
-                                                                        'Required field'}
-                                                    </span>
-                                                </div>
-                                            ))}
-                                        </div>
+                        <div
+                            className={styles.modalOverlay}
+                            onClick={() => setShowTemplateInfo(false)}
+                        >
+                            <div
+                                className={styles.templateInfoModal}
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <div className={styles.modalContent}>
+                                    <div className={styles.modalHeader}>
+                                        <h3>File Template Requirements</h3>
+                                        <button
+                                            className={styles.closeButton}
+                                            onClick={() => setShowTemplateInfo(false)}
+                                        >
+                                            <FaTimes />
+                                        </button>
                                     </div>
 
-                                    <div className={styles.infoSection}>
-                                        <h4>Optional Columns:</h4>
-                                        <div className={styles.columnsGrid}>
-                                            {optionalColumns.map((col, index) => (
-                                                <div key={index} className={styles.columnItem}>
-                                                    <span className={styles.columnName}>{col}</span>
-                                                    <span className={styles.columnDescription}>
-                                                        Optional student account identifier
-                                                    </span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    <div className={styles.infoSection}>
-                                        <h4>Example Data:</h4>
-                                        <div className={styles.exampleTable}>
-                                            <div className={styles.exampleHeader}>
-                                                {[...requiredColumns, ...optionalColumns].map((col, i) => (
-                                                    <div key={i} className={styles.exampleCell}>{col}</div>
+                                    <div className={styles.modalBody}>
+                                        <div className={styles.infoSection}>
+                                            <h4>Required Columns:</h4>
+                                            <div className={styles.columnsGrid}>
+                                                {requiredColumns.map((col, index) => (
+                                                    <div key={index} className={styles.columnItem}>
+                                                        <span className={styles.columnName}>{col}</span>
+                                                        <span className={styles.columnDescription}>
+                                                            {col === 'grade' ? 'Number between 1-12' :
+                                                                col === 'section' ? 'Single letter (A-Z)' :
+                                                                    col === 'field' ? `One of: ${fieldOptions.join(', ')}` :
+                                                                        col === 'email' ? 'Valid email address' :
+                                                                            col === 'gender' ? 'Must be "male" or "female"' :
+                                                                                col === 'phone_number' ? 'Valid phone number (with country code recommended)' :
+                                                                                    'Required field'}
+                                                        </span>
+                                                    </div>
                                                 ))}
                                             </div>
-                                            <div className={styles.exampleRow}>
-                                                <div className={styles.exampleCell}>John Doe</div>
-                                                <div className={styles.exampleCell}>john@example.com</div>
-                                                <div className={styles.exampleCell}>10</div>
-                                                <div className={styles.exampleCell}>A</div>
-                                                <div className={styles.exampleCell}>ai</div>
-                                                <div className={styles.exampleCell}>+1234567890</div>
-                                                <div className={styles.exampleCell}>student_123</div>
+                                        </div>
+
+                                        <div className={styles.infoSection}>
+                                            <h4>Optional Columns:</h4>
+                                            <div className={styles.columnsGrid}>
+                                                {optionalColumns.map((col, index) => (
+                                                    <div key={index} className={styles.columnItem}>
+                                                        <span className={styles.columnName}>{col}</span>
+                                                        <span className={styles.columnDescription}>
+                                                            Optional student account identifier
+                                                        </span>
+                                                    </div>
+                                                ))}
                                             </div>
                                         </div>
-                                    </div>
 
-                                    <div className={styles.infoSection}>
-                                        <div className={styles.note}>
-                                            <FiAlertCircle className={styles.noteIcon} />
-                                            <div className={styles.noteContent}>
-                                                <strong>Important Notes:</strong>
-                                                <ul>
-                                                    <li>Emails must be unique across the system</li>
-                                                    <li>Grade must be a number between 1 and 12</li>
-                                                    <li>Section must be a single uppercase letter</li>
-                                                    <li>Field must be one of the specified values</li>
-                                                    <li>Duplicate emails in the file will be rejected</li>
-                                                </ul>
+                                        <div className={styles.infoSection}>
+                                            <div className={styles.note}>
+                                                <FiAlertCircle className={styles.noteIcon} />
+                                                <div className={styles.noteContent}>
+                                                    <strong>Important Notes:</strong>
+                                                    <ul>
+                                                        <li>Emails must be unique across the system</li>
+                                                        <li>Grade must be a number between 1 and 12</li>
+                                                        <li>Section must be a single uppercase letter</li>
+                                                        <li>Field must be one of the specified values</li>
+                                                        <li>Gender must be exactly "male" or "female"</li>
+                                                        <li>Duplicate emails in the file will be rejected</li>
+                                                    </ul>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -339,7 +300,7 @@ const StudentsBulk = () => {
                             <div className={styles.uploadHeader}>
                                 <h2>Upload Student Data</h2>
                                 <p className={styles.uploadSubtitle}>
-                                    Select a CSV or Excel file containing student information
+                                    Select an Excel file (.xlsx or .xls) containing student information
                                 </p>
                             </div>
 
@@ -365,7 +326,7 @@ const StudentsBulk = () => {
                                     type="file"
                                     ref={fileInputRef}
                                     onChange={handleFileSelect}
-                                    accept=".csv,.xlsx,.xls"
+                                    accept=".xlsx,.xls"
                                     className={styles.fileInput}
                                 />
 
@@ -373,16 +334,16 @@ const StudentsBulk = () => {
                                     <div className={styles.dropZoneContent}>
                                         <FaUpload className={styles.dropZoneIcon} />
                                         <p className={styles.dropZoneText}>
-                                            Drag & drop your file here or click to browse
+                                            Drag & drop your Excel file here or click to browse
                                         </p>
                                         <p className={styles.dropZoneHint}>
-                                            Supports CSV, XLSX, XLS (Max 5MB)
+                                            Supports XLSX, XLS (Max 5MB)
                                         </p>
                                     </div>
                                 ) : (
                                     <div className={styles.fileSelected}>
                                         <div className={styles.fileInfo}>
-                                            <FaFileCsv className={styles.fileIcon} />
+                                            <FaFileExcel className={styles.fileIcon} />
                                             <div className={styles.fileDetails}>
                                                 <h4>{file.name}</h4>
                                                 <p>{(file.size / 1024).toFixed(2)} KB</p>

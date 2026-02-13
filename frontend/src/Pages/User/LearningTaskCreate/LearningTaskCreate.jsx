@@ -42,7 +42,6 @@ export default function LearningTaskCreate() {
         framework_ids: []
     });
 
-    // Redirect if admin
     useEffect(() => {
         if (user.isAuthenticated && user.is_staff) {
             neonToast.error("Admins cannot create learning tasks", "error");
@@ -50,7 +49,6 @@ export default function LearningTaskCreate() {
         }
     }, [user, navigate]);
 
-    // Fetch languages and frameworks
     useEffect(() => {
         const fetchData = async () => {
             setLoadingData(true);
@@ -71,7 +69,6 @@ export default function LearningTaskCreate() {
         fetchData();
     }, []);
 
-    // Form handlers
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
         setFormData(prev => ({
@@ -99,7 +96,6 @@ export default function LearningTaskCreate() {
         });
     };
 
-    // Validation
     const validateForm = () => {
         const newErrors = {};
         if (!formData.title.trim()) newErrors.title = "Title is required";
@@ -112,7 +108,6 @@ export default function LearningTaskCreate() {
         return Object.keys(newErrors).length === 0;
     };
 
-    // Submit
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!validateForm()) {
@@ -165,7 +160,6 @@ export default function LearningTaskCreate() {
     return (
         <div className={styles.container}>
             <SideBar>
-                {/* Header */}
                 <div className={styles.header}>
                     <div className={styles.headerContent}>
                         <button
@@ -184,12 +178,9 @@ export default function LearningTaskCreate() {
                     </div>
                 </div>
 
-                {/* Main Form */}
                 <form onSubmit={handleSubmit} className={styles.form}>
                     <div className={styles.formGrid}>
-                        {/* Left Column */}
                         <div className={styles.formColumn}>
-                            {/* Title */}
                             <div className={styles.formGroup}>
                                 <label htmlFor="title">
                                     <MdTitle /> Task Title <span className={styles.required}>*</span>
@@ -211,7 +202,6 @@ export default function LearningTaskCreate() {
                                 </small>
                             </div>
 
-                            {/* Description */}
                             <div className={styles.formGroup}>
                                 <label htmlFor="description">
                                     <MdDescription /> Description <span className={styles.required}>*</span>
@@ -233,7 +223,6 @@ export default function LearningTaskCreate() {
                                 </small>
                             </div>
 
-                            {/* GitHub Link */}
                             <div className={styles.formGroup}>
                                 <label htmlFor="git_link">
                                     <FaLink /> GitHub Repository Link
@@ -258,9 +247,7 @@ export default function LearningTaskCreate() {
                             </div>
                         </div>
 
-                        {/* Right Column */}
                         <div className={styles.formColumn}>
-                            {/* Visibility */}
                             <div className={styles.formGroup}>
                                 <label className={styles.checkboxLabel}>
                                     <input
@@ -295,7 +282,6 @@ export default function LearningTaskCreate() {
                                 </div>
                             </div>
 
-                            {/* Languages */}
                             <div className={styles.formGroup}>
                                 <label>
                                     <MdLanguage /> Programming Languages <span className={styles.required}>*</span>
@@ -333,7 +319,6 @@ export default function LearningTaskCreate() {
                                 </div>
                             </div>
 
-                            {/* Frameworks */}
                             <div className={styles.formGroup}>
                                 <label>
                                     <MdCode /> Frameworks & Libraries
@@ -370,7 +355,6 @@ export default function LearningTaskCreate() {
                                 </div>
                             </div>
 
-                            {/* Selected Counts */}
                             <div className={styles.selectedCounts}>
                                 <div className={styles.countItem}>
                                     <span className={styles.countLabel}>Languages:</span>
@@ -384,7 +368,6 @@ export default function LearningTaskCreate() {
                         </div>
                     </div>
 
-                    {/* Form Actions */}
                     <div className={styles.formActions}>
                         <button
                             type="button"
@@ -406,7 +389,7 @@ export default function LearningTaskCreate() {
                             <AsyncButton
                                 type="submit"
                                 className={styles.primaryBtn}
-                                loading={loading}
+                                loading={loading || undefined}
                                 disabled={loading || loadingData}
                             >
                                 <FaCode /> Create Learning Task

@@ -22,6 +22,7 @@ import {
     MdInfoOutline,
     MdAdminPanelSettings,
 } from "react-icons/md";
+import { useNotifContext } from "../../Context/NotifContext";
 
 export default function Settings() {
     const { user, getUser } = useUser();
@@ -33,6 +34,10 @@ export default function Settings() {
     const [browserPermission, setBrowserPermission] = useState(
         "Notification" in window ? Notification.permission : "unsupported"
     );
+    const { updatePageTitle } = useNotifContext()
+    useEffect(() => {
+        updatePageTitle("Settings")
+    }, [])
 
     const [settings, setSettings] = useState({
         allow_profile_change: false,
@@ -64,7 +69,6 @@ export default function Settings() {
             const res = await api.get("/api/management/setting/");
             setSettings(res.data);
         } catch (err) {
-            console.error(err.response);
             neonToast.error("Could not load admin settings", "error");
         } finally {
             setSettingsLoading(false);
@@ -179,7 +183,6 @@ export default function Settings() {
             }
             return false;
         } catch (err) {
-            console.error("Error requesting notification permission:", err);
             setError("Failed to request notification permission");
             return false;
         }
@@ -227,7 +230,6 @@ Notification Status:
             setTimeout(() => notification.close(), 5000);
             setSuccess("Test notification sent!");
         } catch (err) {
-            console.error("Error creating test notification:", err);
             setError("Failed to send test notification");
         }
     };

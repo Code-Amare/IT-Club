@@ -15,24 +15,17 @@ import {
 } from "react-icons/fa";
 import { MdVerified, MdLock, MdPerson, MdEmail } from "react-icons/md";
 import SideBar from "../../Components/SideBar/SideBar";
+import { useNotifContext } from "../../Context/NotifContext";
+import { useEffect } from "react";
 
 export default function Profile() {
     const { user, logout } = useUser();
     const navigate = useNavigate();
+    const { updatePageTitle } = useNotifContext()
+    useEffect(() => {
+        updatePageTitle("Profile")
+    }, [])
 
-    if (user.isAuthenticated === null) {
-        return (
-            <div className={styles.loadingContainer}>
-                <div className={styles.loadingSpinner}></div>
-                <p>Loading profile...</p>
-            </div>
-        );
-    }
-
-    if (!user.isAuthenticated) {
-        navigate("/login");
-        return null;
-    }
 
     const handleLogout = () => {
         logout();

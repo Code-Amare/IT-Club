@@ -79,27 +79,48 @@ class StudentsView(APIView):
             page = int(request.query_params.get("page", 1))
             page_size = int(request.query_params.get("page_size", 10))
 
-            profiles = (
-                Profile.objects.select_related("user")
-                .filter(user__role="user")
-                .annotate(
-                    total_sessions_attended=Count("user__attendances", distinct=True),
-                    present_count=Count(
-                        "user__attendances",
-                        filter=Q(user__attendances__status="present"),
-                    ),
-                    late_count=Count(
-                        "user__attendances", filter=Q(user__attendances__status="late")
-                    ),
-                    absent_count=Count(
-                        "user__attendances",
-                        filter=Q(user__attendances__status="absent"),
-                    ),
-                    special_case_count=Count(
-                        "user__attendances",
-                        filter=Q(user__attendances__status="special_case"),
-                    ),
-                )
+            # Base queryset for all students (used for stats and filter options)
+            base_profiles = Profile.objects.select_related("user").filter(
+                user__role="user"
+            )
+
+            # Get distinct grades and sections for filter dropdowns (from all students)
+            all_grades = (
+                base_profiles.exclude(grade__isnull=True)
+                .values_list("grade", flat=True)
+                .distinct()
+                .order_by("grade")
+            )
+            all_sections = (
+                base_profiles.exclude(section__isnull=True)
+                .exclude(section="")
+                .values_list("section", flat=True)
+                .distinct()
+                .order_by("section")
+            )
+            filter_options = {
+                "grades": list(all_grades),
+                "sections": list(all_sections),
+            }
+
+            # Now build the main queryset with annotations for the table
+            profiles = base_profiles.annotate(
+                total_sessions_attended=Count("user__attendances", distinct=True),
+                present_count=Count(
+                    "user__attendances",
+                    filter=Q(user__attendances__status="present"),
+                ),
+                late_count=Count(
+                    "user__attendances", filter=Q(user__attendances__status="late")
+                ),
+                absent_count=Count(
+                    "user__attendances",
+                    filter=Q(user__attendances__status="absent"),
+                ),
+                special_case_count=Count(
+                    "user__attendances",
+                    filter=Q(user__attendances__status="special_case"),
+                ),
             )
 
             # Attendance percentage
@@ -120,7 +141,7 @@ class StudentsView(APIView):
                 )
             )
 
-            # Filters
+            # Apply filters
             if search:
                 search_filter = (
                     Q(user__full_name__icontains=search)
@@ -282,6 +303,7 @@ class StudentsView(APIView):
                         "active": active_students,
                         "inactive": inactive_students,
                     },
+                    "filter_options": filter_options,
                 },
                 status=status.HTTP_200_OK,
             )
@@ -819,6 +841,7 @@ class StudentsBulkUploadView(APIView):
                 "grade",
                 "section",
                 "field",
+                "gender",
                 "phone_number",
             ]
             missing_columns = [col for col in required_columns if col not in df.columns]
@@ -854,6 +877,10 @@ class StudentsBulkUploadView(APIView):
                 field = str(row.get("field", "")).strip().lower()
                 phone_number = str(row.get("phone_number", "")).strip()
                 account = str(row.get("account", "")).strip()
+                gender = str(row.get("gender", "male")).strip().lower()
+
+                if gender not in ["male", "female"]:
+                    row_errors["gender"] = ["Invalid gender"]
 
                 # Check for duplicate emails within the file
                 if email in emails_in_file:
@@ -986,6 +1013,9 @@ class StudentsBulkUploadView(APIView):
                             field = str(row.get("field", "")).strip()
                             phone_number = str(row.get("phone_number", "")).strip()
                             account = str(row.get("account", "")).strip()
+                            gender = (
+                                str(row.get("gender", "male")).strip().lower()
+                            )  # ← FIX: extract gender
 
                             # Create profile instance
                             profile = Profile(
@@ -997,6 +1027,7 @@ class StudentsBulkUploadView(APIView):
                                     account if account and account != "N/A" else None
                                 ),
                                 phone_number=phone_number,
+                                gender=gender,  # ← FIX: store gender
                             )
                             profiles_to_create.append(profile)
 
@@ -1039,6 +1070,9 @@ class StudentsBulkUploadView(APIView):
                                 "phone_number": (
                                     profile.phone_number if profile else None
                                 ),
+                                "gender": (
+                                    profile.gender if profile else None
+                                ),  # ← optional: include in response
                                 "learning_task_limit": self.LEARNING_TASK_LIMIT_DEFAULT,
                                 "message": "Please change your password on first login",
                             }
@@ -1081,10 +1115,11 @@ class StudentsExportView(APIView):
             grade = request.query_params.get("grade", "").strip()
             section = request.query_params.get("section", "").strip()
             account_status = request.query_params.get("account_status", "").strip()
-            format_type = request.query_params.get("format", "csv")
 
             # Get filtered students
-            profiles = Profile.objects.select_related("user").all()
+            profiles = Profile.objects.select_related("user").filter(
+                user__role="user", user__is_deleted=False
+            )
 
             if search:
                 profiles = profiles.filter(
@@ -1122,6 +1157,7 @@ class StudentsExportView(APIView):
                         "Field": profile.field or "",
                         "Account": profile.account or "",
                         "Phone Number": profile.phone_number or "",
+                        "Gender": profile.user.gender or "",
                         "Account Status": (
                             "Active" if profile.user.is_active else "Inactive"
                         ),
@@ -1140,42 +1176,26 @@ class StudentsExportView(APIView):
             # Create DataFrame
             df = pd.DataFrame(data)
 
-            # Create response
+            # Export to Excel
+            output = BytesIO()
+            with pd.ExcelWriter(output, engine="openpyxl") as writer:
+                df.to_excel(writer, index=False, sheet_name="Students")
+            output.seek(0)
+
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"students_export_{timestamp}.xlsx"
 
-            if format_type == "csv":
-                # Convert to CSV
-                csv_data = df.to_csv(index=False)
-                response = HttpResponse(csv_data, content_type="text/csv")
-                filename = f"students_export_{timestamp}.csv"
-                response["Content-Disposition"] = f'attachment; filename="{filename}"'
-
-            elif format_type == "excel":
-                # Convert to Excel
-                output = BytesIO()
-                with pd.ExcelWriter(output, engine="openpyxl") as writer:
-                    df.to_excel(writer, index=False, sheet_name="Students")
-                output.seek(0)
-
-                response = HttpResponse(
-                    output.getvalue(),
-                    content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                )
-                filename = f"students_export_{timestamp}.xlsx"
-                response["Content-Disposition"] = f'attachment; filename="{filename}"'
-
-            else:
-                return Response(
-                    {"error": "Unsupported format. Use csv or excel"},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
+            response = HttpResponse(
+                output.getvalue(),
+                content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            )
+            response["Content-Disposition"] = f'attachment; filename="{filename}"'
 
             return response
 
         except Exception as e:
             return Response(
-                {"error": str(e), "detail": "Failed to export students"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                {"error": str(e), "detail": "Failed to export students"}, status=500
             )
 
 
@@ -1300,6 +1320,7 @@ class StudentTemplateView(APIView):
                     "field",
                     "phone_number",
                     "account",
+                    "gender",
                 ]
             )
 

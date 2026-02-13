@@ -314,6 +314,36 @@
   transform: translateY(-1px);
 }
 
+.exportButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.exportButton:hover:not(:disabled) {
+  background-color: var(--bg-body);
+  border-color: var(--border-color-dark);
+  transform: translateY(-1px);
+}
+
+.exportButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.exportButton .spinner {
+  animation: spin 1s linear infinite;
+}
+
 .clearButton {
   padding: 10px 16px;
   background-color: var(--bg-body);
@@ -872,7 +902,8 @@
   }
 
   .filterButton,
-  .clearButton {
+  .clearButton,
+  .exportButton {
     width: 100%;
     justify-content: center;
   }

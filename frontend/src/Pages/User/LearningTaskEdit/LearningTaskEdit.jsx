@@ -526,7 +526,7 @@ export default function LearningTaskEdit() {
                             <AsyncButton
                                 type="submit"
                                 className={styles.primaryBtn}
-                                loading={loading}
+                                loading={loading || undefined}
                                 disabled={loading}
                             >
                                 <FaSave /> Update Task

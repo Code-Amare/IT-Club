@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../Utils/api";
 import { neonToast } from "../../Components/NeonToast/NeonToast";
@@ -26,6 +26,10 @@ export default function ResetPasswordViaCode() {
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [message, setMessage] = useState({ text: "", type: "" });
+    const { updatePageTitle } = useNotifContext()
+    useEffect(() => {
+        updatePageTitle("Reset Password Via Code")
+    }, [])
 
     const [passwordForm, setPasswordForm] = useState({
         code: "",

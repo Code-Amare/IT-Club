@@ -22,7 +22,11 @@ export default function NotificationDetail() {
 
     const [notification, setNotification] = useState(null);
     const [loading, setLoading] = useState(true);
-    const { getNotif } = useNotifContext()
+    const { getNotif, updatePageTitle } = useNotifContext()
+    useEffect(() => {
+        if (!notification?.title) return
+        updatePageTitle(`Notification '${notification?.title}'`)
+    }, [notification])
 
     useEffect(() => {
         if (!notif_id) return; // do nothing if notif_id is missing
@@ -203,14 +207,12 @@ export default function NotificationDetail() {
 
                         {notification.url && (
                             <div className={styles.cardActions}>
-                                <a
-                                    href={notification.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
+                                <span
+                                    onClick={() => { navigate(notification.url) }}
                                 >
                                     <FaExternalLinkAlt />
                                     View related content
-                                </a>
+                                </span>
                             </div>
                         )}
                     </div>

@@ -1,4 +1,4 @@
-/* Security Container - Reset to original */
+/* Security Container */
 .securityContainer {
   width: 100%;
   min-height: 100vh;
@@ -36,22 +36,25 @@
   }
 }
 
-/* Header - FIXED: Add centering like Settings component */
+/* Header */
 .header {
   padding: 24px 0;
   margin-bottom: 32px;
 }
 
 .headerContent {
-  max-width: 1200px; /* ADDED: Same as Settings component */
-  margin: 0 auto; /* ADDED: Center the content */
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 32px;
 }
 
 .titleSection {
   display: flex;
   align-items: center;
   gap: 16px;
-  margin-bottom: 4px;
 }
 
 .titleIcon {
@@ -74,21 +77,21 @@
   font-weight: 400;
 }
 
-/* Main Content - FIXED: Add centering like Settings component */
+/* Main Content */
 .mainContent {
+  max-width: 1200px;
+  margin: 0 auto 32px;
   display: flex;
   flex-direction: column;
   gap: 24px;
-  max-width: 1200px; /* ADDED: Same as Settings component */
-  margin: 0 auto; /* ADDED: Center the content */
 }
 
-/* Card Styles */
+/* Card Styles - matching Settings */
 .card {
   background: var(--bg-surface);
   border: 1px solid var(--border-color);
   border-radius: 12px;
-  padding: 28px;
+  padding: 24px;
   transition:
     border-color 0.2s ease,
     box-shadow 0.2s ease;
@@ -103,7 +106,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
   padding-bottom: 16px;
   border-bottom: 1px solid var(--border-color);
 }
@@ -143,7 +146,7 @@
   border-color: var(--border-color);
 }
 
-/* Setting Row */
+/* Setting Row - matches Settings' settingContent */
 .settingRow {
   display: flex;
   justify-content: space-between;
@@ -216,7 +219,7 @@
 .formGroup {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
 
 .formLabel {
@@ -389,35 +392,6 @@
   background: transparent;
 }
 
-.emailMessage {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  margin: 16px 0;
-  border: 1px solid;
-}
-
-.emailMessage.success {
-  background: transparent;
-  border-color: var(--toast-success);
-  color: var(--toast-success);
-}
-
-.emailMessage.error {
-  background: transparent;
-  border-color: var(--toast-error);
-  color: var(--toast-error);
-}
-
-.emailMessage svg {
-  font-size: 16px;
-  flex-shrink: 0;
-}
-
 .emailResetTips {
   margin-top: 20px;
   padding: 16px;
@@ -464,20 +438,49 @@
   margin-top: 20px;
 }
 
+/* Button Styles - matching Settings toggle buttons */
+.primaryBtn,
+.dangerBtn,
 .secondaryBtn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   padding: 10px 20px;
   border-radius: 8px;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
-  border: 1px solid var(--border-color);
+  border: 1px solid;
   background: var(--bg-surface);
-  color: var(--text-primary);
   text-decoration: none;
   transition: all 0.2s ease;
+  min-width: 140px;
+}
+
+.primaryBtn {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.primaryBtn:hover:not(:disabled) {
+  background: var(--primary);
+  color: var(--primary-contrast);
+}
+
+.dangerBtn {
+  border-color: var(--toast-error);
+  color: var(--toast-error);
+}
+
+.dangerBtn:hover:not(:disabled) {
+  background: var(--toast-error);
+  color: var(--white);
+}
+
+.secondaryBtn {
+  border-color: var(--border-color);
+  color: var(--text-primary);
 }
 
 .secondaryBtn:hover:not(:disabled) {
@@ -485,12 +488,14 @@
   color: var(--primary);
 }
 
+.primaryBtn:disabled,
+.dangerBtn:disabled,
 .secondaryBtn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 
-.secondaryBtn .spinner {
+.spinner {
   animation: spin 1s linear infinite;
 }
 
@@ -563,56 +568,17 @@
   font-weight: 400;
 }
 
-/* Button Styles */
-.primaryBtn,
-.dangerBtn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  border: 1px solid;
-  background: var(--bg-surface);
-  text-decoration: none;
-  transition: all 0.2s ease;
-}
-
-.primaryBtn {
-  border-color: var(--primary);
-  color: var(--primary);
-}
-
-.primaryBtn:hover:not(:disabled) {
-  background: var(--primary);
-  color: var(--primary-contrast);
-}
-
-.primaryBtn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.dangerBtn {
-  border-color: var(--toast-error);
-  color: var(--toast-error);
-}
-
-.dangerBtn:hover:not(:disabled) {
-  background: var(--toast-error);
-  color: var(--white);
-}
-
-/* Responsive Design */
+/* Responsive Design - matching Settings */
 @media (max-width: 768px) {
   .header {
     padding: 20px 0;
   }
 
   .headerContent {
-    padding: 0 16px; /* ADDED: Add padding for mobile */
+    padding: 0 16px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 20px;
   }
 
   .titleSection {
@@ -621,8 +587,12 @@
     gap: 12px;
   }
 
+  .titleSection h1 {
+    font-size: 24px;
+  }
+
   .mainContent {
-    padding: 0 16px; /* ADDED: Add padding for mobile */
+    padding: 0 16px;
   }
 
   .card {
@@ -671,15 +641,22 @@
     flex-direction: column;
     text-align: center;
   }
+
+  .primaryBtn,
+  .dangerBtn,
+  .secondaryBtn {
+    width: 100%;
+    min-width: unset;
+  }
 }
 
 @media (max-width: 576px) {
   .headerContent {
-    padding: 0 12px; /* ADDED: Smaller padding for mobile */
+    padding: 0 12px;
   }
 
   .mainContent {
-    padding: 0 12px; /* ADDED: Smaller padding for mobile */
+    padding: 0 12px;
   }
 
   .card {
@@ -690,8 +667,20 @@
     font-size: 16px;
   }
 
-  .settingIcon {
+  .titleSection h1 {
     font-size: 20px;
+  }
+
+  .titleSection p {
+    font-size: 13px;
+  }
+
+  .settingInfo h3 {
+    font-size: 15px;
+  }
+
+  .settingInfo p {
+    font-size: 13px;
   }
 
   .formInput {
@@ -702,7 +691,11 @@
   .primaryBtn,
   .dangerBtn,
   .secondaryBtn {
-    width: 100%;
-    justify-content: center;
+    font-size: 13px;
+    padding: 8px 16px;
+  }
+
+  .tipItem {
+    padding: 16px;
   }
 }

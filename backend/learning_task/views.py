@@ -378,34 +378,14 @@ class LikeLearningTaskAPIView(APIView):
         user = request.user
         try:
             task = LearningTask.objects.get(id=task_id)
-            task_owner = task.user
 
-            with transaction.atomic():
-                if user in task.likes.all():
-                    task.likes.remove(user)
-                    action = "unliked"
-                    async_to_sync(notify_user)(
-                        recipient=task_owner,
-                        actor=user,
-                        title="You got a dislike",
-                        description=f"{user.full_name} disliked your learning task.",
-                        code="info",
-                        url=f"/user/learning-task/{task.id}",
-                        is_push_notif=False,
-                    )
+            if user in task.likes.all():
+                task.likes.remove(user)
+                action = "unliked"
 
-                else:
-                    task.likes.add(user)
-                    action = "liked"
-                    async_to_sync(notify_user)(
-                        recipient=task_owner,
-                        actor=user,
-                        title="You got a like",
-                        description=f"{user.full_name} liked your learning task.",
-                        code="info",
-                        url=f"/user/learning-task/{task.id}",
-                        is_push_notif=False,
-                    )
+            else:
+                task.likes.add(user)
+                action = "liked"
 
             return Response(
                 {
@@ -446,8 +426,6 @@ class LearningTaskLimitView(APIView):
 class TaskBonusAPIView(APIView):
     authentication_classes = [JWTCookieAuthentication]
     permission_classes = [IsAuthenticated, IsAdminUser]
-
-    # Field name `updated_at` is not valid for model `TaskBonus` in `learning_task.serializers.TaskBonusSerializer`.
 
     def get(self, request, task_id):
         try:

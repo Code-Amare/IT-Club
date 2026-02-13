@@ -94,7 +94,7 @@ class Profile(models.Model):
         ("frontend", "Frontend"),
         ("backend", "Backend"),
         ("ai", "AI"),
-        ("embadded", "Embadded"),
+        ("embedded", "Embedded"),
         ("cyber", "Cyber"),
         ("other", "Other"),
     ]
@@ -124,4 +124,3 @@ class ChangePasswordViaEmail(models.Model):
             self.code = secrets.randbelow(900000) + 100000
 
         super().save(*args, **kwargs)
-

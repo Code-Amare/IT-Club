@@ -991,3 +991,28 @@
     display: none !important;
   }
 }
+
+.mobileThemeToggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 10px;
+  border-radius: 8px;
+  color: var(--text-primary);
+  margin-top: auto;
+  border-top: 1px solid var(--border-color);
+}
+
+.mobileThemeToggle > *:first-child {
+  width: 24px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Optional: if the toggle itself has extra margins, reset them */
+.mobileThemeToggle button,
+.mobileThemeToggle .themeToggleInner {
+  margin: 0;
+  padding: 0;
+}

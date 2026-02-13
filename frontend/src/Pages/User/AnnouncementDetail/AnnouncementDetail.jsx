@@ -11,6 +11,7 @@ import {
     FaUser
 } from "react-icons/fa";
 import styles from "./AnnouncementDetail.module.css";
+import { useNotifContext } from "../../../Context/NotifContext";
 
 export default function AnnouncementDetail() {
     const { user } = useUser();
@@ -20,6 +21,12 @@ export default function AnnouncementDetail() {
     const [announcement, setAnnouncement] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    const { updatePageTitle } = useNotifContext()
+
+    useEffect(() => {
+        if (!announcement?.title === "") return
+        updatePageTitle(`Announcement '${announcement?.title}'`)
+    }, [announcement])
 
     useEffect(() => {
         if (user.isAuthenticated === null) return;

@@ -18,8 +18,11 @@ export default function NotificationsList() {
     const navigate = useNavigate();
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(true);
-    const { notification, notificationPreview, makeAllAsRead } = useNotifContext();
+    const { notification, notificationPreview, makeAllAsRead, updatePageTitle } = useNotifContext();
     const [notifUnreadCount, setNotifUnreadCount] = useState(notificationPreview.length || 0)
+    useEffect(() => {
+        updatePageTitle("Notifications")
+    }, [])
 
     useEffect(() => {
         setNotifUnreadCount(notificationPreview.length || 0)

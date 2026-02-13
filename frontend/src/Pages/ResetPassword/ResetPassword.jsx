@@ -14,6 +14,7 @@ import {
     FaArrowLeft,
     FaRedo
 } from "react-icons/fa";
+import { useNotifContext } from "../../Context/NotifContext";
 
 export default function ResetPassword() {
     const { signed_inst } = useParams();
@@ -27,6 +28,10 @@ export default function ResetPassword() {
     const [message, setMessage] = useState({ text: "", type: "" });
     const [isValidLink, setIsValidLink] = useState(false);
     const [verificationMessage, setVerificationMessage] = useState("");
+    const { updatePageTitle } = useNotifContext()
+    useEffect(() => {
+        updatePageTitle("Reset Password")
+    }, [])
 
     const [passwordForm, setPasswordForm] = useState({
         new_password: "",

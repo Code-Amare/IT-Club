@@ -1,11 +1,9 @@
-/* ====== BASE CONTAINER ====== */
 .container {
   width: 100%;
   min-height: 100vh;
   background: var(--bg-body);
 }
 
-/* ====== HEADER ====== */
 .header {
   margin-bottom: 24px;
 }
@@ -66,7 +64,6 @@
   margin: 0;
 }
 
-/* ====== FORM ====== */
 .form {
   background: var(--bg-surface);
   border: 1px solid var(--border-color);
@@ -86,7 +83,6 @@
   gap: 24px;
 }
 
-/* ====== FORM GROUPS ====== */
 .formGroup {
   display: flex;
   flex-direction: column;
@@ -112,7 +108,6 @@
   font-weight: 700;
 }
 
-/* ====== INPUTS ====== */
 input[type="text"],
 input[type="url"],
 textarea {
@@ -167,7 +162,6 @@ button:disabled {
   margin-top: 4px;
 }
 
-/* ====== INPUT WITH ICON ====== */
 .inputWithIcon {
   position: relative;
 }
@@ -185,7 +179,6 @@ button:disabled {
   padding-left: 48px;
 }
 
-/* ====== CHECKBOX (VISIBILITY) ====== */
 .checkboxLabel {
   display: flex;
   align-items: flex-start;
@@ -279,7 +272,6 @@ button:disabled {
   color: var(--text-secondary);
 }
 
-/* ====== SELECTION GRID (LANGUAGES & FRAMEWORKS) ====== */
 .selectionGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -309,13 +301,17 @@ button:disabled {
 .selectionItem.selected {
   background: var(--primary);
   border-color: var(--primary);
-  color: var(--text-primary);
+  color: var(--primary-contrast);
 }
 
 .selectionItem.selected .selectionName,
 .selectionItem.selected .selectionCode,
 .selectionItem.selected .selectionLanguage,
 .selectionItem.selected svg {
+  color: var(--primary-contrast) !important;
+}
+
+.selectionName {
   color: var(--text-primary) !important;
 }
 
@@ -375,7 +371,6 @@ button:disabled {
   grid-column: 1 / -1;
 }
 
-/* ====== SELECTED COUNTS ====== */
 .selectedCounts {
   display: flex;
   gap: 24px;
@@ -405,7 +400,6 @@ button:disabled {
   color: var(--text-primary);
 }
 
-/* ====== FORM ACTIONS ====== */
 .formActions {
   display: flex;
   justify-content: space-between;
@@ -457,12 +451,10 @@ button:disabled {
   background: var(--bg-body);
 }
 
-/* ====== RESPONSIVE DESIGN ====== */
 @media (max-width: 1024px) {
   .formGrid {
     gap: 24px;
   }
-
   .selectionGrid {
     grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   }
@@ -473,21 +465,17 @@ button:disabled {
     grid-template-columns: 1fr;
     gap: 32px;
   }
-
   .formActions {
     flex-direction: column;
     align-items: stretch;
   }
-
   .secondaryBtn {
     width: 100%;
     justify-content: center;
   }
-
   .primaryActions {
     width: 100%;
   }
-
   .primaryActions button {
     flex: 1;
     justify-content: center;
@@ -500,24 +488,19 @@ button:disabled {
     align-items: flex-start;
     gap: 12px;
   }
-
   .titleIcon {
     align-self: flex-start;
   }
-
   .selectionGrid {
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   }
-
   .selectedCounts {
     flex-direction: column;
     gap: 16px;
   }
-
   .formActions {
     gap: 12px;
   }
-
   .primaryActions {
     flex-direction: column;
   }
@@ -527,15 +510,12 @@ button:disabled {
   .form {
     padding: 20px;
   }
-
   .titleSection h1 {
     font-size: 20px;
   }
-
   .selectionGrid {
     grid-template-columns: 1fr;
   }
-
   .selectionItem {
     padding: 10px;
   }

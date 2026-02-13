@@ -22,6 +22,7 @@ import {
     FaCalendarAlt,
     FaUserCheck,
     FaUserSlash,
+    FaDownload,
 } from "react-icons/fa";
 import { neonToast } from "../../../Components/NeonToast/NeonToast";
 import styles from "./Students.module.css";
@@ -30,10 +31,7 @@ export default function Students() {
     const { user } = useUser();
     const navigate = useNavigate();
 
-    // Stats state
     const [stats, setStats] = useState({ total: 0, active: 0, inactive: 0, attendance_avg: 0 });
-
-    // Students table states
     const [students, setStudents] = useState([]);
     const [pagination, setPagination] = useState({
         current_page: 1,
@@ -47,15 +45,18 @@ export default function Students() {
         section: "",
         accountStatus: "",
     });
+    const [filterOptions, setFilterOptions] = useState({
+        grades: [],
+        sections: []
+    });
     const [sortConfig, setSortConfig] = useState({
         sort_by: "-user__date_joined",
         sort_order: "desc"
     });
     const [showFilters, setShowFilters] = useState(false);
-    const [availableGrades, setAvailableGrades] = useState([]);
-    const [availableSections, setAvailableSections] = useState([]);
     const [loading, setLoading] = useState(true);
     const [studentsLoading, setStudentsLoading] = useState(false);
+    const [exporting, setExporting] = useState(false);
 
     useEffect(() => {
         if (user.isAuthenticated === null) return;
@@ -65,27 +66,6 @@ export default function Students() {
         }
         fetchStudents();
     }, [user, navigate]);
-
-    // Extract unique grades and sections from students data
-    useEffect(() => {
-        if (students.length > 0) {
-            // Extract unique grades
-            const grades = [...new Set(students
-                .map(student => student.grade)
-                .filter(grade => grade !== null && grade !== undefined)
-                .sort((a, b) => a - b)
-            )];
-            setAvailableGrades(grades);
-
-            // Extract unique sections
-            const sections = [...new Set(students
-                .map(student => student.section)
-                .filter(section => section !== null && section !== undefined)
-                .sort()
-            )];
-            setAvailableSections(sections);
-        }
-    }, [students]);
 
     const fetchStudents = async (page = 1) => {
         setStudentsLoading(true);
@@ -97,7 +77,6 @@ export default function Students() {
                 ...filters
             };
 
-            // Remove empty filters
             Object.keys(params).forEach(key => {
                 if (params[key] === "" || params[key] === null || params[key] === undefined) {
                     delete params[key];
@@ -115,6 +94,7 @@ export default function Students() {
                 total_count: 0,
                 total_pages: 1,
             });
+            setFilterOptions(data.filter_options || { grades: [], sections: [] });
 
         } catch (error) {
             console.error("Error fetching students:", error);
@@ -132,10 +112,7 @@ export default function Students() {
     };
 
     const handleFilterChange = (key, value) => {
-        setFilters(prev => ({
-            ...prev,
-            [key]: value
-        }));
+        setFilters(prev => ({ ...prev, [key]: value }));
     };
 
     const handleSort = (field) => {
@@ -145,15 +122,12 @@ export default function Students() {
         let newSortConfig = { ...sortConfig };
 
         if (isCurrentlyDesc) {
-            // Switch to ascending
             newSortConfig.sort_by = field;
             newSortConfig.sort_order = "asc";
         } else if (isCurrentlyAsc) {
-            // Switch to default (date joined desc)
             newSortConfig.sort_by = "-user__date_joined";
             newSortConfig.sort_order = "desc";
         } else {
-            // Set to descending
             newSortConfig.sort_by = `-${field}`;
             newSortConfig.sort_order = "desc";
         }
@@ -178,6 +152,39 @@ export default function Students() {
             sort_order: "desc"
         });
         fetchStudents(1);
+    };
+
+    const handleExport = async () => {
+        setExporting(true);
+        try {
+            const params = new URLSearchParams();
+            // No format parameter – backend always returns Excel
+            if (filters.search) params.append("search", filters.search);
+            if (filters.grade) params.append("grade", filters.grade);
+            if (filters.section) params.append("section", filters.section);
+            if (filters.accountStatus) params.append("account_status", filters.accountStatus);
+
+            const response = await api.get("/api/management/students/export/", {
+                params,
+                responseType: "blob",
+            });
+
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement("a");
+            link.href = url;
+            link.setAttribute("download", `students_export_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.xlsx`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+
+            neonToast.success("Export completed successfully", "success");
+        } catch (error) {
+            console.error("Export error:", error);
+            neonToast.error("Failed to export students", "error");
+        } finally {
+            setExporting(false);
+        }
     };
 
     const getSortIcon = (field) => {
@@ -211,7 +218,6 @@ export default function Students() {
         }
     };
 
-    // Handle enter key in search
     const handleKeyPress = (e) => {
         if (e.key === 'Enter') {
             handleSearch();
@@ -234,7 +240,6 @@ export default function Students() {
     return (
         <div className={styles.container}>
             <SideBar>
-                {/* Header */}
                 <div className={styles.header}>
                     <div className={styles.headerContent}>
                         <div className={styles.titleSection}>
@@ -250,7 +255,6 @@ export default function Students() {
                                 <FaUpload />
                                 <span>Bulk Upload</span>
                             </Link>
-
                             <Link to="/admin/student/add" className={styles.primaryBtn}>
                                 <FaUserPlus />
                                 <span>Add Student</span>
@@ -259,7 +263,6 @@ export default function Students() {
                     </div>
                 </div>
 
-                {/* Stats */}
                 <div className={styles.statsGrid}>
                     <div className={styles.statCard}>
                         <div className={styles.statIconContainer}>
@@ -270,7 +273,6 @@ export default function Students() {
                             <p className={styles.statValue}>{stats.total || 0}</p>
                         </div>
                     </div>
-
                     <div className={styles.statCard}>
                         <div className={styles.statIconContainer}>
                             <FaUserCheck className={styles.statIcon} />
@@ -280,7 +282,6 @@ export default function Students() {
                             <p className={styles.statValue}>{stats.active || 0}</p>
                         </div>
                     </div>
-
                     <div className={styles.statCard}>
                         <div className={styles.statIconContainer}>
                             <FaUserSlash className={styles.statIcon} />
@@ -290,7 +291,6 @@ export default function Students() {
                             <p className={styles.statValue}>{stats.inactive || 0}</p>
                         </div>
                     </div>
-
                     <div className={styles.statCard}>
                         <div className={styles.statIconContainer}>
                             <FaCalendarAlt className={styles.statIcon} />
@@ -302,7 +302,6 @@ export default function Students() {
                     </div>
                 </div>
 
-                {/* Student Management Table */}
                 <div className={styles.tableCard}>
                     <div className={styles.tableHeader}>
                         <h2>
@@ -316,6 +315,14 @@ export default function Students() {
                                 <FaFilter /> Filters
                             </button>
                             <button
+                                onClick={handleExport}
+                                className={styles.exportButton}
+                                disabled={studentsLoading || exporting}
+                            >
+                                {exporting ? <FaSpinner className={styles.spinner} /> : <FaDownload />}
+                                Export Excel
+                            </button>
+                            <button
                                 onClick={handleClearFilters}
                                 className={styles.clearButton}
                                 disabled={studentsLoading}
@@ -325,7 +332,6 @@ export default function Students() {
                         </div>
                     </div>
 
-                    {/* Filters Section */}
                     {showFilters && (
                         <div className={styles.filtersSection}>
                             <div className={styles.filterRow}>
@@ -349,10 +355,9 @@ export default function Students() {
                                     <select
                                         value={filters.grade}
                                         onChange={(e) => handleFilterChange("grade", e.target.value)}
-                                        disabled={availableGrades.length === 0}
                                     >
                                         <option value="">All Grades</option>
-                                        {availableGrades.map(grade => (
+                                        {filterOptions.grades.map(grade => (
                                             <option key={grade} value={grade}>Grade {grade}</option>
                                         ))}
                                     </select>
@@ -362,10 +367,9 @@ export default function Students() {
                                     <select
                                         value={filters.section}
                                         onChange={(e) => handleFilterChange("section", e.target.value)}
-                                        disabled={availableSections.length === 0}
                                     >
                                         <option value="">All Sections</option>
-                                        {availableSections.map(section => (
+                                        {filterOptions.sections.map(section => (
                                             <option key={section} value={section}>{section}</option>
                                         ))}
                                     </select>
@@ -392,7 +396,6 @@ export default function Students() {
                         </div>
                     )}
 
-                    {/* Students Table */}
                     <div className={styles.tableWrapper}>
                         <div className={styles.tableContainer}>
                             {studentsLoading ? (
@@ -455,7 +458,6 @@ export default function Students() {
                                                         <div className={styles.avatarPlaceholder} style={{ display: student.profile_pic_url ? 'none' : 'flex' }}>
                                                             {student.full_name?.charAt(0) || '?'}
                                                         </div>
-
                                                         <div className={styles.studentInfo}>
                                                             <span className={styles.studentName}>{student.full_name}</span>
                                                             <span className={styles.mobileEmail}>{student.email}</span>
@@ -472,17 +474,14 @@ export default function Students() {
                                                 <td>
                                                     <div className={styles.attendanceCell}>
                                                         <div className={styles.attendanceProgress}>
-                                                            <div
-                                                                className={styles.progressBar}
-                                                                title={`${student.attendance?.attendance_percentage || 0}%`}
-                                                            >
+                                                            <div className={styles.progressBar} title={`${student.attendance?.attendance_percentage || 0}%`}>
                                                                 <div
                                                                     className={styles.progressFill}
                                                                     style={{
                                                                         width: `${Math.min(student.attendance?.attendance_percentage || 0, 100)}%`,
                                                                         backgroundColor: getAttendanceRatingColor(student.attendance?.attendance_rating)
                                                                     }}
-                                                                ></div>
+                                                                />
                                                             </div>
                                                             <span className={styles.attendancePercentage}>
                                                                 {student.attendance?.attendance_percentage || 0}%
@@ -517,7 +516,6 @@ export default function Students() {
                             )}
                         </div>
 
-                        {/* Pagination */}
                         {students.length > 0 && pagination.total_count > pagination.page_size && (
                             <div className={styles.pagination}>
                                 <div className={styles.paginationInfo}>
@@ -568,10 +566,7 @@ export default function Students() {
                                     <select
                                         value={pagination.page_size}
                                         onChange={(e) => {
-                                            setPagination(prev => ({
-                                                ...prev,
-                                                page_size: parseInt(e.target.value)
-                                            }));
+                                            setPagination(prev => ({ ...prev, page_size: parseInt(e.target.value) }));
                                             setTimeout(() => fetchStudents(1), 0);
                                         }}
                                         disabled={studentsLoading}

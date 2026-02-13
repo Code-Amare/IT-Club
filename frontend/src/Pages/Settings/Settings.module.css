@@ -303,6 +303,35 @@
   cursor: not-allowed;
 }
 
+/* Admin Settings List */
+.settingsList {
+  margin-top: 16px;
+  border-top: 1px solid var(--border-color);
+  padding-top: 16px;
+}
+
+.settingItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.settingItem:last-child {
+  border-bottom: none;
+}
+
+.settingItem span {
+  font-size: 14px;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.settingItem .toggleBtn {
+  min-width: 100px;
+}
+
 /* Test Section */
 .testSection {
   max-width: 1200px;
@@ -483,6 +512,10 @@
     gap: 12px;
   }
 
+  .titleSection h1 {
+    font-size: 24px;
+  }
+
   .actionButtons {
     width: 100%;
     justify-content: center;
@@ -558,32 +591,73 @@
   .infoCard {
     padding: 16px;
   }
-}
-/* Admin Settings List */
-.settingsList {
-  margin-top: 16px;
-  border-top: 1px solid var(--border-color);
-  padding-top: 16px;
+
+  .settingItem {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .settingItem .toggleBtn {
+    width: 100%;
+    min-width: unset;
+  }
+
+  .infoCard {
+    gap: 12px;
+  }
+
+  .infoCard svg {
+    margin-top: 0;
+  }
 }
 
-.settingItem {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 0;
-  border-bottom: 1px solid var(--border-color);
-}
+@media (max-width: 480px) {
+  .titleSection h1 {
+    font-size: 20px;
+  }
 
-.settingItem:last-child {
-  border-bottom: none;
-}
+  .titleSection p {
+    font-size: 13px;
+  }
 
-.settingItem span {
-  font-size: 14px;
-  color: var(--text-primary);
-  font-weight: 500;
-}
+  .settingInfo h3 {
+    font-size: 15px;
+  }
 
-.settingItem .toggleBtn {
-  min-width: 100px;
+  .settingInfo p {
+    font-size: 13px;
+  }
+
+  .statusGranted,
+  .statusDenied,
+  .statusDefault {
+    font-size: 12px;
+    padding: 4px 8px;
+  }
+
+  .toggleBtn {
+    font-size: 13px;
+    padding: 8px 16px;
+  }
+
+  .testBtn,
+  .debugBtn,
+  .enableBtn {
+    font-size: 13px;
+    padding: 8px 16px;
+  }
+
+  .statusLabel,
+  .statusValue {
+    font-size: 13px;
+  }
+
+  .infoContent h4 {
+    font-size: 15px;
+  }
+
+  .infoContent li {
+    font-size: 13px;
+  }
 }
