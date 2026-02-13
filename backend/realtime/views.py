@@ -1,11 +1,13 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from asgiref.sync import async_to_sync
 from .models import Notification
-from utils.auth import JWTCookieAuthentication
+from utils.auth import JWTCookieAuthentication, IsSuperUser
 from rest_framework.permissions import IsAuthenticated
 from .serializers import NotificationSerializer
+from django.db import transaction
+from django.utils import timezone
+from datetime import timedelta
 
 
 class GetNotificationBulkView(APIView):
@@ -107,3 +109,26 @@ class DetailNotifView(APIView):
                 {"error": "Notification doesn't exist."},
                 status=status.HTTP_404_NOT_FOUND,
             )
+
+
+class DeleteOldNotificationsView(APIView):
+    authentication_classes = [JWTCookieAuthentication]
+    permission_classes = [IsSuperUser]
+
+    def delete(self, request):
+        user = request.user
+
+        cutoff_date = timezone.now() - timedelta(days=10)
+
+        with transaction.atomic():
+            deleted_count, _ = Notification.objects.filter(
+                recipient=user, sent_at__lt=cutoff_date
+            ).delete()
+
+        return Response(
+            {
+                "message": "Old notifications deleted successfully",
+                "deleted_count": deleted_count,
+            },
+            status=status.HTTP_200_OK,
+        )

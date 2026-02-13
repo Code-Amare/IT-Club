@@ -4,6 +4,7 @@ import { useUser } from "../../Context/UserContext";
 import api from "../../Utils/api";
 import { neonToast } from "../../Components/NeonToast/NeonToast";
 import AsyncButton from "../../Components/AsyncButton/AsyncButton";
+import ConfirmAction from "../../Components/ConfirmAction/ConfirmAction"; // <-- import
 import styles from "./Settings.module.css";
 import SideBar from "../../Components/SideBar/SideBar";
 import {
@@ -38,6 +39,7 @@ export default function Settings() {
         allow_profile_pic_change: false,
     });
     const [settingsLoading, setSettingsLoading] = useState(false);
+    const [deletingOld, setDeletingOld] = useState(false);
 
     useEffect(() => {
         if (user.isAuthenticated === null) return;
@@ -361,41 +363,84 @@ Notification Status:
                     </div>
 
                     {user.isSuperUser && (
-                        <div className={styles.settingCard}>
-                            <div className={styles.settingContent}>
-                                <div className={styles.settingIcon}>
-                                    <MdAdminPanelSettings />
+                        <>
+                            <div className={styles.settingCard}>
+                                <div className={styles.settingContent}>
+                                    <div className={styles.settingIcon}>
+                                        <MdAdminPanelSettings />
+                                    </div>
+                                    <div className={styles.settingInfo}>
+                                        <h3>Admin Settings</h3>
+                                        <p>Global platform configurations</p>
+                                    </div>
                                 </div>
-                                <div className={styles.settingInfo}>
-                                    <h3>Admin Settings</h3>
-                                    <p>Global platform configurations</p>
+                                <div className={styles.settingsList}>
+                                    <div className={styles.settingItem}>
+                                        <span>Allow profile changes</span>
+                                        <AsyncButton
+                                            onClick={() => updateSetting("allow_profile_change", !settings.allow_profile_change)}
+                                            loading={settingsLoading}
+                                            disabled={settingsLoading}
+                                            className={`${styles.toggleBtn} ${settings.allow_profile_change ? styles.toggleBtnEnabled : styles.toggleBtnDisabled}`}
+                                        >
+                                            {settings.allow_profile_change ? "Enabled" : "Disabled"}
+                                        </AsyncButton>
+                                    </div>
+                                    <div className={styles.settingItem}>
+                                        <span>Allow profile picture changes</span>
+                                        <AsyncButton
+                                            onClick={() => updateSetting("allow_profile_pic_change", !settings.allow_profile_pic_change)}
+                                            loading={settingsLoading}
+                                            disabled={settingsLoading}
+                                            className={`${styles.toggleBtn} ${settings.allow_profile_pic_change ? styles.toggleBtnEnabled : styles.toggleBtnDisabled}`}
+                                        >
+                                            {settings.allow_profile_pic_change ? "Enabled" : "Disabled"}
+                                        </AsyncButton>
+                                    </div>
                                 </div>
                             </div>
-                            <div className={styles.settingsList}>
-                                <div className={styles.settingItem}>
-                                    <span>Allow profile changes</span>
-                                    <AsyncButton
-                                        onClick={() => updateSetting("allow_profile_change", !settings.allow_profile_change)}
-                                        loading={settingsLoading}
-                                        disabled={settingsLoading}
-                                        className={`${styles.toggleBtn} ${settings.allow_profile_change ? styles.toggleBtnEnabled : styles.toggleBtnDisabled}`}
-                                    >
-                                        {settings.allow_profile_change ? "Enabled" : "Disabled"}
-                                    </AsyncButton>
+
+                            {/* Delete old notifications with confirmation */}
+                            <div className={styles.settingCard}>
+                                <div className={styles.settingContent}>
+                                    <div className={styles.settingIcon}>
+                                        <FaBell />
+                                    </div>
+                                    <div className={styles.settingInfo}>
+                                        <h3>Clean Up Old Notifications</h3>
+                                        <p>Delete notifications older than 10 days</p>
+                                    </div>
                                 </div>
-                                <div className={styles.settingItem}>
-                                    <span>Allow profile picture changes</span>
-                                    <AsyncButton
-                                        onClick={() => updateSetting("allow_profile_pic_change", !settings.allow_profile_pic_change)}
-                                        loading={settingsLoading}
-                                        disabled={settingsLoading}
-                                        className={`${styles.toggleBtn} ${settings.allow_profile_pic_change ? styles.toggleBtnEnabled : styles.toggleBtnDisabled}`}
+                                <div className={styles.toggleContainer}>
+                                    <ConfirmAction
+                                        title="Delete Old Notifications"
+                                        message="Are you sure you want to delete all notifications older than 10 days? This action cannot be undone."
+                                        confirmText="Delete"
+                                        cancelText="Cancel"
+                                        onConfirm={async () => {
+                                            setDeletingOld(true);
+                                            try {
+                                                const res = await api.delete("/api/realtime/notif/delete-old/");
+                                                neonToast.success(`Deleted ${res.data.deleted_count} old notifications`, "success");
+                                            } catch (err) {
+                                                const msg = err.response?.data?.detail || "Failed to delete old notifications";
+                                                neonToast.error(msg, "error");
+                                            } finally {
+                                                setDeletingOld(false);
+                                            }
+                                        }}
                                     >
-                                        {settings.allow_profile_pic_change ? "Enabled" : "Disabled"}
-                                    </AsyncButton>
+                                        <AsyncButton
+                                            loading={deletingOld}
+                                            disabled={deletingOld}
+                                            className={styles.deleteBtn}
+                                        >
+                                            Delete Old Notifications
+                                        </AsyncButton>
+                                    </ConfirmAction>
                                 </div>
                             </div>
-                        </div>
+                        </>
                     )}
                 </div>
 
