@@ -17,10 +17,8 @@ import {
     FaCalendarCheck,
     FaUserGraduate,
     FaStar,
-    FaExclamationTriangle,
     FaArrowRight,
     FaChartLine,
-    FaCalendarAlt,
     FaPercentage,
     FaRegCalendarCheck,
     FaRegClock,
@@ -54,6 +52,7 @@ const UserDashboard = () => {
                 setLoading(true);
                 const res = await api.get("api/users/data/");
                 setDashboardData(res.data);
+                console.log(res.data)
             } catch (err) {
                 console.log(err);
             } finally {
@@ -63,12 +62,12 @@ const UserDashboard = () => {
         userData();
     }, []);
 
-    // Map backend data to frontend format
+    // Map backend stats to frontend format
     const userStats = dashboardData?.stats ? {
         attendanceRate: dashboardData.stats.attendance_rate,
         attendanceDistribution: dashboardData.stats.attendance_distribution,
         totalLearningTasks: dashboardData.stats.total_learning_tasks,
-        averageGrade: dashboardData.stats.average_grade,
+        totalGrade: dashboardData.stats.total_grade,        // <-- directly use total_grade
         taskCompletion: dashboardData.stats.task_completion_percent,
         totalBonus: dashboardData.stats.total_bonus,
         taskScore: dashboardData.stats.task_score
@@ -97,21 +96,6 @@ const UserDashboard = () => {
         { name: "Under Review", value: dashboardData.task_status_distribution.under_review || 0, color: "#f59e0b", icon: <FaSearch /> },
         { name: "Rated", value: dashboardData.task_status_distribution.rated || 0, color: "#10b981", icon: <FaThumbsUp /> }
     ].filter(item => item.value > 0) : [];
-
-    // Map attendance sessions to upcoming events
-    const upcomingEvents = dashboardData?.attendance_sessions ?
-        dashboardData.attendance_sessions
-            .filter(session => !session.is_ended)
-            .map(session => ({
-                id: session.id,
-                title: session.title,
-                date: session.date,
-                time: "To be scheduled",
-                type: "session",
-                instructor: "System",
-                isEnded: session.is_ended
-            }))
-            .slice(0, 3) : [];
 
     // Calculate attendance trend (placeholder - you might want real calculation)
     const calculateAttendanceTrend = () => {
@@ -335,31 +319,25 @@ const UserDashboard = () => {
                             </div>
                         </div>
 
+                        {/* Third stat card: Total Grade (instead of Average Grade) */}
                         <div className={styles.statCard}>
                             <div className={styles.statIcon} style={{ backgroundColor: "rgba(245, 158, 11, 0.1)" }}>
                                 <FaStar className={styles.statIconSvg} />
                             </div>
                             <div className={styles.statContent}>
-                                <h3>Average Grade</h3>
-                                <p className={styles.statValue}>{userStats?.averageGrade || 0}%</p>
+                                <h3>Total Grade</h3>              {/* changed title */}
+                                <p className={styles.statValue}>{userStats?.totalGrade || 0}</p>  {/* display total grade */}
                                 <span className={styles.statTrend}>
-                                    <FaChartLine /> Based on rated tasks
-                                </span>
+                                    <FaChartLine /> Sum of all grades
+                                </span>                               {/* updated description */}
                                 <div className={styles.gradeBreakdown}>
                                     <div className={styles.breakdownItem}>
-                                        <span className={styles.breakdownLabel}>Scale:</span>
-                                        <span className={styles.breakdownValue}>0-100%</span>
+                                        <span className={styles.breakdownLabel}>Task Score:</span>
+                                        <span className={styles.breakdownValue}>{userStats?.taskScore || 0}</span>
                                     </div>
                                     <div className={styles.breakdownItem}>
-                                        <span className={styles.breakdownLabel}>Performance:</span>
-                                        <span className={`${styles.breakdownValue} ${userStats?.averageGrade >= 90 ? styles.excellent :
-                                            userStats?.averageGrade >= 80 ? styles.good :
-                                                userStats?.averageGrade >= 70 ? styles.average : styles.poor
-                                            }`}>
-                                            {userStats?.averageGrade >= 90 ? "Excellent" :
-                                                userStats?.averageGrade >= 80 ? "Good" :
-                                                    userStats?.averageGrade >= 70 ? "Average" : "Needs Improvement"}
-                                        </span>
+                                        <span className={styles.breakdownLabel}>Bonus:</span>
+                                        <span className={styles.breakdownValue}>+{userStats?.totalBonus || 0}</span>
                                     </div>
                                 </div>
                             </div>
@@ -510,9 +488,8 @@ const UserDashboard = () => {
                         </div>
                     </div>
 
-                    {/* Recently Reviewed Tasks & Upcoming Events */}
+                    {/* Recently Reviewed Tasks */}
                     <div className={styles.tablesSection}>
-                        {/* Recently Reviewed Tasks */}
                         <div className={styles.tableCard}>
                             <div className={styles.tableHeader}>
                                 <h2>
@@ -534,8 +511,14 @@ const UserDashboard = () => {
                                         </thead>
                                         <tbody>
                                             {dashboardData.recently_reviewed_tasks.map((task) => {
-                                                const gradePercentage = task.grade;
-                                                const starRating = gradePercentage / 20; // Convert to 5-star scale
+                                                // If grade is out of 5, multiply by 20 to get percentage
+                                                const gradeValue = Number(task.grade);
+                                                // If grade is on a 5-point scale, uncomment next line:
+                                                // const gradePercentage = gradeValue * 20;
+                                                // For now, treat grade as percentage (as in sample: 5 and 4 are small, maybe it's out of 5)
+                                                // We'll keep gradeValue as is for display, but stars need scaling
+                                                const starRating = gradeValue; // if grade is out of 5, this works
+                                                // If grade is percentage, starRating should be gradeValue/20.
 
                                                 return (
                                                     <tr key={task.id}>
@@ -566,17 +549,17 @@ const UserDashboard = () => {
                                                         <td>
                                                             <div className={styles.gradeCell}>
                                                                 <div className={styles.gradeValue}>
-                                                                    {task.grade}%
+                                                                    {gradeValue} / 5
                                                                 </div>
                                                                 <div className={styles.stars}>
                                                                     {[...Array(5)].map((_, i) => (
                                                                         <FaStar
                                                                             key={i}
-                                                                            className={`${styles.star} ${i < Math.floor(starRating) ? styles.starFilled : ""}`}
+                                                                            className={`${styles.star} ${i < Math.floor(gradeValue) ? styles.starFilled : ""}`}
                                                                         />
                                                                     ))}
                                                                     <span className={styles.gradePercentage}>
-                                                                        ({gradePercentage}%)
+                                                                        ({gradeValue}/5)
                                                                     </span>
                                                                 </div>
                                                             </div>
@@ -594,7 +577,7 @@ const UserDashboard = () => {
                                                         <td>
                                                             <button
                                                                 className={styles.viewButton}
-                                                                onClick={() => navigate(`/learning-task/${task.id}`)}
+                                                                onClick={() => navigate(`/user/learning-task/${task.id}`)}
                                                             >
                                                                 View Details
                                                             </button>
@@ -610,60 +593,6 @@ const UserDashboard = () => {
                                 <button className={styles.viewAllBtn} onClick={handleViewAllTasks}>
                                     View All Tasks <FaArrowRight />
                                 </button>
-                            </div>
-                        </div>
-
-                        {/* Upcoming Events */}
-                        <div className={styles.tableCard}>
-                            <div className={styles.tableHeader}>
-                                <h2>
-                                    <FaCalendarAlt className={styles.tableIcon} /> Upcoming Sessions
-                                </h2>
-                                <span className={styles.badge}>{upcomingEvents.length} sessions</span>
-                            </div>
-                            <div className={styles.eventsList}>
-                                {upcomingEvents.length > 0 ? (
-                                    upcomingEvents.map((event) => (
-                                        <div key={event.id} className={styles.eventItem}>
-                                            <div className={styles.eventDate}>
-                                                <div className={styles.eventDay}>
-                                                    {new Date(event.date).getDate()}
-                                                </div>
-                                                <div className={styles.eventMonth}>
-                                                    {new Date(event.date).toLocaleString('default', { month: 'short' })}
-                                                </div>
-                                            </div>
-                                            <div className={styles.eventDetails}>
-                                                <div className={styles.eventTitle}>{event.title}</div>
-                                                <div className={styles.eventTime}>
-                                                    <FiCalendar /> {event.date}
-                                                </div>
-                                                <div className={styles.eventStatus}>
-                                                    <span className={styles.statusBadge}>
-                                                        {event.isEnded ? "Ended" : "Upcoming"}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                            <div className={styles.eventType}>
-                                                <span className={`${styles.eventTypeBadge} ${styles[event.type]}`}>
-                                                    {event.type}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    ))
-                                ) : (
-                                    <div className={styles.noEvents}>
-                                        <FaCalendarAlt className={styles.noEventsIcon} />
-                                        <p>No upcoming sessions scheduled</p>
-                                        <p className={styles.noEventsSub}>Check back later for new sessions</p>
-                                    </div>
-                                )}
-                            </div>
-                            <div className={styles.tableFooter}>
-                                <div className={styles.eventNote}>
-                                    <FaExclamationTriangle className={styles.noteIcon} />
-                                    <span>Remember to mark attendance for each session</span>
-                                </div>
                             </div>
                         </div>
                     </div>

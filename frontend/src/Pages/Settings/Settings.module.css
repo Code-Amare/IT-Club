@@ -559,3 +559,31 @@
     padding: 16px;
   }
 }
+/* Admin Settings List */
+.settingsList {
+  margin-top: 16px;
+  border-top: 1px solid var(--border-color);
+  padding-top: 16px;
+}
+
+.settingItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.settingItem:last-child {
+  border-bottom: none;
+}
+
+.settingItem span {
+  font-size: 14px;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.settingItem .toggleBtn {
+  min-width: 100px;
+}

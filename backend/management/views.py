@@ -15,13 +15,13 @@ from users.models import Profile
 from users.serializers import UserSerializer, ProfileSerializer, UserInverseSerializer
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
-from .serializers import LanguageSerializer, FrameworkSerializer
+from .serializers import LanguageSerializer, FrameworkSerializer, SettingSerializer
 from learning_task.serializers import (
     LearningTaskSerializer,
     LearningTaskLimitSerializer,
 )
 from learning_task.models import LearningTaskLimit
-from .models import Framework, Language
+from .models import Framework, Language, Setting
 from attendance.models import Attendance, AttendanceSession
 from learning_task.models import LearningTask, TaskReview
 from django.utils.decorators import method_decorator
@@ -1990,7 +1990,11 @@ class AdminControlView(APIView):
 
     def delete(self, request, pk):
         try:
-            admin = User.objects.filter(role__in=["admin", "staff"], is_staff=True, id=pk).exclude(id=request.user.id)
+            admin = (
+                User.objects.filter(role__in=["admin", "staff"], is_staff=True, id=pk)
+                .exclude(id=request.user.id)
+                .first()
+            )
         except User.DoesNotExist:
             return Response(
                 {"error": "Admin not found."}, status=status.HTTP_404_NOT_FOUND
@@ -2000,3 +2004,24 @@ class AdminControlView(APIView):
         return Response(
             {"error": "Admin successfully deleted."}, status=status.HTTP_200_OK
         )
+
+
+@method_decorator(csrf_protect, name="dispatch")
+class SettingUpdateView(APIView):
+    authentication_classes = [JWTCookieAuthentication]
+    permission_classes = [IsSuperUser]
+
+    def get(self, request):
+        setting, _ = Setting.objects.get_or_create(id=1)
+        serializer = SettingSerializer(setting)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def patch(self, request):
+        setting, created = Setting.objects.get_or_create(id=1)
+
+        serializer = SettingSerializer(setting, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

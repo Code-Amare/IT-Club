@@ -4,49 +4,97 @@ import { useUser } from "../../Context/UserContext";
 import api from "../../Utils/api";
 import { neonToast } from "../../Components/NeonToast/NeonToast";
 import AsyncButton from "../../Components/AsyncButton/AsyncButton";
-import styles from "./EditProfile.module.css";
-import { FaUserEdit, FaCamera, FaSave, FaTimes, FaUser, FaEnvelope } from "react-icons/fa";
-import { MdPerson, MdImage } from "react-icons/md";
 import SideBar from "../../Components/SideBar/SideBar";
+import styles from "./EditProfile.module.css";
 
-export default function ProfileEdit() {
-    const { user, refreshUser, login, getUser } = useUser();
+const FIELD_CHOICES = [
+    { value: "frontend", label: "Frontend" },
+    { value: "backend", label: "Backend" },
+    { value: "ai", label: "AI" },
+    { value: "embedded", label: "Embedded" },
+    { value: "cyber", label: "Cyber" },
+    { value: "other", label: "Other" },
+];
+
+export default function EditProfile() {
     const navigate = useNavigate();
-    const [form, setForm] = useState({ fullName: "", email: "" });
+    const { user, getUser } = useUser();
+
+    const [form, setForm] = useState({
+        full_name: "",
+        email: "",
+        grade: "",
+        section: "",
+        field: "",
+        account: "",
+        phone_number: "",
+    });
+
     const [profileImage, setProfileImage] = useState(null);
     const [preview, setPreview] = useState(null);
+    const [removeProfilePic, setRemoveProfilePic] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [isFetching, setIsFetching] = useState(true);
 
+    // Wait for user data to load, then populate form
     useEffect(() => {
-        if (user.isAuthenticated === null) return;
+        if (user.isAuthenticated === null) return; // still loading
+
         if (!user.isAuthenticated) {
             navigate("/login");
             return;
         }
-        setForm({ fullName: user.fullName || "", email: user.email || "" });
+
+        // User is authenticated – fill form from context
+        setForm({
+            full_name: user.fullName || "",
+            email: user.email || "",
+            grade: user.grade || "",
+            section: user.section || "",
+            field: user.field || "",
+            account: user.account || "",
+            phone_number: user.phoneNumber || "",
+        });
+
+        // Set profile preview from context (immediately shows current image)
+        setPreview(user.profilePicURL || null);
+        setIsFetching(false);
     }, [user, navigate]);
 
-    const handleChange = (e) =>
-        setForm((s) => ({ ...s, [e.target.name]: e.target.value }));
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setForm((s) => ({ ...s, [name]: value }));
+    };
 
     const handleImageChange = (e) => {
         const file = e.target.files[0];
-        if (file) {
-            if (file.size > 10 * 1024 * 1024) {
-                neonToast.error("Image size must be less than 10MB", "error");
-                return;
-            }
-            if (!file.type.startsWith("image/")) {
-                neonToast.error("Please select an image file", "error");
-                return;
-            }
-            setProfileImage(file);
-            setPreview(URL.createObjectURL(file));
+        if (!file) return;
+
+        if (file.size > 5 * 1024 * 1024) {
+            neonToast.error("Image must be less than 5MB", "error");
+            return;
         }
+        if (!file.type.startsWith("image/")) {
+            neonToast.error("Please select an image file", "error");
+            return;
+        }
+
+        // Clean up old blob URL if any
+        if (preview && preview.startsWith("blob:")) {
+            URL.revokeObjectURL(preview);
+        }
+
+        setProfileImage(file);
+        setPreview(URL.createObjectURL(file));
+        setRemoveProfilePic(false);
     };
 
     const removeImage = () => {
+        if (preview && preview.startsWith("blob:")) {
+            URL.revokeObjectURL(preview);
+        }
         setProfileImage(null);
+        setRemoveProfilePic(true);
         setPreview(null);
     };
 
@@ -54,218 +102,208 @@ export default function ProfileEdit() {
         setIsLoading(true);
         try {
             const data = new FormData();
-            data.append("full_name", form.fullName.trim());
+            data.append("full_name", form.full_name.trim());
             data.append("email", form.email.trim());
-            if (profileImage) data.append("profile_pic", profileImage);
+            data.append("grade", form.grade || "");
+            data.append("section", form.section || "");
+            data.append("field", form.field || "");
+            data.append("account", form.account || "");
+            data.append("phone_number", form.phone_number || "");
 
-            await api.patch("/api/users/edit/", data, {
-                headers: { "Content-Type": "multipart/form-data" },
-            });
+            if (removeProfilePic) {
+                data.append("remove_profile_pic", "true");
+            } else if (profileImage) {
+                data.append("profile_pic", profileImage);
+            }
 
-            getUser();
+            await api.patch("/api/users/edit/", data);
+            await getUser(); // refresh context so sidebar etc. show new data
+
             neonToast.success("Profile updated successfully", "success");
             navigate("/profile");
         } catch (err) {
             console.error("Update error:", err);
-            const errorMessage =
-                err.response?.data?.detail ||
+            const message =
+                err.response?.data?.error ||
                 err.response?.data?.message ||
+                err.response?.data?.non_field_errors?.[0] ||
                 "Failed to update profile";
-            neonToast.error(errorMessage, "error");
+            neonToast.error(message, "error");
         } finally {
             setIsLoading(false);
         }
     };
 
-    if (user.isAuthenticated === null) {
+    if (isFetching) {
         return (
             <div className={styles.loadingContainer}>
                 <div className={styles.loadingSpinner}></div>
-                <p>Loading...</p>
+                <p>Loading profile...</p>
             </div>
         );
     }
 
-    if (!user.isAuthenticated) return null;
-
     return (
-        <div className={styles.editProfileContainer}>
+        <div className={styles.editProfilePage}>
             <SideBar>
-                <div className={styles.profileHeader}>
-                    <div className={styles.headerContent}>
-                        <div className={styles.avatarSection}>
-                            <div className={styles.avatarContainer}>
-                                <label htmlFor="profileImage" className={styles.avatarUpload}>
-                                    {preview ? (
-                                        <img
-                                            src={preview}
-                                            alt="Preview"
-                                            className={styles.avatarImage}
-                                        />
-                                    ) : user.profilePicURL ? (
-                                        <img
-                                            src={user.profilePicURL}
-                                            alt={user.fullName}
-                                            className={styles.avatarImage}
-                                            onError={(e) => {
-                                                e.target.style.display = "none";
-                                                e.target.nextElementSibling.style.display = "flex";
-                                            }}
-                                        />
-                                    ) : null}
-                                    <div
-                                        className={`${styles.avatarFallback} ${(preview || user.profilePicURL) ? styles.hidden : ""}`}
-                                    >
-                                        <MdPerson />
+                <div className={styles.editProfileContent}>
+                    {/* Avatar card */}
+                    <div className={styles.avatarCard}>
+                        <div className={styles.avatarWrapper}>
+                            <label htmlFor="profileImage" className={styles.avatarLabel}>
+                                {preview ? (
+                                    <img src={preview} alt="Profile" className={styles.avatar} />
+                                ) : (
+                                    <div className={styles.avatarPlaceholder}>
+                                        {form.full_name?.charAt(0) || "U"}
                                     </div>
-                                    <div className={styles.uploadOverlay}>
-                                        <FaCamera />
-                                        <span>Change Photo</span>
-                                    </div>
-                                </label>
-                                <input
-                                    id="profileImage"
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={handleImageChange}
-                                    className={styles.fileInput}
-                                />
-                                {preview && (
-                                    <button
-                                        type="button"
-                                        className={styles.removeImageBtn}
-                                        onClick={removeImage}
-                                    >
-                                        <FaTimes />
-                                    </button>
                                 )}
-                            </div>
-                            <div className={styles.userInfo}>
-                                <h1 className={styles.fullName}>
-                                    <FaUserEdit /> Edit Profile
-                                </h1>
-                                <div className={styles.emailSection}>
-                                    <FaEnvelope />
-                                    <span className={styles.email}>{user.email}</span>
+                                <div className={styles.avatarOverlay}>
+                                    <span>Change</span>
                                 </div>
-                            </div>
+                            </label>
+                            <input
+                                id="profileImage"
+                                type="file"
+                                accept="image/*"
+                                onChange={handleImageChange}
+                                className={styles.fileInput}
+                            />
+                            {preview && (
+                                <button
+                                    type="button"
+                                    className={styles.removeAvatarBtn}
+                                    onClick={removeImage}
+                                    title="Remove photo"
+                                >
+                                    ✕
+                                </button>
+                            )}
                         </div>
+                        <p className={styles.avatarHint}>
+                            Click to upload a new photo (max 5MB)
+                        </p>
                     </div>
-                </div>
 
-                {/* Main Content */}
-                <main className={styles.mainContent}>
-                    <div className={styles.card}>
-                        <div className={styles.cardHeader}>
-                            <h2>
-                                <FaUserEdit className={styles.cardIcon} />
-                                Personal Information
-                            </h2>
-                        </div>
+                    {/* Form card */}
+                    <div className={styles.formCard}>
+                        <h2 className={styles.formTitle}>Edit Profile</h2>
 
-                        <form className={styles.form} onSubmit={(e) => e.preventDefault()}>
+                        <form onSubmit={(e) => e.preventDefault()} className={styles.form}>
                             <div className={styles.formGrid}>
-                                <div className={styles.formGroup}>
-                                    <label className={styles.formLabel}>
-                                        <FaUser />
-                                        <span>Full Name</span>
-                                    </label>
+                                {/* Full Name */}
+                                <div className={styles.field}>
+                                    <label>Full Name</label>
                                     <input
                                         type="text"
-                                        name="fullName"
-                                        value={form.fullName}
+                                        name="full_name"
+                                        value={form.full_name}
                                         onChange={handleChange}
-                                        className={styles.formInput}
-                                        placeholder="Enter your full name"
-                                        maxLength={100}
+                                        placeholder="Your full name"
                                     />
-                                    <div className={styles.characterCount}>
-                                        {form.fullName.length}/100 characters
-                                    </div>
                                 </div>
 
-                                <div className={styles.formGroup}>
-                                    <label className={styles.formLabel}>
-                                        <FaEnvelope />
-                                        <span>Email Address</span>
-                                    </label>
+                                {/* Email */}
+                                <div className={styles.field}>
+                                    <label>Email</label>
                                     <input
                                         type="email"
                                         name="email"
                                         value={form.email}
                                         onChange={handleChange}
-                                        className={styles.formInput}
-                                        placeholder="Enter your email"
+                                        placeholder="email@example.com"
                                     />
-                                    <p className={styles.helperText}>
-                                        Changing your email will require verification
-                                    </p>
                                 </div>
 
-                                <div className={styles.formGroup}>
-                                    <label className={styles.formLabel}>
-                                        <MdImage />
-                                        <span>Profile Photo</span>
-                                    </label>
-                                    <div className={styles.fileUploadContainer}>
-                                        <label htmlFor="profileImage" className={styles.fileUploadBtn}>
-                                            <FaCamera />
-                                            <span>Choose Image</span>
-                                        </label>
-                                        <input
-                                            id="profileImage"
-                                            type="file"
-                                            accept="image/*"
-                                            onChange={handleImageChange}
-                                            className={styles.fileInput}
-                                        />
-                                        <p className={styles.helperText}>
-                                            JPG, PNG, or GIF • Max 5MB
-                                        </p>
-                                        {preview && (
-                                            <div className={styles.previewContainer}>
-                                                <img
-                                                    src={preview}
-                                                    alt="Preview"
-                                                    className={styles.imagePreview}
-                                                />
-                                                <button
-                                                    type="button"
-                                                    className={styles.previewRemoveBtn}
-                                                    onClick={removeImage}
-                                                >
-                                                    <FaTimes />
-                                                </button>
-                                            </div>
-                                        )}
-                                    </div>
+                                {/* Grade */}
+                                <div className={styles.field}>
+                                    <label>Grade</label>
+                                    <input
+                                        type="number"
+                                        name="grade"
+                                        value={form.grade}
+                                        onChange={handleChange}
+                                        min="1"
+                                        max="12"
+                                        placeholder="e.g., 10"
+                                    />
+                                </div>
+
+                                {/* Section */}
+                                <div className={styles.field}>
+                                    <label>Section</label>
+                                    <input
+                                        type="text"
+                                        name="section"
+                                        value={form.section}
+                                        onChange={handleChange}
+                                        maxLength="1"
+                                        placeholder="A, B, C..."
+                                        style={{ textTransform: "uppercase" }}
+                                    />
+                                </div>
+
+                                {/* Field */}
+                                <div className={styles.field}>
+                                    <label>Field</label>
+                                    <select
+                                        name="field"
+                                        value={form.field}
+                                        onChange={handleChange}
+                                    >
+                                        <option value="">Select a field</option>
+                                        {FIELD_CHOICES.map((c) => (
+                                            <option key={c.value} value={c.value}>
+                                                {c.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                {/* Account */}
+                                <div className={styles.field}>
+                                    <label>Account</label>
+                                    <input
+                                        type="text"
+                                        name="account"
+                                        value={form.account}
+                                        onChange={handleChange}
+                                        placeholder="Username or account ID"
+                                    />
+                                </div>
+
+                                {/* Phone */}
+                                <div className={styles.field}>
+                                    <label>Phone Number</label>
+                                    <input
+                                        type="tel"
+                                        name="phone_number"
+                                        value={form.phone_number}
+                                        onChange={handleChange}
+                                        placeholder="+1234567890"
+                                    />
                                 </div>
                             </div>
 
                             <div className={styles.formActions}>
                                 <AsyncButton
                                     onClick={handleSubmit}
-                                    className={styles.primaryBtn}
                                     loading={isLoading}
-                                    disabled={isLoading}
+                                    className={styles.saveBtn}
                                 >
-                                    <FaSave />
-                                    <span>Save Changes</span>
+                                    Save Changes
                                 </AsyncButton>
-
                                 <button
                                     type="button"
-                                    className={styles.secondaryBtn}
                                     onClick={() => navigate("/profile")}
-                                    disabled={isLoading}
+                                    className={styles.cancelBtn}
                                 >
-                                    <FaTimes />
-                                    <span>Cancel</span>
+                                    Cancel
                                 </button>
                             </div>
                         </form>
                     </div>
-                </main>
+                </div>
             </SideBar>
         </div>
     );

@@ -26,4 +26,4 @@ class Framework(models.Model):
 
 class Setting(models.Model):
     allow_profile_change = models.BooleanField(default=False)
-    allow_proifle_pic_change = models.BooleanField(default=False)
+    allow_profile_pic_change = models.BooleanField(default=False)

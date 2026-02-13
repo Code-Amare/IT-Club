@@ -1,24 +1,28 @@
-/* EditProfile Container */
-.editProfileContainer {
+/* Base */
+.editProfilePage {
   width: 100%;
   min-height: 100vh;
   background: var(--bg-body);
 }
 
-/* Loading State */
+.editProfileContent {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* Loading */
 .loadingContainer {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 400px;
-  gap: 16px;
-}
-
-.loadingContainer p {
+  min-height: 60vh;
+  gap: 1rem;
   color: var(--text-secondary);
-  font-size: 16px;
-  font-weight: 400;
 }
 
 .loadingSpinner {
@@ -36,214 +40,135 @@
   }
 }
 
-/* Header - FIXED: Add centering */
-.profileHeader {
-  padding: 24px 0;
-  margin-bottom: 32px;
-}
-
-.headerContent {
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-/* Avatar Section */
-.avatarSection {
+/* Avatar Card */
+.avatarCard {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 2rem;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 24px;
+  gap: 1rem;
+  transition: box-shadow 0.2s;
 }
 
-.avatarContainer {
+.avatarCard:hover {
+  box-shadow: 0 8px 20px var(--card-shadow);
+}
+
+.avatarWrapper {
   position: relative;
-  width: 96px;
-  height: 96px;
-  border-radius: 50%;
-  overflow: hidden;
-  border: 2px solid var(--border-color);
+  width: 120px;
+  height: 120px;
 }
 
-.avatarUpload {
+.avatarLabel {
+  display: block;
   width: 100%;
   height: 100%;
-  display: block;
-  position: relative;
+  border-radius: 50%;
+  overflow: hidden;
   cursor: pointer;
+  border: 3px solid var(--primary);
+  transition: transform 0.2s;
 }
 
-.avatarImage {
+.avatarLabel:hover {
+  transform: scale(1.02);
+}
+
+.avatar {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.avatarFallback {
+.avatarPlaceholder {
   width: 100%;
   height: 100%;
+  background: var(--primary);
+  color: var(--primary-contrast);
+  font-size: 3rem;
+  font-weight: 600;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--primary);
-  color: var(--white);
-  font-size: 40px;
+  text-transform: uppercase;
 }
 
-.avatarFallback.hidden {
-  display: none;
-}
-
-/* FIXED: Upload Overlay - Proper centering */
-.uploadOverlay {
+.avatarOverlay {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: var(--white);
-  opacity: 0;
-  transition: opacity 0.2s ease;
-  z-index: 2;
-}
-
-.avatarContainer:hover .uploadOverlay {
-  opacity: 1;
-}
-
-.uploadOverlay svg {
-  font-size: 20px;
-  margin-bottom: 6px;
-}
-
-.uploadOverlay span {
-  font-size: 12px;
+  color: white;
+  font-size: 0.9rem;
   font-weight: 500;
-  text-align: center;
-  line-height: 1.2;
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
+}
+
+.avatarLabel:hover .avatarOverlay {
+  opacity: 1;
 }
 
 .fileInput {
   display: none;
 }
 
-.removeImageBtn {
+.removeAvatarBtn {
   position: absolute;
-  top: -6px;
-  right: -6px;
-  width: 28px;
-  height: 28px;
+  bottom: 0;
+  right: 0;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background: var(--toast-error);
-  color: var(--white);
+  color: white;
   border: 2px solid var(--bg-surface);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-size: 12px;
-  padding: 0;
-  transition: all 0.2s ease;
-  z-index: 3;
+  font-size: 1.2rem;
+  transition: transform 0.2s;
 }
 
-.removeImageBtn:hover {
+.removeAvatarBtn:hover {
   transform: scale(1.1);
 }
 
-/* User Info */
-.userInfo {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.fullName {
-  font-size: 28px;
-  font-weight: 600;
-  color: var(--text-primary);
+.avatarHint {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
   margin: 0;
-  letter-spacing: -0.5px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
 }
 
-.fullName svg {
-  font-size: 24px;
-  color: var(--primary);
-}
-
-.emailSection {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.emailSection svg {
-  font-size: 18px;
-  color: var(--text-secondary);
-}
-
-.email {
-  font-size: 16px;
-  color: var(--text-secondary);
-  font-weight: 400;
-}
-
-/* Main Content - FIXED: Add centering */
-.mainContent {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-/* Card Styles */
-.card {
+/* Form Card */
+.formCard {
   background: var(--bg-surface);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 28px;
-  transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
+  border-radius: 16px;
+  padding: 2rem;
 }
 
-.card:hover {
-  border-color: var(--primary);
-  box-shadow: 0 4px 16px var(--card-shadow);
-}
-
-.cardHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-  padding-bottom: 16px;
+.formTitle {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 1.5rem 0;
+  padding-bottom: 0.75rem;
   border-bottom: 1px solid var(--border-color);
 }
 
-.cardHeader h2 {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--text-primary);
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin: 0;
-}
-
-.cardIcon {
-  font-size: 20px;
-  color: var(--primary);
-}
-
-/* Form Styles */
 .form {
   width: 100%;
 }
@@ -251,229 +176,100 @@
 .formGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 24px;
-  margin-bottom: 32px;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
 }
 
-.formGroup {
+.field {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 0.5rem;
 }
 
-.formLabel {
-  font-size: 14px;
+.field label {
+  font-size: 0.9rem;
   font-weight: 500;
-  color: var(--text-primary);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.formInput {
-  width: 100%;
-  padding: 12px 16px;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  font-size: 14px;
-  color: var(--text-primary);
-  background-color: var(--bg-surface);
-  transition: all 0.2s ease;
-  font-weight: 400;
-}
-
-.formInput:focus {
-  outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
-}
-
-.characterCount {
-  font-size: 13px;
   color: var(--text-secondary);
-  text-align: right;
-  font-weight: 400;
 }
 
-.helperText {
-  font-size: 13px;
-  color: var(--text-secondary);
-  margin: 4px 0 0 0;
-  font-weight: 400;
-  line-height: 1.4;
-}
-
-/* File Upload */
-.fileUploadContainer {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.fileUploadBtn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
+.field input,
+.field select {
+  padding: 0.75rem 1rem;
   border: 1px solid var(--border-color);
+  border-radius: 10px;
+  font-size: 1rem;
   background: var(--bg-surface);
   color: var(--text-primary);
-  text-decoration: none;
-  transition: all 0.2s ease;
-  width: fit-content;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
 }
 
-.fileUploadBtn:hover {
+.field input:focus,
+.field select:focus {
+  outline: none;
   border-color: var(--primary);
-  color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1);
 }
 
-.previewContainer {
-  position: relative;
-  width: 120px;
-  height: 120px;
-  border-radius: 8px;
-  overflow: hidden;
-  border: 1px solid var(--border-color);
-  margin-top: 8px;
+.field input:hover,
+.field select:hover {
+  border-color: var(--primary-light);
 }
 
-.imagePreview {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.previewRemoveBtn {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: var(--toast-error);
-  color: var(--white);
-  border: 2px solid var(--bg-surface);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 12px;
-  padding: 0;
-  transition: all 0.2s ease;
-}
-
-.previewRemoveBtn:hover {
-  transform: scale(1.1);
-}
-
-/* Form Actions */
+/* Actions */
 .formActions {
   display: flex;
-  gap: 12px;
-  padding-top: 24px;
+  gap: 1rem;
+  padding-top: 1.5rem;
   border-top: 1px solid var(--border-color);
 }
 
-.primaryBtn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-size: 14px;
+.saveBtn,
+.cancelBtn {
+  padding: 0.75rem 1.5rem;
+  border-radius: 10px;
+  font-size: 1rem;
   font-weight: 500;
   cursor: pointer;
-  border: 1px solid var(--primary);
-  background: var(--bg-surface);
-  color: var(--primary);
-  text-decoration: none;
-  transition: all 0.2s ease;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
 }
 
-.primaryBtn:hover:not(:disabled) {
+.saveBtn {
   background: var(--primary);
   color: var(--primary-contrast);
+  border: none;
 }
 
-.primaryBtn:disabled {
+.saveBtn:hover:not(:disabled) {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+}
+
+.saveBtn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 
-.secondaryBtn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  border: 1px solid var(--border-color);
-  background: var(--bg-surface);
+.cancelBtn {
+  background: transparent;
   color: var(--text-primary);
-  text-decoration: none;
-  transition: all 0.2s ease;
+  border: 1px solid var(--border-color);
 }
 
-.secondaryBtn:hover:not(:disabled) {
+.cancelBtn:hover {
   border-color: var(--primary);
   color: var(--primary);
 }
 
-.secondaryBtn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-/* Responsive Design */
+/* Responsive */
 @media (max-width: 768px) {
-  .profileHeader {
-    padding: 20px 0;
-  }
-
-  .headerContent {
-    padding: 0 16px;
-  }
-
-  .avatarSection {
-    flex-direction: column;
-    text-align: center;
-    align-items: center;
-    gap: 20px;
-  }
-
-  .avatarContainer {
-    width: 80px;
-    height: 80px;
-  }
-
-  .userInfo {
-    align-items: center;
-    text-align: center;
-  }
-
-  .fullName {
-    justify-content: center;
-  }
-
-  .mainContent {
-    padding: 0 16px;
-  }
-
-  .card {
-    padding: 20px;
-  }
-
-  .cardHeader {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
+  .editProfileContent {
+    padding: 1rem;
   }
 
   .formGrid {
@@ -484,57 +280,20 @@
     flex-direction: column;
   }
 
-  .fileUploadBtn {
+  .saveBtn,
+  .cancelBtn {
     width: 100%;
-    justify-content: center;
   }
 }
 
-@media (max-width: 576px) {
-  .headerContent {
-    padding: 0 12px;
+@media (max-width: 480px) {
+  .avatarCard,
+  .formCard {
+    padding: 1.5rem;
   }
 
-  .mainContent {
-    padding: 0 12px;
-  }
-
-  .avatarContainer {
-    width: 72px;
-    height: 72px;
-  }
-
-  .avatarFallback {
-    font-size: 32px;
-  }
-
-  .fullName {
-    font-size: 24px;
-  }
-
-  .email {
-    font-size: 14px;
-  }
-
-  .card {
-    padding: 16px;
-  }
-
-  .cardHeader h2 {
-    font-size: 16px;
-  }
-
-  .primaryBtn,
-  .secondaryBtn {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .uploadOverlay svg {
-    font-size: 18px;
-  }
-
-  .uploadOverlay span {
-    font-size: 11px;
+  .avatarWrapper {
+    width: 100px;
+    height: 100px;
   }
 }

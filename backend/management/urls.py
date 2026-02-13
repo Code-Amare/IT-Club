@@ -25,6 +25,7 @@ from .views import (
     GetAllUsersView,
     DashboardView,
     StudentDataView,
+    SettingUpdateView,
 )
 
 urlpatterns = [
@@ -34,6 +35,7 @@ urlpatterns = [
     path("students/stats/", StudentsStatsView.as_view(), name="students-stats"),
     path("students/create/", StudentCreateView.as_view(), name="student-create"),
     path("student/edit/<int:pk>/", StudentUpdateView.as_view(), name="student-edit"),
+    path("setting/", SettingUpdateView.as_view(), name="edit-setting"),
     path(
         "task/delete/<int:task_id>/",
         DeleteLearningTaskView.as_view(),

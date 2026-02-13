@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Language, Framework
+from .models import Language, Framework, Setting
 
 
 class LanguageSerializer(serializers.ModelSerializer):
@@ -17,3 +17,9 @@ class FrameworkSerializer(serializers.ModelSerializer):
     class Meta:
         model = Framework
         fields = ["id", "name", "language", "language_id"]
+
+
+class SettingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Setting
+        fields = ["allow_profile_change", "allow_profile_pic_change"]

@@ -8,10 +8,8 @@ import styles from "./Settings.module.css";
 import SideBar from "../../Components/SideBar/SideBar";
 import {
     FaBell,
-    FaSave,
     FaTimes,
     FaCheck,
-    FaExclamationTriangle,
     FaSearch,
     FaClock,
     FaCog,
@@ -20,7 +18,8 @@ import {
     MdNotifications,
     MdNotificationsOff,
     MdErrorOutline,
-    MdInfoOutline
+    MdInfoOutline,
+    MdAdminPanelSettings,
 } from "react-icons/md";
 
 export default function Settings() {
@@ -34,43 +33,73 @@ export default function Settings() {
         "Notification" in window ? Notification.permission : "unsupported"
     );
 
-    // Initialize permission state
+    const [settings, setSettings] = useState({
+        allow_profile_change: false,
+        allow_profile_pic_change: false,
+    });
+    const [settingsLoading, setSettingsLoading] = useState(false);
+
     useEffect(() => {
         if (user.isAuthenticated === null) return;
-
         if (!user.isAuthenticated) {
             navigate("/login");
             return;
         }
-
-        // Update permission state
         if ("Notification" in window) {
             setBrowserPermission(Notification.permission);
         }
     }, [user, navigate]);
 
-    // Handle master notification toggle
+    useEffect(() => {
+        if (user.isAuthenticated && user.isSuperUser) {
+            fetchSettings();
+        }
+    }, [user.isAuthenticated, user.isSuperUser]);
+
+    const fetchSettings = async () => {
+        setSettingsLoading(true);
+        try {
+            const res = await api.get("/api/management/setting/");
+            setSettings(res.data);
+        } catch (err) {
+            console.error(err.response);
+            neonToast.error("Could not load admin settings", "error");
+        } finally {
+            setSettingsLoading(false);
+        }
+    };
+
+    const updateSetting = async (key, value) => {
+        setSettingsLoading(true);
+        try {
+            const res = await api.patch("/api/management/setting/", { [key]: value });
+            setSettings(res.data);
+            neonToast.success("Setting updated", "success");
+        } catch (err) {
+            const msg = err.response?.data?.detail || "Failed to update setting";
+            neonToast.error(msg, "error");
+        } finally {
+            setSettingsLoading(false);
+        }
+    };
+
+    const clearMessages = () => {
+        setError(null);
+        setSuccess(null);
+    };
+
     const handleNotifToggle = async () => {
         setIsLoading(true);
         setError(null);
-
         try {
             const response = await api.post("/api/users/notif/");
-
-            // Refresh user data from context
             await getUser();
-
-            const newState = response.data?.notif_enabled;
-            const action = newState ? "enabled" : "disabled";
-            const message = response.data?.message
-
+            const message = response.data?.message;
             if (response.data?.notif_enabled) {
-                neonToast.success(message)
+                neonToast.success(message);
+            } else {
+                neonToast.warning(message);
             }
-            else {
-                neonToast.warning(message)
-            }
-
         } catch (err) {
             const errorMessage = err.response?.data?.detail ||
                 err.response?.data?.error ||
@@ -82,26 +111,18 @@ export default function Settings() {
         }
     };
 
-    // Handle push notification toggle
     const handlePushToggle = async () => {
         setIsLoading(true);
         setError(null);
-
-        // Can't enable push if master notifications are disabled
         if (!user.notifEnabled) {
             setError("Enable notifications first to use push notifications");
             setIsLoading(false);
             return;
         }
-
-        // If trying to enable push notifications
         if (!user.pushNotifEnabled) {
-            // Check if browser permission is already granted
             if (browserPermission === "granted") {
-                // Permission is granted, we can enable push notifications
                 await togglePushSetting();
             } else if (browserPermission === "default") {
-                // Request permission first
                 const granted = await requestBrowserPermission();
                 if (granted) {
                     await togglePushSetting();
@@ -114,7 +135,6 @@ export default function Settings() {
                 setIsLoading(false);
             }
         } else {
-            // Disabling push notifications
             await togglePushSetting();
         }
     };
@@ -122,20 +142,13 @@ export default function Settings() {
     const togglePushSetting = async () => {
         try {
             const response = await api.post("/api/users/push-notif/");
-
-            // Refresh user data from context
             await getUser();
-
-            const newState = response.data?.push_notif_enabled;
-            const message = response.data?.message
-
+            const message = response.data?.message;
             if (response.data?.push_notif_enabled) {
-                neonToast.success(message)
+                neonToast.success(message);
+            } else {
+                neonToast.warning(message);
             }
-            else {
-                neonToast.warning(message)
-            }
-
         } catch (err) {
             const errorMessage = err.response?.data?.detail ||
                 err.response?.data?.error ||
@@ -152,11 +165,9 @@ export default function Settings() {
             setError("Your browser does not support notifications");
             return false;
         }
-
         try {
             const permission = await Notification.requestPermission();
             setBrowserPermission(permission);
-
             if (permission === "granted") {
                 setSuccess("Browser notifications enabled!");
                 return true;
@@ -165,7 +176,6 @@ export default function Settings() {
                 return false;
             }
             return false;
-
         } catch (err) {
             console.error("Error requesting notification permission:", err);
             setError("Failed to request notification permission");
@@ -190,7 +200,6 @@ Notification Status:
             setError("Push notifications are not enabled");
             return;
         }
-
         if (browserPermission !== "granted") {
             if (browserPermission === "default") {
                 requestBrowserPermission();
@@ -199,40 +208,30 @@ Notification Status:
             }
             return;
         }
-
         if (!("Notification" in window)) {
             setError("Your browser does not support notifications");
             return;
         }
-
         try {
             const notification = new Notification("Test Notification", {
                 body: "This is a test push notification from our app.",
                 icon: '/favicon.ico',
                 tag: `test-${Date.now()}`,
             });
-
             notification.onclick = () => {
                 window.focus();
                 notification.close();
             };
-
             setTimeout(() => notification.close(), 5000);
             setSuccess("Test notification sent!");
-
         } catch (err) {
             console.error("Error creating test notification:", err);
             setError("Failed to send test notification");
         }
     };
 
-    // Sync push notifications with permission when permission changes
     useEffect(() => {
-        // If permission is not granted, push notifications should be false
         if (browserPermission !== "granted" && user.pushNotifEnabled) {
-            // If push is enabled but permission is not granted, disable it
-            // This handles the case where permission was revoked or denied
-            // We'll disable it on the backend
             if (user.isAuthenticated) {
                 api.post("/api/users/push-notif/").then(() => {
                     getUser();
@@ -253,7 +252,6 @@ Notification Status:
     return (
         <div className={styles.container}>
             <SideBar>
-                {/* Header */}
                 <div className={styles.header}>
                     <div className={styles.headerContent}>
                         <div className={styles.titleSection}>
@@ -266,6 +264,7 @@ Notification Status:
                         <div className={styles.actionButtons}>
                             <AsyncButton
                                 onClick={() => {
+                                    clearMessages();
                                     getUser();
                                     setSuccess("Settings refreshed");
                                 }}
@@ -280,14 +279,12 @@ Notification Status:
                     </div>
                 </div>
 
-                {/* Messages */}
                 {error && (
                     <div className={styles.errorBanner}>
                         <MdErrorOutline />
                         <span>{error}</span>
                     </div>
                 )}
-
                 {success && (
                     <div className={styles.successBanner}>
                         <FaCheck />
@@ -295,9 +292,7 @@ Notification Status:
                     </div>
                 )}
 
-                {/* Settings Grid */}
                 <div className={styles.settingsGrid}>
-                    {/* Master Notifications */}
                     <div className={styles.settingCard}>
                         <div className={styles.settingContent}>
                             <div className={styles.settingIcon}>
@@ -326,7 +321,6 @@ Notification Status:
                         </div>
                     </div>
 
-                    {/* Push Notifications */}
                     <div className={styles.settingCard}>
                         <div className={styles.settingContent}>
                             <div className={styles.settingIcon}>
@@ -335,7 +329,6 @@ Notification Status:
                             <div className={styles.settingInfo}>
                                 <h3>Push Notifications</h3>
                                 <p>Show browser popup notifications when enabled</p>
-                                {/* ADDED BACK: Permission status label */}
                                 <div className={styles.permissionStatus}>
                                     {browserPermission === "granted" && (
                                         <span className={styles.statusGranted}>
@@ -366,9 +359,46 @@ Notification Status:
                             </AsyncButton>
                         </div>
                     </div>
+
+                    {user.isSuperUser && (
+                        <div className={styles.settingCard}>
+                            <div className={styles.settingContent}>
+                                <div className={styles.settingIcon}>
+                                    <MdAdminPanelSettings />
+                                </div>
+                                <div className={styles.settingInfo}>
+                                    <h3>Admin Settings</h3>
+                                    <p>Global platform configurations</p>
+                                </div>
+                            </div>
+                            <div className={styles.settingsList}>
+                                <div className={styles.settingItem}>
+                                    <span>Allow profile changes</span>
+                                    <AsyncButton
+                                        onClick={() => updateSetting("allow_profile_change", !settings.allow_profile_change)}
+                                        loading={settingsLoading}
+                                        disabled={settingsLoading}
+                                        className={`${styles.toggleBtn} ${settings.allow_profile_change ? styles.toggleBtnEnabled : styles.toggleBtnDisabled}`}
+                                    >
+                                        {settings.allow_profile_change ? "Enabled" : "Disabled"}
+                                    </AsyncButton>
+                                </div>
+                                <div className={styles.settingItem}>
+                                    <span>Allow profile picture changes</span>
+                                    <AsyncButton
+                                        onClick={() => updateSetting("allow_profile_pic_change", !settings.allow_profile_pic_change)}
+                                        loading={settingsLoading}
+                                        disabled={settingsLoading}
+                                        className={`${styles.toggleBtn} ${settings.allow_profile_pic_change ? styles.toggleBtnEnabled : styles.toggleBtnDisabled}`}
+                                    >
+                                        {settings.allow_profile_pic_change ? "Enabled" : "Disabled"}
+                                    </AsyncButton>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
-                {/* Test Section */}
                 <div className={styles.testSection}>
                     <div className={styles.testButtons}>
                         <AsyncButton
@@ -380,7 +410,6 @@ Notification Status:
                             <FaBell />
                             <span>Test Push Notification</span>
                         </AsyncButton>
-
                         <button
                             className={styles.debugBtn}
                             onClick={checkNotificationStatus}
@@ -388,7 +417,6 @@ Notification Status:
                             <FaSearch />
                             <span>Check Status</span>
                         </button>
-
                         {browserPermission === "default" && user.notifEnabled && (
                             <button
                                 className={styles.enableBtn}
@@ -400,7 +428,6 @@ Notification Status:
                         )}
                     </div>
 
-                    {/* Status */}
                     <div className={styles.statusCard}>
                         <div className={styles.statusRow}>
                             <span className={styles.statusLabel}>Browser Status:</span>
@@ -430,7 +457,6 @@ Notification Status:
                         </div>
                     </div>
 
-                    {/* Info */}
                     <div className={styles.infoCard}>
                         <MdInfoOutline />
                         <div className={styles.infoContent}>

@@ -2,9 +2,9 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 from rest_framework.response import Response
 from rest_framework import status
-from utils.auth import JWTCookieAuthentication, RolePermissionFactory
 from rest_framework.permissions import IsAuthenticated
 from django.middleware.csrf import get_token
+from learning_task.models import TaskReview
 from .models import VerifyEmail, ChangePasswordViaEmail, Profile
 from django.contrib.auth import get_user_model
 from django.db import transaction
@@ -19,6 +19,7 @@ from django.core import signing
 from axes.utils import reset as axes_reset
 from asgiref.sync import async_to_sync
 from utils.notif import notify_user
+from utils.auth import JWTCookieAuthentication
 from django.db.models import Avg, Sum
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
@@ -564,8 +565,9 @@ class EditProfileView(APIView):
     permission_classes = [IsAuthenticated]
 
     def patch(self, request):
+        user = request.user
         setting, created = Setting.objects.get_or_create(id=1)
-        if setting.allow_proifle_pic_change:
+        if setting.allow_profile_pic_change:
             profile_pic_file = request.FILES.get("profile_pic")
             if not profile_pic_file:
                 return Response(
@@ -596,7 +598,7 @@ class EditProfileView(APIView):
                 {"error": "You are not allowed to edit your profile"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        
+
         user = request.user
         with transaction.atomic():
             profile, created = Profile.objects.get_or_create(
@@ -1044,15 +1046,12 @@ class UserDashboardView(APIView):
         draft_tasks = tasks.filter(status="draft").count()
         redo_tasks = tasks.filter(status="redo").count()
 
-        avg_grade = (
-            tasks.filter(status="rated")
-            .aggregate(avg=Avg("reviews__rating"))
-            .get("avg")
+        # Compute total grade = sum of all admin task reviews + all bonuses
+        total_admin_reviews = (
+            TaskReview.objects.filter(task__user=user, is_admin=True)
+            .aggregate(total=Sum("rating"))
+            .get("total")
             or 0
-        )
-
-        task_completion = (
-            round((rated_tasks / total_tasks) * 100, 1) if total_tasks else 0
         )
 
         total_bonus = (
@@ -1060,6 +1059,12 @@ class UserDashboardView(APIView):
             .aggregate(total=Sum("score"))
             .get("total")
             or 0
+        )
+
+        total_grade = total_admin_reviews + total_bonus
+
+        task_completion = (
+            round((rated_tasks / total_tasks) * 100, 1) if total_tasks else 0
         )
 
         # Attendance stats
@@ -1102,17 +1107,6 @@ class UserDashboardView(APIView):
                 }
             )
 
-        # Upcoming sessions
-        upcoming_sessions = [
-            {
-                "id": s.id,
-                "title": s.title,
-                "date": s.created_at.date(),
-                "is_ended": s.is_ended,
-            }
-            for s in AttendanceSession.objects.filter(targets=user, is_ended=False)[:3]
-        ]
-
         return Response(
             {
                 "stats": {
@@ -1124,16 +1118,15 @@ class UserDashboardView(APIView):
                         "special_case": special_case_count,
                     },
                     "total_learning_tasks": total_tasks,
-                    "average_grade": round(avg_grade, 2),
+                    "total_grade": total_grade,  # NEW: sum of admin reviews + bonuses
                     "task_completion_percent": task_completion,
                     "total_bonus": total_bonus,
                     "task_score": rated_tasks * 5,
                 },
                 "task_status_distribution": task_status_distribution,
                 "recently_reviewed_tasks": recently_reviewed_tasks,
-                "attendance_sessions": upcoming_sessions,
             },
-            status=status.HTTP_200_OK,
+            status=200,
         )
 
 

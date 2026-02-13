@@ -11,6 +11,7 @@ import {
     FaUserShield,
     FaKey,
     FaSignOutAlt,
+    FaBell,                // new icon for notifications
 } from "react-icons/fa";
 import { MdVerified, MdLock, MdPerson, MdEmail } from "react-icons/md";
 import SideBar from "../../Components/SideBar/SideBar";
@@ -51,8 +52,6 @@ export default function Profile() {
         <div className={styles.profileContainer}>
             {/* Header Section */}
             <SideBar>
-
-
                 <div className={styles.profileHeader}>
                     <div className={styles.headerContent}>
                         <div className={styles.avatarSection}>
@@ -107,7 +106,7 @@ export default function Profile() {
 
                 {/* Main Content */}
                 <main className={styles.mainContent}>
-                    {/* User Details Card */}
+                    {/* Account Information Card (existing) */}
                     <div className={styles.card}>
                         <div className={styles.cardHeader}>
                             <h2>
@@ -208,7 +207,92 @@ export default function Profile() {
                         </div>
                     </div>
 
-                    {/* Quick Actions */}
+                    {/* NEW: Profile Details Card */}
+                    <div className={styles.card}>
+                        <div className={styles.cardHeader}>
+                            <h2>
+                                <MdPerson className={styles.cardIcon} />
+                                Profile Details
+                            </h2>
+                            {/* Optional edit button – could link to same edit page */}
+                        </div>
+                        <div className={styles.cardGrid}>
+                            <div className={styles.cardRow}>
+                                <div className={styles.rowHeader}>
+                                    <span className={styles.label}>Grade</span>
+                                </div>
+                                <span className={styles.value}>{user.grade || "—"}</span>
+                            </div>
+                            <div className={styles.cardRow}>
+                                <div className={styles.rowHeader}>
+                                    <span className={styles.label}>Field</span>
+                                </div>
+                                <span className={styles.value}>{user.field || "—"}</span>
+                            </div>
+                            <div className={styles.cardRow}>
+                                <div className={styles.rowHeader}>
+                                    <span className={styles.label}>Account</span>
+                                </div>
+                                <span className={styles.value}>{user.account || "—"}</span>
+                            </div>
+                            <div className={styles.cardRow}>
+                                <div className={styles.rowHeader}>
+                                    <span className={styles.label}>Section</span>
+                                </div>
+                                <span className={styles.value}>{user.section || "—"}</span>
+                            </div>
+                            <div className={styles.cardRow}>
+                                <div className={styles.rowHeader}>
+                                    <span className={styles.label}>Phone Number</span>
+                                </div>
+                                <span className={styles.value}>{user.phoneNumber || "—"}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* NEW: Notification Preferences Card */}
+                    <div className={styles.card}>
+                        <div className={styles.cardHeader}>
+                            <h2>
+                                <FaBell className={styles.cardIcon} />
+                                Notification Preferences
+                            </h2>
+                        </div>
+                        <div className={styles.cardGrid}>
+                            <div className={styles.cardRow}>
+                                <div className={styles.rowHeader}>
+                                    <span className={styles.label}>Push Notifications</span>
+                                </div>
+                                <div className={styles.statusContainer}>
+                                    <span
+                                        className={`${styles.statusBadge} ${user.pushNotifEnabled
+                                            ? styles.statusEnabled
+                                            : styles.statusDisabled
+                                            }`}
+                                    >
+                                        {user.pushNotifEnabled ? "Enabled" : "Disabled"}
+                                    </span>
+                                </div>
+                            </div>
+                            <div className={styles.cardRow}>
+                                <div className={styles.rowHeader}>
+                                    <span className={styles.label}>Email Notifications</span>
+                                </div>
+                                <div className={styles.statusContainer}>
+                                    <span
+                                        className={`${styles.statusBadge} ${user.notifEnabled
+                                            ? styles.statusEnabled
+                                            : styles.statusDisabled
+                                            }`}
+                                    >
+                                        {user.notifEnabled ? "Enabled" : "Disabled"}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Quick Actions (existing) */}
                     <div className={styles.quickActions}>
                         <h2 className={styles.actionsTitle}>Quick Actions</h2>
                         <div className={styles.actionsGrid}>

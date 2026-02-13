@@ -4,6 +4,7 @@ from management.models import Language, Framework
 from django.contrib.auth import get_user_model
 from users.serializers import UserSerializer, ProfileSerializer, UserInverseSerializer
 from management.serializers import LanguageSerializer, FrameworkSerializer
+from django.db.models import Sum
 
 
 User = get_user_model()
@@ -243,3 +244,28 @@ class TaskBonusSerializer(serializers.ModelSerializer):
         if value < 0 or value > 30:
             raise serializers.ValidationError("Bonus score must be between 0 and 20.")
         return value
+
+
+class UserGradeSerializer(serializers.ModelSerializer):
+    grade = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ["id", "full_name", "grade"]
+
+    def get_grade(self, obj):
+        # Sum all admin task reviews
+        admin_reviews_sum = (
+            TaskReview.objects.filter(task__user=obj, is_admin=True).aggregate(
+                total=Sum("rating")
+            )["total"]
+            or 0
+        )
+        # Sum all bonuses
+        bonus_sum = (
+            TaskBonus.objects.filter(task__user=obj).aggregate(total=Sum("score"))[
+                "total"
+            ]
+            or 0
+        )
+        return admin_reviews_sum + bonus_sum

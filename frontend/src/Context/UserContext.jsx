@@ -19,12 +19,19 @@ export function UserProvider({ children }) {
         profilePicURL: null,
         notifEnabled: null,
         pushNotifEnabled: null,
+        grade: null,
+        field: null,
+        account: null,
+        section: null,
+        phoneNumber: null,
+        isSuperUser: null,
     })
 
     // Exposed getUser function
     const getUser = async () => {
         try {
             const res = await api.get("/api/users/get/")
+            console.log(res)
             if (res.status === 200 && res.data) {
                 const user = res.data.user
                 setUser({
@@ -40,6 +47,12 @@ export function UserProvider({ children }) {
                     profilePicURL: user.profile_pic_url,
                     pushNotifEnabled: user.push_notif_enabled,
                     notifEnabled: user.notif_enabled,
+                    grade: user?.profile?.grade,
+                    field: user?.profile?.field,
+                    account: user?.profile?.account,
+                    section: user?.profile?.section,
+                    phoneNumber: user?.profile?.phone_number,
+                    isSuperUser: user.is_superuser,
                 })
             }
         } catch (error) {
@@ -77,6 +90,12 @@ export function UserProvider({ children }) {
             profilePicURL: null,
             notifEnabled: null,
             pushNotifEnabled: null,
+            grade: null,
+            field: null,
+            account: null,
+            section: null,
+            phoneNumber: null,
+            isSuperUser: null,
         })
     }
 
