@@ -1,222 +1,209 @@
+/* Page container */
 .PageContainer {
   min-height: 100vh;
+  background: var(--bg-body);
   display: flex;
   flex-direction: column;
-  background-color: var(--bg-body);
-  font-family: "Inter", sans-serif;
-  color: var(--text-primary);
 }
 
+/* Main content */
 .MainContainer {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2rem 1rem;
+  padding: 2rem;
 }
 
+/* Verification box */
 .VerificationBox {
-  background-color: var(--bg-surface);
-  padding: 3rem;
-  border-radius: 1rem;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  max-width: 450px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 24px;
+  padding: 2.5rem;
   width: 100%;
-  text-align: center;
+  max-width: 440px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+  transition: box-shadow 0.3s ease;
 }
 
+.VerificationBox:hover {
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+}
+
+/* Icon container */
 .IconContainer {
-  width: 80px;
-  height: 80px;
-  margin: 0 auto 1.5rem;
   display: flex;
-  align-items: center;
   justify-content: center;
-  background-color: rgba(var(--primary-rgb), 0.1);
+  margin-bottom: 1.5rem;
+}
+
+.EmailIcon {
+  font-size: 3rem;
+  color: var(--primary);
+  background: rgba(79, 70, 229, 0.1);
+  padding: 1rem;
   border-radius: 50%;
 }
 
-.IconContainer svg {
-  width: 36px;
-  height: 36px;
-}
-
+/* Titles */
 .Title {
   font-size: 2rem;
   font-weight: 700;
-  margin-bottom: 0.75rem;
   color: var(--text-primary);
+  margin: 0 0 0.5rem;
+  line-height: 1.2;
+  text-align: center;
 }
 
 .Subtitle {
-  font-size: 1rem;
   color: var(--text-secondary);
-  margin-bottom: 2rem;
-  line-height: 1.5;
+  font-size: 0.95rem;
+  margin: 0 0 2rem;
+  text-align: center;
 }
 
+/* Input */
 .InputWrapper {
   margin-bottom: 2rem;
 }
 
 .Input {
   width: 100%;
-  padding: 1rem 1.5rem;
+  padding: 0.75rem 1rem;
   border: 1px solid var(--border-color);
-  border-radius: 0.5rem;
-  font-size: 1.25rem;
-  font-weight: 600;
-  letter-spacing: 0.5em;
-  text-align: center;
-  background-color: var(--bg-body);
+  border-radius: 10px;
+  background: var(--bg-body);
   color: var(--text-primary);
-  transition: border-color 0.2s;
+  font-size: 1rem;
+  text-align: center;
+  letter-spacing: 0.5rem;
+  font-weight: 600;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+  box-sizing: border-box;
 }
 
 .Input:focus {
   outline: none;
   border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
 }
 
+.Input:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Button group */
 .ButtonGroup {
   display: flex;
-  flex-direction: column;
   gap: 1rem;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
+}
+
+.PrimaryBtn,
+.SecondaryBtn {
+  flex: 1;
+  padding: 0.75rem;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 0.2s,
+    transform 0.1s,
+    box-shadow 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
 }
 
 .PrimaryBtn {
-  padding: 1rem 1.5rem;
-  background-color: var(--primary);
-  color: var(--primary-contrast);
+  background: var(--primary);
+  color: white;
   border: none;
-  border-radius: 0.5rem;
-  font-weight: 600;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: background-color 0.2s, transform 0.1s;
 }
 
-.PrimaryBtn:hover:not(.Disabled) {
-  background-color: var(--primary-dark);
+.PrimaryBtn:hover:not(:disabled) {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
 }
 
-.PrimaryBtn:active:not(.Disabled) {
-  transform: translateY(1px);
+.PrimaryBtn:active:not(:disabled) {
+  transform: translateY(0);
 }
 
-.PrimaryBtn.Disabled {
+.PrimaryBtn.Disabled,
+.PrimaryBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.SecondaryBtn {
+  background: transparent;
+  color: var(--primary);
+  border: 1px solid var(--primary);
+}
+
+.SecondaryBtn:hover:not(:disabled) {
+  background: rgba(79, 70, 229, 0.1);
+  transform: translateY(-1px);
+}
+
+.SecondaryBtn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.SecondaryBtn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-.SecondaryBtn {
-  padding: 1rem 1.5rem;
-  background-color: transparent;
-  color: var(--text-primary);
-  border: 1px solid var(--border-color);
-  border-radius: 0.5rem;
-  font-weight: 600;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: background-color 0.2s, border-color 0.2s;
+/* Spinner */
+.Spinner {
+  animation: spin 1s linear infinite;
 }
 
-.SecondaryBtn:hover {
-  background-color: var(--bg-body);
-  border-color: var(--text-secondary);
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
+/* Help text */
 .HelpText {
-  font-size: 0.875rem;
+  text-align: center;
   color: var(--text-secondary);
-  line-height: 1.5;
+  font-size: 0.9rem;
 }
 
 .HelpText p {
-  margin: 0.25rem 0;
+  margin: 0.5rem 0;
 }
 
-/* Mobile Responsive Styles */
-@media (max-width: 768px) {
-  .MainContainer {
-    padding: 1rem;
-  }
-
+/* Responsive */
+@media (max-width: 480px) {
   .VerificationBox {
-    padding: 2.5rem 2rem;
-    border-radius: 0.875rem;
-  }
-
-  .IconContainer {
-    width: 72px;
-    height: 72px;
-    margin-bottom: 1.25rem;
-  }
-
-  .IconContainer svg {
-    width: 32px;
-    height: 32px;
+    padding: 2rem 1.5rem;
   }
 
   .Title {
     font-size: 1.75rem;
   }
 
-  .Subtitle {
-    font-size: 0.9375rem;
-    margin-bottom: 1.75rem;
-  }
-
-  .Input {
-    font-size: 1.125rem;
-    padding: 0.875rem 1.25rem;
-    letter-spacing: 0.4em;
-  }
-
   .ButtonGroup {
-    margin-bottom: 1.75rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .VerificationBox {
-    padding: 2rem 1.5rem;
-  }
-
-  .IconContainer {
-    width: 64px;
-    height: 64px;
-    margin-bottom: 1rem;
-  }
-
-  .IconContainer svg {
-    width: 28px;
-    height: 28px;
-  }
-
-  .Title {
-    font-size: 1.5rem;
-  }
-
-  .Subtitle {
-    font-size: 0.875rem;
-    margin-bottom: 1.5rem;
+    flex-direction: column;
   }
 
   .Input {
-    font-size: 1rem;
-    padding: 0.75rem 1rem;
-    letter-spacing: 0.3em;
-  }
-
-  .PrimaryBtn,
-  .SecondaryBtn {
-    padding: 0.875rem 1.25rem;
-    font-size: 0.9375rem;
-  }
-
-  .HelpText {
-    font-size: 0.8125rem;
+    letter-spacing: 0.25rem;
   }
 }

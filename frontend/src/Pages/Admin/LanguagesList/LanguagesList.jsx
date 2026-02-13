@@ -8,10 +8,8 @@ import {
     FaArrowLeft,
     FaLanguage,
     FaPlus,
-    FaSearch,
     FaEdit,
     FaCopy,
-    FaEye
 } from "react-icons/fa";
 import {
     MdSort,
@@ -19,6 +17,7 @@ import {
     MdCode
 } from "react-icons/md";
 import styles from "./LanguagesList.module.css";
+import { useNotifContext } from "../../../Context/NotifContext";
 
 export default function LanguagesList() {
     const navigate = useNavigate();
@@ -29,6 +28,10 @@ export default function LanguagesList() {
     const [searchTerm, setSearchTerm] = useState("");
     const [sortBy, setSortBy] = useState("name");
     const [sortOrder, setSortOrder] = useState("asc");
+    const { updatePageTitle } = useNotifContext()
+    useEffect(() => {
+        updatePageTitle("Languages")
+    }, [])
 
     useEffect(() => {
         fetchLanguages();
@@ -114,7 +117,6 @@ export default function LanguagesList() {
                 <div className={styles.controls}>
                     <div className={styles.searchContainer}>
                         <div className={styles.searchWithIcon}>
-                            <FaSearch className={styles.searchIcon} />
                             <input
                                 type="text"
                                 placeholder="Search languages by name, code, or color..."

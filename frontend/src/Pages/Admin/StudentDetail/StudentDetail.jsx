@@ -18,6 +18,7 @@ import {
     MdClass, MdGrade, MdAssignment, MdSchool
 } from "react-icons/md";
 import styles from "./StudentDetail.module.css";
+import { useNotifContext } from "../../../Context/NotifContext";
 
 /* ---------------- MOCK DATA (OUTSIDE COMPONENT) ---------------- */
 const MOCK_ACTIVITIES = [
@@ -32,6 +33,10 @@ export default function StudentDetail() {
     const { id } = useParams();
     const navigate = useNavigate();
     const { user } = useUser();
+    const { updatePageTitle } = useNotifContext()
+    useEffect(() => {
+        updatePageTitle("Student Detail")
+    }, [])
 
     const [student, setStudent] = useState(null);
     const [loading, setLoading] = useState(true);

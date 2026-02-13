@@ -20,11 +20,11 @@ import {
     MdEdit
 } from "react-icons/md";
 import styles from "./LanguagesEdit.module.css";
+import { useNotifContext } from "../../../Context/NotifContext";
 
 export default function LanguagesEdit() {
     const navigate = useNavigate();
     const { id } = useParams();
-    const { user } = useUser();
 
     const [language, setLanguage] = useState({
         name: "",
@@ -38,6 +38,10 @@ export default function LanguagesEdit() {
     const [originalData, setOriginalData] = useState(null);
     const [deleteConfirmationText, setDeleteConfirmationText] = useState("");
     const [deleteError, setDeleteError] = useState("");
+    const { updatePageTitle } = useNotifContext()
+    useEffect(() => {
+        updatePageTitle("Edit Language")
+    }, [])
 
     useEffect(() => {
         fetchLanguageData();

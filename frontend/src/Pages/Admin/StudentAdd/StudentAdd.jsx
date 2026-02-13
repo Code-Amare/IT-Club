@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../../Context/UserContext";
 import api from "../../../Utils/api";
@@ -19,11 +19,14 @@ import {
     MdClass
 } from "react-icons/md";
 import styles from "./StudentAdd.module.css";
+import { useNotifContext } from "../../../Context/NotifContext";
 
 export default function StudentAdd() {
     const navigate = useNavigate();
-    const { user } = useUser();
-
+    const { updatePageTitle } = useNotifContext()
+    useEffect(() => {
+        updatePageTitle("Add Student")
+    }, [])
     const [formData, setFormData] = useState({
         full_name: "",
         email: "",
@@ -386,7 +389,7 @@ export default function StudentAdd() {
                                 <FaUser /> Add Student
                             </AsyncButton>
                         </div>
-                     </div>
+                    </div>
                 </form>
             </SideBar>
         </div>

@@ -19,6 +19,7 @@ import {
     FaFileAlt      // icon for content
 } from "react-icons/fa";
 import styles from "./AnnouncementDetail.module.css";
+import { useNotifContext } from "../../../Context/NotifContext";
 
 export default function AnnouncementDetail() {
     const { user } = useUser();
@@ -29,6 +30,11 @@ export default function AnnouncementDetail() {
     const [recipients, setRecipients] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    const { updatePageTitle } = useNotifContext()
+    useEffect(() => {
+        if (!announcement?.title) return
+        updatePageTitle(`Announcement '${announcement?.title}'`)
+    }, [announcement])
 
     // Filter states
     const [filters, setFilters] = useState({

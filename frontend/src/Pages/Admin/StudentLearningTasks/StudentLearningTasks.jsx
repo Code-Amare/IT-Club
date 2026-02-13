@@ -7,26 +7,11 @@ import SideBar from "../../../Components/SideBar/SideBar";
 import LearningTaskCard from "../../../Components/LearningTaskCard/LearningTaskCard";
 import {
     FaArrowLeft,
-    FaUser,
     FaTasks,
-    FaSearch,
-    FaSortUp,
-    FaSortDown,
-    FaEye,
-    FaComment,
-    FaStar,
-    FaGraduationCap,
-    FaBook
 } from "react-icons/fa";
-import {
-    MdAssignment,
-    MdOutlineFilterList,
-    MdOutlineSort,
-    MdClass
-} from "react-icons/md";
 import styles from "./StudentLearningTasks.module.css";
+import { useNotifContext } from "../../../Context/NotifContext";
 
-/* ─────────────── NORMALIZERS ─────────────── */
 
 const normalizeTask = (task) => ({
     ...task,
@@ -54,6 +39,10 @@ export default function StudentLearningTasks() {
     const { id } = useParams();
     const navigate = useNavigate();
     const { user } = useUser();
+    const { updatePageTitle } = useNotifContext()
+    useEffect(() => {
+        updatePageTitle("Student Learning Tasks")
+    }, [])
 
     const [student, setStudent] = useState(null);
     const [tasks, setTasks] = useState([]);

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../../Context/UserContext";
 import api from "../../../Utils/api";
@@ -19,11 +19,14 @@ import {
     MdArrowDownward
 } from "react-icons/md";
 import styles from "./TaskLimitBulk.module.css";
+import { useNotifContext } from "../../../Context/NotifContext";
 
 export default function TaskLimitBulk() {
     const navigate = useNavigate();
-    const { user } = useUser();
-
+    const { updatePageTitle } = useNotifContext()
+    useEffect(() => {
+        updatePageTitle("Task Limit Bulk Operation")
+    }, [])
     const [formData, setFormData] = useState({
         operation: "set",
         value: "",

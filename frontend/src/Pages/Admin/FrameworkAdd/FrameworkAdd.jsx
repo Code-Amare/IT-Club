@@ -18,6 +18,7 @@ import {
     MdLanguage
 } from "react-icons/md";
 import styles from "./FrameworkAdd.module.css";
+import { useNotifContext } from "../../../Context/NotifContext";
 
 export default function FrameworkAdd() {
     const navigate = useNavigate();
@@ -39,6 +40,10 @@ export default function FrameworkAdd() {
     const [errors, setErrors] = useState({});
     const [bulkError, setBulkError] = useState("");
     const [submitAction, setSubmitAction] = useState("add");
+    const { updatePageTitle } = useNotifContext()
+    useEffect(() => {
+        updatePageTitle("Add Framework")
+    }, [])
 
     // Fetch languages for dropdown
     useEffect(() => {

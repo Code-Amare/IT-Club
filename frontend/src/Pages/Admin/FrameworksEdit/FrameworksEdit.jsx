@@ -19,6 +19,7 @@ import {
     MdLanguage
 } from "react-icons/md";
 import styles from "./FrameworksEdit.module.css";
+import { useNotifContext } from "../../../Context/NotifContext";
 
 export default function FrameworksEdit() {
     const navigate = useNavigate();
@@ -37,6 +38,10 @@ export default function FrameworksEdit() {
     const [originalData, setOriginalData] = useState(null);
     const [deleteConfirmationText, setDeleteConfirmationText] = useState("");
     const [deleteError, setDeleteError] = useState("");
+    const { updatePageTitle } = useNotifContext()
+    useEffect(() => {
+        updatePageTitle("Edit Framework")
+    }, [])
 
     useEffect(() => {
         fetchData();

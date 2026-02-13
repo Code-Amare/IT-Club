@@ -6,6 +6,7 @@ import { neonToast } from "../../Components/NeonToast/NeonToast";
 import AsyncButton from "../../Components/AsyncButton/AsyncButton";
 import SideBar from "../../Components/SideBar/SideBar";
 import styles from "./EditProfile.module.css";
+import { useNotifContext } from "../../Context/NotifContext";
 
 const FIELD_CHOICES = [
     { value: "frontend", label: "Frontend" },
@@ -19,6 +20,10 @@ const FIELD_CHOICES = [
 export default function EditProfile() {
     const navigate = useNavigate();
     const { user, getUser } = useUser();
+    const { updatePageTitle } = useNotifContext()
+    useEffect(() => {
+        updatePageTitle("Edit Profile")
+    }, [])
 
     const [form, setForm] = useState({
         full_name: "",

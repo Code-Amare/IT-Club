@@ -11,10 +11,15 @@ import {
     FaTimes,
     FaExclamationTriangle
 } from "react-icons/fa";
+import { useNotifContext } from "../../Context/NotifContext";
 
 const EditLearningTask = () => {
     const { taskId } = useParams();
     const navigate = useNavigate();
+    const { updatePageTitle } = useNotifContext()
+    useEffect(() => {
+        updatePageTitle("Edit Learning Task")
+    }, [])
 
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);

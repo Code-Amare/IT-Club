@@ -40,6 +40,7 @@ import {
     MdDescription
 } from "react-icons/md";
 import styles from "./LearningTaskDetail.module.css";
+import { useNotifContext } from "../../../Context/NotifContext";
 
 export default function LearningTaskDetail() {
     const navigate = useNavigate();
@@ -74,6 +75,11 @@ export default function LearningTaskDetail() {
     const [submittingBonus, setSubmittingBonus] = useState(false);
     const [deletingBonus, setDeletingBonus] = useState(false);
     const [editingBonus, setEditingBonus] = useState(false);
+
+    const { updatePageTitle } = useNotifContext()
+    useEffect(() => {
+        updatePageTitle("Learning Task Detail")
+    }, [])
 
     // Fetch task data
     useEffect(() => {

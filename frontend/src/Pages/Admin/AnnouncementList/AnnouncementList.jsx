@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useUser } from "../../../Context/UserContext";
 import api from "../../../Utils/api";
 import SideBar from "../../../Components/SideBar/SideBar";
 import AnnouncementCard from "../../../Components/AnnouncementCard/AnnouncementCard";
@@ -8,16 +7,14 @@ import {
     FaBullhorn,
     FaPlus,
     FaSync,
-    FaSearch,
     FaStar,
     FaCalendarAlt,
     FaUsers
 } from "react-icons/fa";
 import styles from "./AnnouncementList.module.css";
+import { useNotifContext } from "../../../Context/NotifContext";
 
 export default function AnnouncementList() {
-    const { user } = useUser();
-    const navigate = useNavigate();
     const [announcements, setAnnouncements] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState("all");
@@ -28,6 +25,10 @@ export default function AnnouncementList() {
         upcoming: 0,
         avgRecipients: 0
     });
+    const { updatePageTitle } = useNotifContext()
+    useEffect(() => {
+        updatePageTitle("Announcements")
+    }, [])
 
     // Fetch all announcements
     const fetchAnnouncements = async () => {
@@ -174,7 +175,6 @@ export default function AnnouncementList() {
                 {/* Filters & Search */}
                 <div className={styles.filters}>
                     <div className={styles.search}>
-                        <FaSearch />
                         <input
                             type="text"
                             placeholder="Search by title..."

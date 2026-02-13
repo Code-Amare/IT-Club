@@ -1,68 +1,73 @@
+/* Page container */
 .PageContainer {
   min-height: 100vh;
+  background: var(--bg-body);
   display: flex;
   flex-direction: column;
-  background-color: var(--bg-body);
-  font-family: "Inter", sans-serif;
-  color: var(--text-primary);
 }
 
+/* Main content */
 .MainContainer {
   flex: 1;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 2rem 1rem;
+  padding: 2rem;
+  gap: 4rem;
   max-width: 1200px;
   margin: 0 auto;
-  gap: 3rem;
-}
-
-.EmailBox {
-  background-color: var(--bg-surface);
-  padding: 2.5rem;
-  border-radius: 1.5rem;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-  max-width: 500px;
   width: 100%;
-  text-align: center;
 }
 
+/* Email verification box */
+.EmailBox {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 24px;
+  padding: 2.5rem;
+  width: 100%;
+  max-width: 440px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+  transition: box-shadow 0.3s ease;
+}
+
+.EmailBox:hover {
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+}
+
+/* Icon container */
 .IconContainer {
-  width: 80px;
-  height: 80px;
-  margin: 0 auto 2rem;
   display: flex;
-  align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
-  border-radius: 50%;
-  padding: 1rem;
+  margin-bottom: 1.5rem;
 }
 
 .EmailIcon {
-  width: 40px;
-  height: 40px;
-  color: white;
+  font-size: 3rem;
+  color: var(--primary);
+  background: rgba(79, 70, 229, 0.1);
+  padding: 1rem;
+  border-radius: 50%;
 }
 
+/* Titles */
 .Title {
   font-size: 2rem;
-  font-weight: 800;
-  margin-bottom: 1rem;
-  background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-secondary) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 0.5rem;
+  line-height: 1.2;
+  text-align: center;
 }
 
 .Subtitle {
-  font-size: 1rem;
   color: var(--text-secondary);
-  margin-bottom: 2rem;
-  line-height: 1.5;
+  font-size: 0.95rem;
+  margin: 0 0 2rem;
+  text-align: center;
 }
 
+/* Input group with icon */
 .InputGroup {
   position: relative;
   margin-bottom: 1.5rem;
@@ -70,51 +75,68 @@
 
 .Input {
   width: 100%;
-  padding: 1rem 1rem 1rem 3rem;
-  border: 2px solid var(--border-color);
-  border-radius: 0.75rem;
-  font-size: 1rem;
-  background-color: var(--bg-body);
+  padding: 0.75rem 1rem 0.75rem 2.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-body);
   color: var(--text-primary);
-  transition: all 0.3s ease;
+  font-size: 1rem;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+  box-sizing: border-box;
 }
 
 .Input:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.Input:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
 .InputIcon {
   position: absolute;
-  left: 1rem;
+  left: 12px;
   top: 50%;
   transform: translateY(-50%);
   color: var(--text-secondary);
-  width: 1.25rem;
-  height: 1.25rem;
+  font-size: 1rem;
+  pointer-events: none;
 }
 
+/* Primary button */
 .PrimaryBtn {
   width: 100%;
-  padding: 1rem 1.5rem;
-  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-  color: var(--text-primary);
+  padding: 0.875rem;
+  background: var(--primary);
+  color: white;
   border: none;
-  border-radius: 0.75rem;
-  font-weight: 600;
+  border-radius: 10px;
   font-size: 1rem;
+  font-weight: 600;
   cursor: pointer;
+  transition:
+    background-color 0.2s,
+    transform 0.1s,
+    box-shadow 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.75rem;
-  transition: all 0.3s ease;
+  gap: 0.5rem;
 }
 
 .PrimaryBtn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(var(--primary-hover), 0.3);
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+}
+
+.PrimaryBtn:active:not(:disabled) {
+  transform: translateY(0);
 }
 
 .PrimaryBtn:disabled {
@@ -123,15 +145,18 @@
 }
 
 .BtnIcon {
-  transition: transform 0.3s ease;
+  font-size: 0.9rem;
+  transition: transform 0.2s;
 }
 
 .PrimaryBtn:hover:not(:disabled) .BtnIcon {
   transform: translateX(4px);
 }
 
+/* Spinner animation */
 .Spinner {
   animation: spin 1s linear infinite;
+  margin-right: 0.5rem;
 }
 
 @keyframes spin {
@@ -143,10 +168,12 @@
   }
 }
 
+/* Help text */
 .HelpText {
-  margin-top: 1.5rem;
+  text-align: center;
   color: var(--text-secondary);
-  font-size: 0.875rem;
+  font-size: 0.9rem;
+  margin: 1.5rem 0 0;
 }
 
 .TextButton {
@@ -155,102 +182,76 @@
   color: var(--primary);
   font-weight: 600;
   cursor: pointer;
+  font-size: 0.9rem;
+  text-decoration: underline;
+  transition: color 0.2s;
   padding: 0;
-  font-size: 0.875rem;
 }
 
 .TextButton:hover {
-  text-decoration: underline;
+  color: var(--primary-hover);
 }
 
+/* Features section */
 .Features {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1.5rem;
-  width: 100%;
-  max-width: 800px;
+  flex: 1;
+  max-width: 500px;
+  padding: 2rem;
 }
 
 .Feature {
   display: flex;
   align-items: flex-start;
   gap: 1rem;
-  padding: 1.5rem;
-  background-color: var(--bg-surface);
-  border-radius: 1rem;
-  transition: transform 0.3s ease;
-}
-
-.Feature:hover {
-  transform: translateY(-5px);
+  margin-bottom: 2rem;
 }
 
 .FeatureIcon {
+  flex-shrink: 0;
   width: 48px;
   height: 48px;
-  min-width: 48px;
+  background: rgba(79, 70, 229, 0.1);
+  color: var(--primary);
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
-  color: white;
-  border-radius: 12px;
   font-size: 1.25rem;
 }
 
 .FeatureTitle {
-  font-size: 1.125rem;
-  font-weight: 700;
-  margin-bottom: 0.5rem;
+  font-size: 1.1rem;
+  font-weight: 600;
   color: var(--text-primary);
+  margin: 0 0 0.25rem;
 }
 
 .FeatureDesc {
-  font-size: 0.875rem;
+  font-size: 0.9rem;
   color: var(--text-secondary);
+  margin: 0;
   line-height: 1.5;
 }
 
-/* Mobile Responsive Styles */
+/* Responsive design */
 @media (max-width: 768px) {
   .MainContainer {
-    padding: 1rem;
+    flex-direction: column;
     gap: 2rem;
+    padding: 1rem;
   }
 
   .EmailBox {
     padding: 2rem 1.5rem;
   }
 
-  .IconContainer {
-    width: 64px;
-    height: 64px;
-    margin-bottom: 1.5rem;
-  }
-
-  .EmailIcon {
-    width: 32px;
-    height: 32px;
+  .Features {
+    max-width: 100%;
+    padding: 0 1rem;
   }
 
   .Title {
     font-size: 1.75rem;
-  }
-
-  .Features {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-
-  .Feature {
-    padding: 1.25rem;
-  }
-
-  .FeatureIcon {
-    width: 40px;
-    height: 40px;
-    min-width: 40px;
-    font-size: 1rem;
   }
 }
 
@@ -259,27 +260,21 @@
     padding: 1.5rem 1rem;
   }
 
-  .Title {
-    font-size: 1.5rem;
+  .Feature {
+    gap: 0.75rem;
   }
 
-  .IconContainer {
-    width: 56px;
-    height: 56px;
+  .FeatureIcon {
+    width: 40px;
+    height: 40px;
+    font-size: 1rem;
   }
 
-  .EmailIcon {
-    width: 28px;
-    height: 28px;
+  .FeatureTitle {
+    font-size: 1rem;
   }
 
-  .Input {
-    padding: 0.875rem 0.875rem 0.875rem 2.75rem;
-    font-size: 0.9375rem;
-  }
-
-  .PrimaryBtn {
-    padding: 0.875rem;
-    font-size: 0.9375rem;
+  .FeatureDesc {
+    font-size: 0.85rem;
   }
 }

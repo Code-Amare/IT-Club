@@ -68,6 +68,8 @@
 
 .searchWithIcon {
   position: relative;
+  display: flex;
+  align-items: center;
 }
 
 .searchIcon {
@@ -77,6 +79,7 @@
   transform: translateY(-50%);
   color: var(--text-secondary);
   font-size: 16px;
+  pointer-events: none; /* prevents icon from blocking input clicks */
 }
 
 .searchInput {
@@ -122,9 +125,8 @@
   background: transparent;
   border: none;
   outline: none;
-  color: var(--text-primary); 
+  color: var(--text-primary);
   background-color: var(--bg-body);
-  /* color: black; */
   font-size: 14px;
   padding: 0.2em;
   cursor: pointer;

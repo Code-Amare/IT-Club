@@ -7,28 +7,30 @@ import SideBar from "../../../Components/SideBar/SideBar";
 import {
     FaArrowLeft,
     FaPlus,
-    FaSearch,
     FaEdit,
     FaCode,
     FaLanguage,
-    FaEye
 } from "react-icons/fa";
 import {
     MdSort,
     MdRefresh,
-    MdDeveloperMode
 } from "react-icons/md";
 import styles from "./FrameworksList.module.css";
+import { useNotifContext } from "../../../Context/NotifContext";
 
 export default function FrameworksList() {
     const navigate = useNavigate();
-    const { user } = useUser();
 
     const [frameworks, setFrameworks] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
     const [sortBy, setSortBy] = useState("name");
     const [sortOrder, setSortOrder] = useState("asc");
+
+    const { updatePageTitle } = useNotifContext()
+    useEffect(() => {
+        updatePageTitle("Frameworks")
+    }, [])
 
     useEffect(() => {
         fetchFrameworks();
@@ -51,9 +53,9 @@ export default function FrameworksList() {
         .filter(framework => {
             const matchesSearch = searchTerm === "" ||
                 framework.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                (framework.language && 
-                 (framework.language.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                  framework.language.code.toLowerCase().includes(searchTerm.toLowerCase())));
+                (framework.language &&
+                    (framework.language.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        framework.language.code.toLowerCase().includes(searchTerm.toLowerCase())));
 
             return matchesSearch;
         })
@@ -104,7 +106,6 @@ export default function FrameworksList() {
                 <div className={styles.controls}>
                     <div className={styles.searchContainer}>
                         <div className={styles.searchWithIcon}>
-                            <FaSearch className={styles.searchIcon} />
                             <input
                                 type="text"
                                 placeholder="Search frameworks by name or language..."

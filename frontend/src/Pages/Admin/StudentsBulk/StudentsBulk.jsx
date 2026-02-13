@@ -16,6 +16,7 @@ import {
     FaCopy
 } from 'react-icons/fa';
 import { FiAlertCircle, FiInfo } from 'react-icons/fi';
+import { useNotifContext } from '../../../Context/NotifContext';
 
 const StudentsBulk = () => {
     const [file, setFile] = useState(null);
@@ -28,6 +29,10 @@ const StudentsBulk = () => {
     const [showTemplateInfo, setShowTemplateInfo] = useState(false);
     const fileInputRef = useRef(null);
     const resultsRef = useRef(null);
+    const { updatePageTitle } = useNotifContext()
+    useEffect(() => {
+        updatePageTitle("Student Bulk Upload")
+    }, [])
 
     // Updated columns: gender must be 'male' or 'female'
     const requiredColumns = [

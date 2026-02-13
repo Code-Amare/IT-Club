@@ -20,11 +20,15 @@ import {
 } from "react-icons/fa";
 import styles from "./MarkAttendance.module.css";
 import { neonToast } from "../../../Components/NeonToast/NeonToast";
+import { useNotifContext } from "../../../Context/NotifContext";
 
 export default function MarkAttendance() {
-    const { user } = useUser();
     const navigate = useNavigate();
     const { sessionId } = useParams();
+    const { updatePageTitle } = useNotifContext()
+    useEffect(() => {
+        updatePageTitle("Mark Attendance")
+    }, [])
 
     const [session, setSession] = useState(null);
     const [existingAttendances, setExistingAttendances] = useState([]);

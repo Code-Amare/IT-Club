@@ -26,10 +26,15 @@ import {
 } from "react-icons/fa";
 import { neonToast } from "../../../Components/NeonToast/NeonToast";
 import styles from "./Students.module.css";
+import { useNotifContext } from "../../../Context/NotifContext";
 
 export default function Students() {
     const { user } = useUser();
     const navigate = useNavigate();
+    const { updatePageTitle } = useNotifContext()
+    useEffect(() => {
+        updatePageTitle("Students")
+    }, [])
 
     const [stats, setStats] = useState({ total: 0, active: 0, inactive: 0, attendance_avg: 0 });
     const [students, setStudents] = useState([]);

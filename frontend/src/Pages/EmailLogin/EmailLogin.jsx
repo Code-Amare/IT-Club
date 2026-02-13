@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styles from "./EmailLogin.module.css";
 import api from "../../Utils/api";
@@ -14,6 +14,10 @@ const EmailLogin = () => {
     const [loading, setLoading] = useState(false);
     const { globalLoading } = useContext(LoadingContext);
     const navigate = useNavigate();
+
+    useEffect(() => {
+        document.title = "Login With Email"
+    }, [])
 
     const handleSendVerification = async () => {
         // Basic email validation

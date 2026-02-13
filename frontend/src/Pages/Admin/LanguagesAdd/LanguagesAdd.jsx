@@ -20,6 +20,7 @@ import {
     MdDelete
 } from "react-icons/md";
 import styles from "./LanguagesAdd.module.css";
+import { useNotifContext } from "../../../Context/NotifContext";
 
 export default function LanguagesAdd() {
     const navigate = useNavigate();
@@ -31,6 +32,10 @@ export default function LanguagesAdd() {
         code: "",
         color: "#3b82f6"
     });
+    const { updatePageTitle } = useNotifContext()
+    useEffect(() => {
+        updatePageTitle("Add Language")
+    }, [])
 
     const [bulkLanguages, setBulkLanguages] = useState([
         { name: "", code: "", color: "#3b82f6" }

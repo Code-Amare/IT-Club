@@ -24,12 +24,16 @@ import {
     MdClass
 } from "react-icons/md";
 import styles from "./StudentEdit.module.css";
+import { useNotifContext } from "../../../Context/NotifContext";
 
 export default function StudentEdit() {
     const navigate = useNavigate();
-    const { user } = useUser();
     const { id } = useParams();
     const fileInputRef = useRef(null);
+    const { updatePageTitle } = useNotifContext()
+    useEffect(() => {
+        updatePageTitle("Edit Student")
+    }, [])
 
     const [formData, setFormData] = useState({
         full_name: "",

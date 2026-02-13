@@ -18,6 +18,7 @@ import {
 } from "react-icons/fa";
 import styles from "./EditAnnouncement.module.css";
 import { neonToast } from "../../../Components/NeonToast/NeonToast";
+import { useNotifContext } from "../../../Context/NotifContext";
 
 export default function EditAnnouncement() {
     const { user } = useUser();
@@ -32,6 +33,10 @@ export default function EditAnnouncement() {
         is_important: false,
         targets: [] // array of user IDs
     });
+    const { updatePageTitle } = useNotifContext()
+    useEffect(() => {
+        updatePageTitle("Edit Announcement")
+    }, [])
 
     // Announcement data (for initial values)
     const [announcement, setAnnouncement] = useState(null);

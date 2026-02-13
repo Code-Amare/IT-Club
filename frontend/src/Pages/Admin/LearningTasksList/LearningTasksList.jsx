@@ -6,15 +6,11 @@ import { neonToast } from "../../../Components/NeonToast/NeonToast";
 import SideBar from "../../../Components/SideBar/SideBar";
 import LearningTaskCard from "../../../Components/LearningTaskCard/LearningTaskCard";
 import {
-    FaSearch,
-    FaFilter,
     FaTimes,
     FaTasks,
     FaGlobe,
     FaStar,
     FaCode,
-    FaCogs,
-    FaUserCog
 } from "react-icons/fa";
 import {
     MdRefresh,
@@ -22,10 +18,14 @@ import {
     MdSettings
 } from "react-icons/md";
 import styles from "./LearningTasksList.module.css";
+import { useNotifContext } from "../../../Context/NotifContext";
 
 export default function LearningTasksList() {
-    const { user } = useUser();
     const navigate = useNavigate();
+    const { updatePageTitle } = useNotifContext()
+    useEffect(() => {
+        updatePageTitle("Learning Tasks")
+    }, [])
 
     // State
     const [tasks, setTasks] = useState([]);
@@ -393,7 +393,6 @@ export default function LearningTasksList() {
                 <div className={styles.filtersCard}>
                     <div className={styles.searchSection}>
                         <div className={styles.searchInputWrapper}>
-                            <FaSearch className={styles.searchIcon} />
                             <input
                                 type="text"
                                 placeholder="Search tasks by title, description, user, or technologies..."

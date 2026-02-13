@@ -6,17 +6,14 @@ import SideBar from "../../../Components/SideBar/SideBar";
 import AttendanceSessionCard from "../../../Components/AttendanceSessionCard/AttendanceSessionCard";
 import {
     FaCalendarPlus,
-    FaFilter,
     FaSync,
     FaCalendarAlt,
     FaChartBar,
-    FaSearch
 } from "react-icons/fa";
 import styles from "./AttendanceList.module.css";
+import { useNotifContext } from "../../../Context/NotifContext";
 
 export default function AttendanceList() {
-    const { user } = useUser();
-    const navigate = useNavigate();
     const [sessions, setSessions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState("all");
@@ -26,6 +23,11 @@ export default function AttendanceList() {
         open: 0,
         closed: 0
     });
+    const { updatePageTitle } = useNotifContext()
+    useEffect(() => {
+        updatePageTitle("Attendances")
+    }, [])
+
 
     useEffect(() => {
         fetchSessions();
@@ -160,7 +162,6 @@ export default function AttendanceList() {
 
                 <div className={styles.filters}>
                     <div className={styles.search}>
-                        <FaSearch />
                         <input
                             type="text"
                             placeholder="Search sessions..."

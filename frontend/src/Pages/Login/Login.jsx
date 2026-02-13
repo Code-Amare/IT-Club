@@ -1,21 +1,22 @@
-import { useState, useContext } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom"; // Added useLocation
+import { useState, useContext, useEffect } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { FaEye, FaEyeSlash } from "react-icons/fa"; // Import eye icons
 import styles from "./Login.module.css";
-import ThemeToggle from "../../Components/ThemeToggle/ThemeToggle";
 import api from "../../Utils/api";
 import { LoadingContext } from "../../Context/LoaderContext";
 import FullScreenSpinner from "../../Components/FullScreenSpinner/FullScreenSpinner";
 import { neonToast } from "../../Components/NeonToast/NeonToast";
-import { useSite } from "../../Context/SiteContext";
 import { useUser } from "../../Context/UserContext";
 
 const Login = () => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [showPassword, setShowPassword] = useState(false); // New state
 
-    // Destructure specifically and alias 'login' to 'updateUserContext'
     const user = useUser();
-    const { site } = useSite(); // site.isTwoFaMandatory
+    useEffect(() => {
+        document.title = "Login"
+    }, [])
     const { globalLoading } = useContext(LoadingContext);
 
     const navigate = useNavigate();
@@ -23,12 +24,10 @@ const Login = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        console.log(email)
-        console.log(password)
 
         try {
-            const res = await api.post("api/users/login/", { "email": email, "password": password, }, { publicApi: true });
-            const verifyEmail = res.data.verify_email
+            const res = await api.post("api/users/login/", { email, password }, { publicApi: true });
+            const verifyEmail = res.data.verify_email;
             user.getUser();
 
             if (verifyEmail) {
@@ -41,7 +40,6 @@ const Login = () => {
             const params = new URLSearchParams(location.search);
             const next = params.get("next") || "/admin";
             navigate(next);
-
         } catch (err) {
             console.error(err);
             const errMsg = err.response?.data?.error || "Something went wrong";
@@ -72,19 +70,30 @@ const Login = () => {
                     />
 
                     <label className={styles.Label}>Password</label>
-                    <input
-                        type="password"
-                        className={styles.Input}
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="Enter your password"
-                        required
-                    />
+                    <div className={styles.passwordWrapper}>
+                        <input
+                            type={showPassword ? "text" : "password"}
+                            className={styles.passwordInput}
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            placeholder="Enter your password"
+                            required
+                        />
+                        <button
+                            type="button"
+                            className={styles.eyeButton}
+                            onClick={() => setShowPassword(!showPassword)}
+                            aria-label={showPassword ? "Hide password" : "Show password"}
+                        >
+                            {showPassword ? <FaEyeSlash /> : <FaEye />}
+                        </button>
+                    </div>
 
                     <button type="submit" className={styles.LoginBtn}>Login</button>
 
                     <p className={styles.RegisterPrompt}>
-                        Log in with email: <Link to="/login/email" className={styles.RegisterLink}>Click here</Link>                    </p>
+                        Log in with email: <Link to="/login/email" className={styles.RegisterLink}>Click here</Link>
+                    </p>
                 </form>
             </main>
         </div>

@@ -23,11 +23,16 @@ import {
     FaDownload
 } from "react-icons/fa";
 import styles from "./SessionDetail.module.css";
+import { useNotifContext } from "../../../Context/NotifContext";
 
 export default function SessionDetail() {
     const { user } = useUser();
     const navigate = useNavigate();
     const { sessionId } = useParams();
+    const { updatePageTitle } = useNotifContext()
+    useEffect(() => {
+        updatePageTitle("Session Detail")
+    }, [])
 
     const [session, setSession] = useState(null);
     const [attendances, setAttendances] = useState([]);

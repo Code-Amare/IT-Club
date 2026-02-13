@@ -34,6 +34,7 @@ import { FiTrendingUp } from "react-icons/fi";
 import { useUser } from "../../../Context/UserContext";
 import api from "../../../Utils/api";
 import { neonToast } from "../../../Components/NeonToast/NeonToast";
+import { useNotifContext } from "../../../Context/NotifContext";
 
 const AdminDashboard = () => {
     const { user } = useUser();
@@ -49,6 +50,10 @@ const AdminDashboard = () => {
         grade_distribution: {},
         top_learning_tasks: []
     });
+    const { updatePageTitle } = useNotifContext()
+    useEffect(() => {
+        updatePageTitle("Admin Dashboard")
+    }, [])
 
     const [gradeData, setGradeData] = useState([]);
     const [genderData, setGenderData] = useState([

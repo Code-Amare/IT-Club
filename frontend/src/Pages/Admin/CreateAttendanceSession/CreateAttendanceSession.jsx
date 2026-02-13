@@ -16,9 +16,9 @@ import {
 } from "react-icons/fa";
 import styles from "./CreateAttendanceSession.module.css";
 import { neonToast } from "../../../Components/NeonToast/NeonToast";
+import { useNotifContext } from "../../../Context/NotifContext";
 
 export default function CreateAttendanceSession() {
-    const { user } = useUser();
     const navigate = useNavigate();
 
     // Form state
@@ -35,6 +35,10 @@ export default function CreateAttendanceSession() {
     const [searchTerm, setSearchTerm] = useState("");
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
+    const { updatePageTitle } = useNotifContext()
+    useEffect(() => {
+        updatePageTitle("Create Attendance Session")
+    }, [])
 
     // Filter states
     const [filters, setFilters] = useState({
