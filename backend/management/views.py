@@ -309,8 +309,10 @@ class TopLearningTasks(APIView):
         top_learning_tasks = LearningTaskSerializer(top_tasks, many=True)
         return Response({"top_learning_tasks": top_learning_tasks.data})
 
-
+@method_decorator(csrf_protect, name="dispatch")
 class StudentUpdateView(APIView):
+    authentication_classes = [JWTCookieAuthentication]
+    permission_classes = []
 
     def put(self, request, pk):
         try:
@@ -602,7 +604,7 @@ class StudentDataView(APIView):
                 {"error": "User not found."}, status=status.HTTP_404_NOT_FOUND
             )
 
-
+@method_decorator(csrf_protect, name="dispatch")
 class StudentDeleteView(APIView):
     authentication_classes = [JWTCookieAuthentication]
     permission_classes = [IsAuthenticated, RolePermissionFactory(["admin", "staff"])]
@@ -654,6 +656,7 @@ class StudentDeleteView(APIView):
             )
 
 
+@method_decorator(csrf_protect, name="dispatch")
 class StudentCreateView(APIView):
     authentication_classes = [JWTCookieAuthentication]
     permission_classes = [IsAuthenticated, RolePermissionFactory(["admin", "staff"])]
@@ -774,13 +777,10 @@ class StudentCreateView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-
+@method_decorator(csrf_protect, name="dispatch")
 class StudentsBulkUploadView(APIView):
-
     authentication_classes = [JWTCookieAuthentication]
     permission_classes = [IsAuthenticated, RolePermissionFactory(["admin", "staff"])]
-
-    # Constants
     LEARNING_TASK_LIMIT_DEFAULT = 20
     FIELD_LIST = ["ai", "other", "backend", "frontend", "embedded", "cyber"]
 
@@ -1068,9 +1068,6 @@ class StudentsBulkUploadView(APIView):
 
 
 class StudentsExportView(APIView):
-    """
-    View for exporting students to CSV/Excel
-    """
 
     authentication_classes = [JWTCookieAuthentication]
     permission_classes = [IsAuthenticated, RolePermissionFactory(["admin", "staff"])]
@@ -1181,9 +1178,6 @@ class StudentsExportView(APIView):
 
 
 class StudentsStatsView(APIView):
-    """
-    View for student statistics
-    """
 
     authentication_classes = [JWTCookieAuthentication]
     permission_classes = [IsAuthenticated, RolePermissionFactory(["admin", "staff"])]
