@@ -52,12 +52,6 @@ class AttendanceSerializer(serializers.ModelSerializer):
                     {"note": "This field is required for special_case status."}
                 )
 
-        # If status is NOT special_case → note must be empty
-        if new_status != "special_case" and note:
-            raise serializers.ValidationError(
-                {"note": "Note is only allowed when status is 'special_case'."}
-            )
-
         return attrs
 
     def update(self, instance, validated_data):
@@ -67,10 +61,13 @@ class AttendanceSerializer(serializers.ModelSerializer):
         if instance.status == "special_case" and new_status != "special_case":
             validated_data["note"] = None
 
+        if new_status != "special_case":
+            validated_data["note"] = None
+
         return super().update(instance, validated_data)
 
     def create(self, validated_data):
-        # If created with non-special_case → remove note
+
         if validated_data.get("status") != "special_case":
             validated_data["note"] = None
 

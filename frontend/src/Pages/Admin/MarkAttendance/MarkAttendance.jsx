@@ -332,7 +332,7 @@ export default function MarkAttendance() {
             navigate(`/admin/session/${sessionId}`)
 
         } catch (error) {
-            console.error("Error marking attendance:", error);
+            console.log(error.response);
             if (error.response?.data?.error) {
                 setError(`Error: ${error.response.data.error}`);
             } else if (error.response?.data?.errors) {

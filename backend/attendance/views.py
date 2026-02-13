@@ -232,6 +232,8 @@ class AttendanceAPIView(APIView):
                     created_attendances.append(user_id)
             else:
                 errors.append({"user": user_id, "errors": serializer.errors})
+        if len(errors) > 0:
+            return Response({"error": errors}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response(
             {
