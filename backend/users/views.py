@@ -565,8 +565,38 @@ class EditProfileView(APIView):
 
     def patch(self, request):
         setting, created = Setting.objects.get_or_create(id=1)
+        if setting.allow_proifle_pic_change:
+            profile_pic_file = request.FILES.get("profile_pic")
+            if not profile_pic_file:
+                return Response(
+                    {"error": "Only profile picture can be updated."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            serializer = UserSerializer(
+                user,
+                data={"profile_pic": profile_pic_file},  # only send profile_pic
+                partial=True,
+                context={"request": request},
+            )
+
+            if serializer.is_valid():
+                serializer.save()
+                return Response(
+                    {"user": serializer.data},
+                    status=status.HTTP_200_OK,
+                )
+
+            return Response(
+                {"errors": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         if not setting.allow_profile_change and not request.user.is_staff:
-            return Response({"error": "You are not allowed to edit your profile"})
+            return Response(
+                {"error": "You are not allowed to edit your profile"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        
         user = request.user
         with transaction.atomic():
             profile, created = Profile.objects.get_or_create(
