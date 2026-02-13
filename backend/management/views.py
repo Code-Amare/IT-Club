@@ -10,7 +10,7 @@ from django.utils import timezone
 from django.http import HttpResponse
 from io import BytesIO
 from datetime import datetime
-from utils.auth import JWTCookieAuthentication, RolePermissionFactory
+from utils.auth import JWTCookieAuthentication, RolePermissionFactory, IsSuperUser
 from users.models import Profile
 from users.serializers import UserSerializer, ProfileSerializer, UserInverseSerializer
 from django.core.validators import validate_email
@@ -1732,3 +1732,269 @@ class DashboardView(APIView):
         }
 
         return Response(response_data)
+
+
+@method_decorator(csrf_protect, name="dispatch")
+class AdminControlView(APIView):
+    authentication_classes = [JWTCookieAuthentication]
+    permission_classes = [IsSuperUser]
+
+    def get(self, request, pk=None):
+        if pk:
+            try:
+                admin = User.objects.get(
+                    role__in=["admin", "staff"], is_staff=True, pk=pk
+                )
+            except User.DoesNotExist:
+                return Response(
+                    {"error": "Admin not found."}, status=status.HTTP_404_NOT_FOUND
+                )
+            serializer = UserInverseSerializer(admin)
+            return Response({"admin": serializer.data}, status=status.HTTP_200_OK)
+        admins = User.objects.filter(role__in=["admin", "staff"], is_staff=True)
+        admins_serialzier = UserInverseSerializer(admins)
+        return Response({"admins": admins_serialzier}, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        try:
+            email = (request.data.get("email") or "").strip()
+            full_name = (request.data.get("full_name") or "").strip()
+            grade = request.data.get("grade")
+            section = (request.data.get("section") or "").strip()
+            field = (request.data.get("field") or "").strip()
+            account = (request.data.get("account") or "N/A").strip()
+            phone_number = (request.data.get("phone_number") or "").strip()
+
+            # Validate all required fields
+            errors = {}
+
+            if not email:
+                errors["email"] = ["Email is required"]
+            else:
+                try:
+                    validate_email(email)
+                except ValidationError:
+                    errors["email"] = ["Invalid email format"]
+
+            if not full_name:
+                errors["full_name"] = ["Full name is required"]
+
+            if grade is None:
+                errors["grade"] = ["Grade is required"]
+            else:
+                try:
+                    grade = int(grade)
+                    if grade < 1 or grade > 12:
+                        errors["grade"] = ["Grade must be between 1 and 12"]
+                except (ValueError, TypeError):
+                    errors["grade"] = ["Grade must be a valid number"]
+
+            if not section:
+                errors["section"] = ["Section is required"]
+            elif len(section) != 1 or not section.isalpha():
+                errors["section"] = ["Section must be a single letter (A-Z)"]
+
+            if not field:
+                errors["field"] = ["Field is required"]
+
+            if not phone_number:
+                errors["phone_number"] = ["Phone number is required"]
+
+            # Check for existing email
+            if (
+                email
+                and not errors.get("email")
+                and User.objects.filter(email=email).exists()
+            ):
+                errors["email"] = ["User with this email already exists"]
+
+            if errors:
+                return Response(
+                    {"detail": "Validation failed", "errors": errors},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            with transaction.atomic():
+                # Create user
+                user = User.objects.create_user(
+                    email=email,
+                    full_name=full_name,
+                    is_active=True,  # Always active on creation
+                    role="user",
+                )
+
+                # Create profile with proper field values
+                profile = Profile.objects.create(
+                    user=user,
+                    grade=grade,
+                    section=section.upper() if section else None,
+                    field=field if field else None,
+                    account=account,
+                    phone_number=phone_number if phone_number else None,
+                )
+
+            response_data = {
+                "id": user.id,
+                "full_name": user.full_name,
+                "email": user.email,
+                "grade": profile.grade,
+                "section": profile.section,
+                "field": profile.field,
+                "account": profile.account,
+                "phone_number": profile.phone_number,
+                "account_status": "active",
+                "created_at": profile.created_at,
+                "message": "Admin created successfully",
+            }
+
+            return Response(response_data, status=status.HTTP_201_CREATED)
+
+        except ValidationError as e:
+            return Response(
+                {"detail": "Validation error", "errors": str(e)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        except Exception as e:
+            # Log the error for debugging
+            import traceback
+
+            print(f"Error creating admin: {str(e)}")
+            print(traceback.format_exc())
+
+            return Response(
+                {
+                    "detail": "Failed to create admin",
+                    "error": "An unexpected error occurred",
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+    def put(self, request, pk):
+        try:
+            admin = User.objects.get(pk=pk, role__in=["admin", "staff"])
+            profile = Profile.objects.get(user=admin)
+
+            errors = {}
+
+            email = (request.data.get("email") or "").strip()
+            full_name = (request.data.get("full_name") or "").strip()
+            gender = (request.data.get("gender") or "").strip().lower()
+            grade = request.data.get("grade")
+            section = (request.data.get("section") or "").strip()
+            field = (request.data.get("field") or "").strip()
+            account = (request.data.get("account") or "N/A").strip()
+            phone_number = (request.data.get("phone_number") or "").strip()
+            account_status = request.data.get("account_status", "active")
+            profile_pic = request.FILES.get("profile_pic")
+
+            if profile_pic:
+                if profile_pic.size > 10 * 1024 * 1024:
+
+                    errors["profile_pic"] = ["Profile picture must be less than 10MB"]
+
+                if not profile_pic.content_type.startswith("image/"):
+                    errors["profile_pic"] = ["Only image files are allowe"]
+
+            if not email:
+                errors["email"] = ["Email is required"]
+            else:
+                try:
+                    validate_email(email)
+                except ValidationError:
+                    errors["email"] = ["Invalid email format"]
+
+            if (
+                email
+                and admin.email != email
+                and User.objects.filter(email=email).exists()
+            ):
+                errors["email"] = ["Admin with this email already exists"]
+
+            if not full_name:
+                errors["full_name"] = ["Full name is required"]
+
+            if gender not in ["male", "female", "other"]:
+                errors["gender"] = ["Gender must be male, female, or other"]
+
+            try:
+                grade = int(grade)
+                if grade < 1 or grade > 12:
+                    raise ValueError
+            except Exception:
+                errors["grade"] = ["Grade must be between 1 and 12"]
+
+            if not section or len(section) != 1 or not section.isalpha():
+                errors["section"] = ["Section must be a single letter (A-Z)"]
+
+            if not field:
+                errors["field"] = ["Field is required"]
+
+            if not phone_number:
+                errors["phone_number"] = ["Phone number is required"]
+
+            if errors:
+                return Response(
+                    {"detail": "Validation failed", "errors": errors},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            with transaction.atomic():
+
+                user_serializer = UserSerializer(
+                    admin,
+                    data={
+                        "email": email,
+                        "full_name": full_name,
+                        "gender": gender,
+                        "is_active": account_status == "active",
+                    },
+                    partial=True,
+                    context={"request": request},
+                )
+                user_serializer.is_valid(raise_exception=True)
+                user_serializer.save()
+
+                # update profile
+                profile.grade = grade
+                profile.section = section.upper()
+                profile.field = field
+                profile.account = account
+                profile.phone_number = phone_number
+                profile.save()
+
+            return Response(
+                {
+                    "message": "Admin updated successfully",
+                    "user": user_serializer.data,
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        except User.DoesNotExist:
+            return Response(
+                {"detail": "Admin not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        except Profile.DoesNotExist:
+            return Response(
+                {"detail": "Admin profile not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        except Exception as e:
+            return Response(
+                {"detail": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+    def delete(self, request, pk):
+        try:
+            admin = User.objects.get(role__in=["admin", "staff"], is_staff=True, id=pk)
+        except User.DoesNotExist:
+            return Response(
+                {"error": "Admin not found."}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        admin.delete()
+        return Response(
+            {"error": "Admin successfully deleted."}, status=status.HTTP_200_OK
+        )
