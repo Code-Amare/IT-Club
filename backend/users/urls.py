@@ -19,6 +19,7 @@ from .views import (
     TogglePushNotificationView,
     UserAttendanceView,
     UserDashboardView,
+    GetProfileView,
 )
 
 urlpatterns = [
@@ -27,6 +28,7 @@ urlpatterns = [
     path("verify-code/", VerifyCodeView.as_view(), name="verify-code"),
     path("login/", LoginView.as_view(), name="login"),
     path("logout/", LogoutView.as_view(), name="logout"),
+    path("profile/", GetProfileView.as_view(), name="get-profile"),
     path("get/", GetUserView.as_view(), name="get-user"),
     path("edit/", EditProfileView.as_view(), name="edit-profile"),
     path("delete/", UserDeleteView.as_view(), name="delete-user"),

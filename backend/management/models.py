@@ -22,3 +22,8 @@ class Framework(models.Model):
 
     def __str__(self):
         return f"{self.name} - {self.language.name}"
+
+
+class Setting(models.Model):
+    allow_profile_change = models.BooleanField(default=False)
+    allow_proifle_pic_change = models.BooleanField(default=False)

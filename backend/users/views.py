@@ -5,12 +5,12 @@ from rest_framework import status
 from utils.auth import JWTCookieAuthentication, RolePermissionFactory
 from rest_framework.permissions import IsAuthenticated
 from django.middleware.csrf import get_token
-from .models import VerifyEmail, ChangePasswordViaEmail
+from .models import VerifyEmail, ChangePasswordViaEmail, Profile
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from utils.mail import send_email
 from django.contrib.auth import authenticate
-from .serializers import UserSerializer
+from .serializers import UserSerializer, ProfileSerializer, UserInverseSerializer
 from django.conf import settings
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_protect
@@ -27,6 +27,7 @@ from rest_framework import status
 from attendance.serializers import AttendanceSerializer, AttendanceWithSessionSerializer
 from learning_task.models import LearningTask, TaskBonus
 from attendance.models import Attendance, AttendanceSession
+from management.models import Setting
 
 
 IS_TWOFA_MANDATORY = settings.IS_TWOFA_MANDATORY
@@ -46,11 +47,20 @@ class GetUserView(APIView):
 
         if user.is_authenticated:
             return Response(
-                {"user": UserSerializer(user).data}, status=status.HTTP_200_OK
+                {"user": UserInverseSerializer(user).data}, status=status.HTTP_200_OK
             )
         return Response(
             {"detail": "User is not authenticated."}, status=status.HTTP_400_BAD_REQUEST
         )
+
+
+class GetProfileView(APIView):
+    authentication_classes = [JWTCookieAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        serializer = UserInverseSerializer(request.user)
+        return Response({"user": serializer.data}, status=status.HTTP_200_OK)
 
 
 class SendVerificationCodeView(APIView):
@@ -551,25 +561,50 @@ class UserDeleteView(APIView):
 @method_decorator(csrf_protect, name="dispatch")
 class EditProfileView(APIView):
     authentication_classes = [JWTCookieAuthentication]
-    permission_classes = [
-        IsAuthenticated,
-        RolePermissionFactory(["admin", "staff"]),
-    ]
+    permission_classes = [IsAuthenticated]
 
     def patch(self, request):
+        setting, created = Setting.objects.get_or_create(id=1)
+        if not setting.allow_profile_change and not request.user.is_staff:
+            return Response({"error": "You are not allowed to edit your profile"})
         user = request.user
-        serializer = UserSerializer(
-            user,
-            data=request.data,
-            partial=True,
-            context={"request": request},
-        )
-        if serializer.is_valid():
-            serializer.save()
-            return Response({"user": serializer.data}, status=status.HTTP_200_OK)
+        with transaction.atomic():
+            profile, created = Profile.objects.get_or_create(
+                user=user,
+                defaults={
+                    "grade": 10,
+                    "section": "A",
+                    "field": "frontend",
+                    "account": "N/A",
+                    "phone_number": "0000000000",
+                },
+            )
+            profile_serializer = ProfileSerializer(
+                profile,
+                data=request.data,
+                partial=True,
+                context={"request": request},
+            )
+            serializer = UserSerializer(
+                user,
+                data=request.data,
+                partial=True,
+                context={"request": request},
+            )
+
+            if serializer.is_valid() and profile_serializer.is_valid():
+                serializer.save()
+                profile_serializer.save()
+                return Response(
+                    {"user": serializer.data, "profile": profile_serializer.data},
+                    status=status.HTTP_200_OK,
+                )
+
+        errors = {**serializer.errors, **profile_serializer.errors}
 
         return Response(
-            {"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
+            {"errors": errors},
+            status=status.HTTP_400_BAD_REQUEST,
         )
 
 

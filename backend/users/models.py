@@ -124,3 +124,4 @@ class ChangePasswordViaEmail(models.Model):
             self.code = secrets.randbelow(900000) + 100000
 
         super().save(*args, **kwargs)
+

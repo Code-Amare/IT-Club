@@ -309,10 +309,11 @@ class TopLearningTasks(APIView):
         top_learning_tasks = LearningTaskSerializer(top_tasks, many=True)
         return Response({"top_learning_tasks": top_learning_tasks.data})
 
+
 @method_decorator(csrf_protect, name="dispatch")
 class StudentUpdateView(APIView):
     authentication_classes = [JWTCookieAuthentication]
-    permission_classes = []
+    permission_classes = [RolePermissionFactory(["admin", "staff"])]
 
     def put(self, request, pk):
         try:
@@ -321,7 +322,6 @@ class StudentUpdateView(APIView):
 
             errors = {}
 
-            # -------- basic fields --------
             email = (request.data.get("email") or "").strip()
             full_name = (request.data.get("full_name") or "").strip()
             gender = (request.data.get("gender") or "").strip().lower()
@@ -604,6 +604,7 @@ class StudentDataView(APIView):
                 {"error": "User not found."}, status=status.HTTP_404_NOT_FOUND
             )
 
+
 @method_decorator(csrf_protect, name="dispatch")
 class StudentDeleteView(APIView):
     authentication_classes = [JWTCookieAuthentication]
@@ -776,6 +777,7 @@ class StudentCreateView(APIView):
                 },
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+
 
 @method_decorator(csrf_protect, name="dispatch")
 class StudentsBulkUploadView(APIView):
@@ -1736,8 +1738,12 @@ class AdminControlView(APIView):
     def get(self, request, pk=None):
         if pk:
             try:
-                admin = User.objects.get(
-                    role__in=["admin", "staff"], is_staff=True, pk=pk
+                admin = (
+                    User.objects.filter(
+                        role__in=["admin", "staff"], is_staff=True, pk=pk
+                    )
+                    .exclude(id=request.user.id)
+                    .first()
                 )
             except User.DoesNotExist:
                 return Response(
@@ -1745,7 +1751,9 @@ class AdminControlView(APIView):
                 )
             serializer = UserInverseSerializer(admin)
             return Response({"admin": serializer.data}, status=status.HTTP_200_OK)
-        admins = User.objects.filter(role__in=["admin", "staff"], is_staff=True)
+        admins = User.objects.filter(
+            role__in=["admin", "staff"], is_staff=True
+        ).exclude(id=request.user.id)
         admins_serialzier = UserInverseSerializer(admins)
         return Response({"admins": admins_serialzier}, status=status.HTTP_200_OK)
 
@@ -1982,7 +1990,7 @@ class AdminControlView(APIView):
 
     def delete(self, request, pk):
         try:
-            admin = User.objects.get(role__in=["admin", "staff"], is_staff=True, id=pk)
+            admin = User.objects.filter(role__in=["admin", "staff"], is_staff=True, id=pk).exclude(id=request.user.id)
         except User.DoesNotExist:
             return Response(
                 {"error": "Admin not found."}, status=status.HTTP_404_NOT_FOUND
