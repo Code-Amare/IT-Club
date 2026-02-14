@@ -3,12 +3,10 @@ from django.views.decorators.csrf import csrf_protect
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from django.db import transaction
 from .models import Announcement
 from .serializers import AnnouncementSerializer, AnnouncementMinimalSerializer
-from users.serializers import UserInverseSerializer
-from utils.auth import RolePermissionFactory
 from utils.auth import JWTCookieAuthentication
 from asgiref.sync import async_to_sync
 from utils.notif import notify_users_bulk
@@ -17,7 +15,7 @@ from utils.notif import notify_users_bulk
 @method_decorator(csrf_protect, name="dispatch")
 class AnnouncementView(APIView):
     authentication_classes = [JWTCookieAuthentication]
-    permission_classes = [IsAuthenticated, RolePermissionFactory(["admin", "staff"])]
+    permission_classes = [IsAdminUser]
 
     def get(self, request, pk=None):
 

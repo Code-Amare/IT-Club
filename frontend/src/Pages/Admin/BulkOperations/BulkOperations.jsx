@@ -27,10 +27,16 @@ import {
 import { neonToast } from "../../../Components/NeonToast/NeonToast";
 import styles from "../Students/Students.module.css";
 import bulkStyles from "./BulkOperations.module.css";
+import { useNotifContext } from "../../../Context/NotifContext";
 
 export default function BulkOperations() {
     const { user } = useUser();
     const navigate = useNavigate();
+    const { updatePageTitle } = useNotifContext();
+
+    useEffect(() => {
+        updatePageTitle("Student Bulk Operation");
+    }, [updatePageTitle]);
 
     // ---------- Filters ----------
     const [filters, setFilters] = useState({

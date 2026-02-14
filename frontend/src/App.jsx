@@ -51,6 +51,9 @@ import UserAnnouncementDetail from "./Pages/User/AnnouncementDetail/Announcement
 import EditAnnouncement from "./Pages/Admin/EditAnnouncement/EditAnnouncement"
 import UserAnnouncements from './Pages/User/UserAnnouncements/UserAnnouncements'
 import BulkOperations from './Pages/Admin/BulkOperations/BulkOperations'
+import AdminList from "./Pages/Admin/AdminList/AdminList"
+import AddAdmin from './Pages/Admin/AddAdmin/AddAdmin'
+import AdminDetail from './Pages/Admin/AdminDetail/AdminDetail'
 
 function App() {
   return (
@@ -79,6 +82,7 @@ function App() {
         </Route>
         <Route element={<ProtectedRoute requiredRole={["admin", "staff"]} />}>
           <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/staff" element={<AdminDashboard />} />
           <Route path="/admin/students" element={<Students />} />
           <Route path="/admin/student/add" element={<StudentAdd />} />
           <Route path="/admin/students/bulk" element={<StudentsBulk />} />
@@ -103,6 +107,9 @@ function App() {
           <Route path="/admin/announcement/:announcementId" element={<AdminAnnouncementDetail />} />
           <Route path="/admin/announcement/edit/:announcementId" element={<EditAnnouncement />} />
           <Route path="/admin/students/bulk-operation" element={<BulkOperations />} />
+          <Route path="/admin/staff" element={<AdminList />} />
+          <Route path="/admin/staff/add" element={<AddAdmin />} />
+          <Route path="/admin/staff/:id" element={<AdminDetail />} />
         </Route>
         <Route element={<ProtectedRoute requiredRole={["user"]} />}>
           <Route path='/user' element={<UserDashboard />} />

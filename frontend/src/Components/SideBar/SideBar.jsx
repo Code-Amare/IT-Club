@@ -18,12 +18,12 @@ import {
     MdPeople,
     MdAssignment,
     MdSchool,
-    MdWork,
     MdCode,
     MdAccountTree,
     MdChecklist,
     MdAnnouncement,
-    MdGroupWork,
+    MdAdminPanelSettings,
+    MdSelectAll,
 } from "react-icons/md";
 import { useUser } from "../../Context/UserContext";
 import { useNotifContext } from "../../Context/NotifContext";
@@ -54,7 +54,8 @@ export default function SideBar({ children }) {
         { icon: <MdAccountTree />, text: "Frameworks", to: "/admin/frameworks" },
         { icon: <MdAnnouncement />, text: "Announcements", to: "/admin/announcements" },
         { icon: <MdChecklist />, text: "Attendance", to: "/admin/attendance" },
-        { icon: <MdGroupWork />, text: "Attendance", to: "/admin/students/bulk-operation" },
+        { icon: <MdSelectAll />, text: "Bulk Operation", to: "/admin/students/bulk-operation" },
+        { icon: <MdAdminPanelSettings />, text: "Admins", to: "/admin/staff" },
     ];
 
     const userMenuItems = [

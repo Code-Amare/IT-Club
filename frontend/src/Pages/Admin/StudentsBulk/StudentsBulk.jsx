@@ -1,3 +1,4 @@
+// src/pages/Admin/Students/StudentsBulk.js
 import React, { useState, useRef, useEffect } from 'react';
 import styles from './StudentsBulk.module.css';
 import SideBar from '../../../Components/SideBar/SideBar';
@@ -10,10 +11,8 @@ import {
     FaCheckCircle,
     FaExclamationTriangle,
     FaSpinner,
-    FaEye,
-    FaEyeSlash,
     FaTimes,
-    FaCopy
+    FaEnvelope
 } from 'react-icons/fa';
 import { FiAlertCircle, FiInfo } from 'react-icons/fi';
 import { useNotifContext } from '../../../Context/NotifContext';
@@ -24,17 +23,16 @@ const StudentsBulk = () => {
     const [uploadResults, setUploadResults] = useState(null);
     const [validationErrors, setValidationErrors] = useState([]);
     const [createdStudents, setCreatedStudents] = useState([]);
-    const [showPasswords, setShowPasswords] = useState({});
     const [activeTab, setActiveTab] = useState('upload');
     const [showTemplateInfo, setShowTemplateInfo] = useState(false);
     const fileInputRef = useRef(null);
     const resultsRef = useRef(null);
-    const { updatePageTitle } = useNotifContext()
-    useEffect(() => {
-        updatePageTitle("Student Bulk Upload")
-    }, [])
+    const { updatePageTitle } = useNotifContext();
 
-    // Updated columns: gender must be 'male' or 'female'
+    useEffect(() => {
+        updatePageTitle("Student Bulk Upload");
+    }, [updatePageTitle]);
+
     const requiredColumns = [
         "full_name",
         "email",
@@ -46,14 +44,14 @@ const StudentsBulk = () => {
     ];
 
     const optionalColumns = ["account"];
-    const fieldOptions = ["frontend", "backend", "ai", "embadded", "cyber", "other"];
+    const fieldOptions = ["frontend", "backend", "ai", "embedded", "cyber", "other"];
 
     const handleFileSelect = (e) => {
         const selectedFile = e.target.files[0];
         if (!selectedFile) return;
 
         const fileExtension = selectedFile.name.split('.').pop().toLowerCase();
-        const allowedExtensions = ['xlsx', 'xls']; // Only Excel files allowed
+        const allowedExtensions = ['xlsx', 'xls'];
 
         if (!allowedExtensions.includes(fileExtension)) {
             neonToast.error('Invalid file format. Please upload Excel files (.xlsx or .xls).', 'error');
@@ -128,7 +126,6 @@ const StudentsBulk = () => {
         }
     };
 
-    // Download Excel template from backend
     const downloadTemplate = async () => {
         try {
             const response = await api.get('/api/management/students/template/', {
@@ -149,21 +146,6 @@ const StudentsBulk = () => {
         }
     };
 
-    const togglePasswordVisibility = (studentId) => {
-        setShowPasswords(prev => ({
-            ...prev,
-            [studentId]: !prev[studentId]
-        }));
-    };
-
-    const copyPassword = (password, studentName) => {
-        navigator.clipboard.writeText(password).then(() => {
-            neonToast.success(`Password for ${studentName} copied to clipboard`, 'success');
-        }).catch(() => {
-            neonToast.error('Failed to copy password', 'error');
-        });
-    };
-
     const formatError = (errorObj) => {
         if (typeof errorObj === 'string') return errorObj;
         if (Array.isArray(errorObj)) return errorObj.join(', ');
@@ -180,7 +162,6 @@ const StudentsBulk = () => {
         setUploadResults(null);
         setValidationErrors([]);
         setCreatedStudents([]);
-        setShowPasswords({});
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
         }
@@ -221,7 +202,7 @@ const StudentsBulk = () => {
                         </div>
                     </header>
 
-                    {/* Template Info Modal with backdrop */}
+                    {/* Template Info Modal */}
                     {showTemplateInfo && (
                         <div
                             className={styles.modalOverlay}
@@ -518,25 +499,6 @@ const StudentsBulk = () => {
                                                 <FaCheckCircle />
                                                 Successfully Created Students
                                             </h3>
-                                            <div className={styles.studentsActions}>
-                                                <button
-                                                    className={styles.togglePasswordsButton}
-                                                    onClick={() => {
-                                                        const allShown = Object.values(showPasswords).every(v => v);
-                                                        const newState = {};
-                                                        createdStudents.forEach(student => {
-                                                            newState[student.id] = !allShown;
-                                                        });
-                                                        setShowPasswords(newState);
-                                                    }}
-                                                >
-                                                    {Object.values(showPasswords).every(v => v) ? (
-                                                        <>Hide All Passwords</>
-                                                    ) : (
-                                                        <>Show All Passwords</>
-                                                    )}
-                                                </button>
-                                            </div>
                                         </div>
 
                                         <div className={styles.studentsTableContainer}>
@@ -548,8 +510,7 @@ const StudentsBulk = () => {
                                                         <th>Grade & Section</th>
                                                         <th>Field</th>
                                                         <th>Phone</th>
-                                                        <th>Temporary Password</th>
-                                                        <th>Actions</th>
+                                                        <th>Status</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
@@ -579,51 +540,14 @@ const StudentsBulk = () => {
                                                                 {student.phone_number}
                                                             </td>
                                                             <td>
-                                                                <div className={styles.passwordCell}>
-                                                                    <span className={styles.passwordValue}>
-                                                                        {showPasswords[student.id]
-                                                                            ? student.temporary_password || 'Generated on server'
-                                                                            : '••••••••••••'}
-                                                                    </span>
-                                                                    <div className={styles.passwordActions}>
-                                                                        <button
-                                                                            className={styles.passwordToggle}
-                                                                            onClick={() => togglePasswordVisibility(student.id)}
-                                                                        >
-                                                                            {showPasswords[student.id] ? <FaEyeSlash /> : <FaEye />}
-                                                                        </button>
-                                                                        <button
-                                                                            className={styles.passwordCopy}
-                                                                            onClick={() => copyPassword(
-                                                                                student.temporary_password || 'No password available',
-                                                                                student.full_name
-                                                                            )}
-                                                                        >
-                                                                            <FaCopy />
-                                                                        </button>
-                                                                    </div>
-                                                                </div>
-                                                            </td>
-                                                            <td>
                                                                 <span className={styles.messageBadge}>
-                                                                    {student.message || 'Change password on first login'}
+                                                                    <FaEnvelope /> Activation email sent
                                                                 </span>
                                                             </td>
                                                         </tr>
                                                     ))}
                                                 </tbody>
                                             </table>
-                                        </div>
-
-                                        <div className={styles.importantNote}>
-                                            <div className={styles.noteHeader}>
-                                                <FiAlertCircle />
-                                                <strong>Important:</strong>
-                                            </div>
-                                            <p>
-                                                Students must change their temporary passwords on first login.
-                                                Make sure to provide them with their temporary passwords securely.
-                                            </p>
                                         </div>
                                     </div>
                                 )}

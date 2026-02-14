@@ -28,10 +28,13 @@ from .views import (
     SettingUpdateView,
     GradesRankExportPdfView,
     StudentsBulkOperationView,
+    AdminControlView,
 )
 
 urlpatterns = [
     path("users/", GetAllUsersView.as_view(), name="get-users"),
+    path("admins/", AdminControlView.as_view(), name="admin-control"),
+    path("admin/<int:pk>/", AdminControlView.as_view(), name="admin-user"),
     path("dashboard/", DashboardView.as_view(), name="dashboard"),
     path("students/", StudentsView.as_view(), name="students-list"),
     path("students/stats/", StudentsStatsView.as_view(), name="students-stats"),

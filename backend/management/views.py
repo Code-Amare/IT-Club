@@ -10,7 +10,7 @@ from django.utils import timezone
 from django.http import HttpResponse
 from io import BytesIO
 from datetime import datetime
-from utils.auth import JWTCookieAuthentication, RolePermissionFactory, IsSuperUser
+from utils.auth import JWTCookieAuthentication, IsSuperUser
 from users.models import Profile
 from users.serializers import UserSerializer, ProfileSerializer, UserInverseSerializer
 from django.core.validators import validate_email
@@ -80,7 +80,7 @@ User = get_user_model()
 
 class StudentsView(APIView):
     authentication_classes = [JWTCookieAuthentication]
-    permission_classes = [RolePermissionFactory(["admin", "staff"])]
+    permission_classes = [IsAdminUser]
 
     def get(self, request):
         try:
@@ -365,7 +365,7 @@ class TopLearningTasks(APIView):
 @method_decorator(csrf_protect, name="dispatch")
 class StudentUpdateView(APIView):
     authentication_classes = [JWTCookieAuthentication]
-    permission_classes = [RolePermissionFactory(["admin", "staff"])]
+    permission_classes = [IsAdminUser]
 
     def put(self, request, pk):
         try:
@@ -392,7 +392,7 @@ class StudentUpdateView(APIView):
                     errors["profile_pic"] = ["Profile picture must be less than 10MB"]
 
                 if not profile_pic.content_type.startswith("image/"):
-                    errors["profile_pic"] = ["Only image files are allowe"]
+                    errors["profile_pic"] = ["Only image files are allowed"]
 
             if not email:
                 errors["email"] = ["Email is required"]
@@ -498,7 +498,7 @@ class StudentUpdateView(APIView):
 
 class StudentDetailView(APIView):
     authentication_classes = [JWTCookieAuthentication]
-    permission_classes = [RolePermissionFactory(["admin", "staff"])]
+    permission_classes = [IsAdminUser]
 
     def get(self, request, student_id):
         try:
@@ -660,7 +660,7 @@ class StudentDataView(APIView):
 @method_decorator(csrf_protect, name="dispatch")
 class StudentDeleteView(APIView):
     authentication_classes = [JWTCookieAuthentication]
-    permission_classes = [IsAuthenticated, RolePermissionFactory(["admin", "staff"])]
+    permission_classes = [IsAuthenticated, IsAdminUser]
 
     def get_object(self, pk):
         try:
@@ -712,7 +712,7 @@ class StudentDeleteView(APIView):
 @method_decorator(csrf_protect, name="dispatch")
 class StudentCreateView(APIView):
     authentication_classes = [JWTCookieAuthentication]
-    permission_classes = [IsAuthenticated, RolePermissionFactory(["admin", "staff"])]
+    permission_classes = [IsAuthenticated, IsAdminUser]
     FIELD_LIST = ["ai", "other", "backend", "frontend", "embedded", "cyber"]
 
     def post(self, request):
@@ -837,7 +837,7 @@ class StudentCreateView(APIView):
 @method_decorator(csrf_protect, name="dispatch")
 class StudentsBulkUploadView(APIView):
     authentication_classes = [JWTCookieAuthentication]
-    permission_classes = [IsAuthenticated, RolePermissionFactory(["admin", "staff"])]
+    permission_classes = [IsAuthenticated, IsAdminUser]
     LEARNING_TASK_LIMIT_DEFAULT = 20
     FIELD_LIST = ["ai", "other", "backend", "frontend", "embedded", "cyber"]
 
@@ -867,7 +867,7 @@ class StudentsBulkUploadView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            # Validate ALL required columns
+            # Validate required columns
             required_columns = [
                 "full_name",
                 "email",
@@ -894,15 +894,13 @@ class StudentsBulkUploadView(APIView):
             profiles_to_create = []
             learning_task_limits_to_create = []
 
-            # Track emails to check for duplicates in the file itself
             emails_in_file = set()
             duplicate_emails_in_file = set()
 
-            # First pass: Validate all rows
+            # First pass: validate
             for index, row in df.iterrows():
                 row_errors = {}
 
-                # Prepare and validate each field
                 email = str(row["email"]).strip().lower()
                 full_name = str(row.get("full_name", "")).strip()
                 grade_str = str(row.get("grade", "")).strip()
@@ -915,12 +913,10 @@ class StudentsBulkUploadView(APIView):
                 if gender not in ["male", "female"]:
                     row_errors["gender"] = ["Invalid gender"]
 
-                # Check for duplicate emails within the file
                 if email in emails_in_file:
                     duplicate_emails_in_file.add(email)
                 emails_in_file.add(email)
 
-                # Email validation
                 if not email:
                     row_errors["email"] = ["Email is required"]
                 else:
@@ -929,11 +925,9 @@ class StudentsBulkUploadView(APIView):
                     except ValidationError:
                         row_errors["email"] = ["Invalid email format"]
 
-                # Full name validation
                 if not full_name:
                     row_errors["full_name"] = ["Full name is required"]
 
-                # Grade validation
                 if not grade_str:
                     row_errors["grade"] = ["Grade is required"]
                 else:
@@ -944,30 +938,24 @@ class StudentsBulkUploadView(APIView):
                     except (ValueError, TypeError):
                         row_errors["grade"] = ["Grade must be a valid number"]
 
-                # Section validation
                 if not section:
                     row_errors["section"] = ["Section is required"]
                 elif len(section) != 1 or not section.isalpha():
                     row_errors["section"] = ["Section must be a single letter (A-Z)"]
 
-                # Field validation
                 if not field:
                     row_errors["field"] = ["Field is required"]
-
-                if field not in self.FIELD_LIST:
+                elif field not in self.FIELD_LIST:
                     row_errors["field"] = [f"'{field}' is invalid field name."]
 
-                # Phone number validation
                 if not phone_number:
                     row_errors["phone_number"] = ["Phone number is required"]
 
-                # If there are validation errors for this row, add to errors
                 if row_errors:
                     errors.append(
                         {"row": index + 1, "email": email, "errors": row_errors}
                     )
 
-            # Check for duplicate emails in the file
             if duplicate_emails_in_file:
                 for index, row in df.iterrows():
                     email = str(row["email"]).strip().lower()
@@ -980,7 +968,6 @@ class StudentsBulkUploadView(APIView):
                             }
                         )
 
-            # If there are validation errors, return them immediately
             if errors:
                 return Response(
                     {
@@ -993,9 +980,8 @@ class StudentsBulkUploadView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            # Second pass: Create users (in batches)
+            # Second pass: create users
             with transaction.atomic():
-                # Get existing emails in database to avoid duplicates
                 existing_emails = set(
                     User.objects.filter(
                         email__in=[
@@ -1008,13 +994,8 @@ class StudentsBulkUploadView(APIView):
                 for index, row in df.iterrows():
                     email = str(row["email"]).strip().lower()
                     full_name = str(row.get("full_name", "")).strip()
-                    grade_str = str(row.get("grade", "")).strip()
-                    section = str(row.get("section", "")).strip().upper()
-                    field = str(row.get("field", "")).strip()
-                    phone_number = str(row.get("phone_number", "")).strip()
-                    account = str(row.get("account", "")).strip()
+                    gender = str(row.get("gender", "male")).strip().lower()
 
-                    # Skip if email already exists in database
                     if email in existing_emails:
                         errors.append(
                             {
@@ -1026,15 +1007,17 @@ class StudentsBulkUploadView(APIView):
                         continue
 
                     user = User(
-                        email=email, full_name=full_name, is_active=True, role="user"
+                        email=email,
+                        full_name=full_name,
+                        is_active=True,
+                        role="user",
+                        gender=gender,  # ← gender now goes to User
                     )
                     users_to_create.append(user)
 
-                # Bulk create users
                 if users_to_create:
                     created_users = User.objects.bulk_create(users_to_create)
 
-                    # Create profiles and learning task limits
                     user_dict = {user.email: user for user in created_users}
 
                     for index, row in df.iterrows():
@@ -1046,49 +1029,37 @@ class StudentsBulkUploadView(APIView):
                             field = str(row.get("field", "")).strip()
                             phone_number = str(row.get("phone_number", "")).strip()
                             account = str(row.get("account", "")).strip()
-                            gender = (
-                                str(row.get("gender", "male")).strip().lower()
-                            )  # ← FIX: extract gender
 
-                            # Create profile instance
                             profile = Profile(
                                 user=user,
                                 grade=int(grade_str),
-                                section=section,
-                                field=field,
+                                section=section.upper(),
+                                field=field.lower(),
                                 account=(
                                     account if account and account != "N/A" else None
                                 ),
                                 phone_number=phone_number,
-                                gender=gender,  # ← FIX: store gender
                             )
                             profiles_to_create.append(profile)
 
-                            # Create learning task limit instance
                             learning_task_limit = LearningTaskLimit(
                                 user=user, limit=self.LEARNING_TASK_LIMIT_DEFAULT
                             )
                             learning_task_limits_to_create.append(learning_task_limit)
 
-                    # Bulk create profiles
                     if profiles_to_create:
                         Profile.objects.bulk_create(profiles_to_create)
 
-                    # Bulk create learning task limits
                     if learning_task_limits_to_create:
                         LearningTaskLimit.objects.bulk_create(
                             learning_task_limits_to_create
                         )
 
-                    # Prepare response data
                     for user in created_users:
-                        # Find the corresponding profile
-                        profile = None
-                        for p in profiles_to_create:
-                            if p.user_id == user.id:
-                                profile = p
-                                break
-
+                        profile = next(
+                            (p for p in profiles_to_create if p.user_id == user.id),
+                            None,
+                        )
                         created_students.append(
                             {
                                 "id": user.id,
@@ -1097,15 +1068,11 @@ class StudentsBulkUploadView(APIView):
                                 "grade": profile.grade if profile else None,
                                 "section": profile.section if profile else None,
                                 "field": profile.field if profile else None,
-                                "account": (
-                                    profile.account or "N/A" if profile else None
-                                ),
+                                "account": profile.account if profile else "N/A",
                                 "phone_number": (
                                     profile.phone_number if profile else None
                                 ),
-                                "gender": (
-                                    profile.gender if profile else None
-                                ),  # ← optional: include in response
+                                "gender": user.gender,  # ← from User
                                 "learning_task_limit": self.LEARNING_TASK_LIMIT_DEFAULT,
                                 "message": "Please change your password on first login",
                             }
@@ -1119,11 +1086,9 @@ class StudentsBulkUploadView(APIView):
                 "learning_task_limit_default": self.LEARNING_TASK_LIMIT_DEFAULT,
             }
 
-            if errors:
-                status_code = status.HTTP_207_MULTI_STATUS
-            else:
-                status_code = status.HTTP_201_CREATED
-
+            status_code = (
+                status.HTTP_207_MULTI_STATUS if errors else status.HTTP_201_CREATED
+            )
             return Response(response_data, status=status_code)
 
         except Exception as e:
@@ -1139,7 +1104,7 @@ class StudentsBulkUploadView(APIView):
 class StudentsExportView(APIView):
 
     authentication_classes = [JWTCookieAuthentication]
-    permission_classes = [IsAuthenticated, RolePermissionFactory(["admin", "staff"])]
+    permission_classes = [IsAuthenticated, IsAdminUser]
 
     def get(self, request):
         try:
@@ -1235,7 +1200,7 @@ class StudentsExportView(APIView):
 class StudentsStatsView(APIView):
 
     authentication_classes = [JWTCookieAuthentication]
-    permission_classes = [IsAuthenticated, RolePermissionFactory(["admin", "staff"])]
+    permission_classes = [IsAuthenticated, IsAdminUser]
 
     def get(self, request):
         try:
@@ -1339,7 +1304,7 @@ class StudentsStatsView(APIView):
 
 class StudentTemplateView(APIView):
     authentication_classes = [JWTCookieAuthentication]
-    permission_classes = [IsAuthenticated, RolePermissionFactory(["admin", "staff"])]
+    permission_classes = [IsAuthenticated, IsAdminUser]
 
     def get(self, request):
         try:
@@ -1409,7 +1374,7 @@ class LanguageDetailAPIView(APIView):
 @method_decorator(csrf_protect, name="dispatch")
 class LanguageAPIView(APIView):
     authentication_classes = [JWTCookieAuthentication]
-    permission_classes = [IsAuthenticated, RolePermissionFactory(["admin", "staff"])]
+    permission_classes = [IsAuthenticated, IsAdminUser]
 
     def post(self, request):
         serializer = LanguageSerializer(data=request.data)
@@ -1455,7 +1420,7 @@ class LanguageAPIView(APIView):
 @method_decorator(csrf_protect, name="dispatch")
 class LanguageBulkAPIView(APIView):
     authentication_classes = [JWTCookieAuthentication]
-    permission_classes = [IsAuthenticated, RolePermissionFactory(["admin", "staff"])]
+    permission_classes = [IsAuthenticated, IsAdminUser]
 
     def post(self, request):
         serializer = LanguageSerializer(data=request.data, many=True)
@@ -1494,7 +1459,7 @@ class FrameworkGetAPIView(APIView):
 @method_decorator(csrf_protect, name="dispatch")
 class FrameworkAPIView(APIView):
     authentication_classes = [JWTCookieAuthentication]
-    permission_classes = [IsAuthenticated, RolePermissionFactory(["admin", "staff"])]
+    permission_classes = [IsAuthenticated, IsAdminUser]
 
     def post(self, request):
         serializer = FrameworkSerializer(data=request.data)
@@ -1541,7 +1506,7 @@ class FrameworkAPIView(APIView):
 @method_decorator(csrf_protect, name="dispatch")
 class FrameworkBulkAPIView(APIView):
     authentication_classes = [JWTCookieAuthentication]
-    permission_classes = [IsAuthenticated, RolePermissionFactory(["admin", "staff"])]
+    permission_classes = [IsAuthenticated, IsAdminUser]
 
     def post(self, request):
         serializer = FrameworkSerializer(data=request.data, many=True)
@@ -1554,7 +1519,7 @@ class FrameworkBulkAPIView(APIView):
 @method_decorator(csrf_protect, name="dispatch")
 class DeleteLearningTaskView(APIView):
     authentication_classes = [JWTCookieAuthentication]
-    permission_classes = [RolePermissionFactory(["admin", "staff"])]
+    permission_classes = [IsAdminUser]
 
     def delete(self, request, task_id):
         try:
@@ -1595,7 +1560,7 @@ class DeleteLearningTaskView(APIView):
 @method_decorator(csrf_protect, name="dispatch")
 class DeleteTaskReviewView(APIView):
     authentication_classes = [JWTCookieAuthentication]
-    permission_classes = [RolePermissionFactory(["admin", "staff"])]
+    permission_classes = [IsAdminUser]
 
     def delete(self, request, task_id):
         try:
@@ -1621,7 +1586,7 @@ class DeleteTaskReviewView(APIView):
 @method_decorator(csrf_protect, name="dispatch")
 class TaskLimitView(APIView):
     authentication_classes = [JWTCookieAuthentication]
-    permission_classes = [RolePermissionFactory(["admin", "staff"])]
+    permission_classes = [IsAdminUser]
 
     def post(self, request):
         data = request.data
@@ -1717,7 +1682,7 @@ class TaskLimitView(APIView):
 
 class GetAllUsersView(APIView):
     authentication_classes = [JWTCookieAuthentication]
-    permission_classes = [RolePermissionFactory(["admin", "staff"])]
+    permission_classes = [IsAdminUser]
 
     def get(self, request):
         users = Profile.objects.filter(user__role="user")
@@ -1732,7 +1697,7 @@ class GetAllUsersView(APIView):
 
 class DashboardView(APIView):
     authentication_classes = [JWTCookieAuthentication]
-    permission_classes = [RolePermissionFactory(["admin", "staff"])]
+    permission_classes = [IsAdminUser]
 
     def get(self, request):
         students = User.objects.filter(role="user", is_deleted=False)
@@ -1796,25 +1761,23 @@ class AdminControlView(APIView):
 
     def get(self, request, pk=None):
         if pk:
-            try:
-                admin = (
-                    User.objects.filter(
-                        role__in=["admin", "staff"], is_staff=True, pk=pk
-                    )
-                    .exclude(id=request.user.id)
-                    .first()
-                )
-            except User.DoesNotExist:
+            admin = (
+                User.objects.filter(role="admin", is_staff=True, pk=pk)
+                .exclude(id=request.user.id)
+                .first()
+            )
+            if not admin:
                 return Response(
                     {"error": "Admin not found."}, status=status.HTTP_404_NOT_FOUND
                 )
             serializer = UserInverseSerializer(admin)
             return Response({"admin": serializer.data}, status=status.HTTP_200_OK)
-        admins = User.objects.filter(
-            role__in=["admin", "staff"], is_staff=True
-        ).exclude(id=request.user.id)
-        admins_serialzier = UserInverseSerializer(admins)
-        return Response({"admins": admins_serialzier}, status=status.HTTP_200_OK)
+
+        admins = User.objects.filter(role="admin", is_staff=True).exclude(
+            id=request.user.id
+        )
+        admins_serializer = UserInverseSerializer(admins, many=True)
+        return Response({"admins": admins_serializer.data}, status=status.HTTP_200_OK)
 
     def post(self, request):
         try:
@@ -1825,6 +1788,7 @@ class AdminControlView(APIView):
             field = (request.data.get("field") or "").strip()
             account = (request.data.get("account") or "N/A").strip()
             phone_number = (request.data.get("phone_number") or "").strip()
+            is_superuser = request.data.get("is_superuser", False)
 
             # Validate all required fields
             errors = {}
@@ -1880,8 +1844,10 @@ class AdminControlView(APIView):
                 user = User.objects.create_user(
                     email=email,
                     full_name=full_name,
-                    is_active=True,  # Always active on creation
-                    role="user",
+                    is_active=True,
+                    is_staff=True,
+                    is_superuser=is_superuser,
+                    role="admin",
                 )
 
                 # Create profile with proper field values
@@ -1932,7 +1898,7 @@ class AdminControlView(APIView):
 
     def put(self, request, pk):
         try:
-            admin = User.objects.get(pk=pk, role__in=["admin", "staff"])
+            admin = User.objects.get(pk=pk, role="admin")
             profile = Profile.objects.get(user=admin)
 
             errors = {}
@@ -1954,7 +1920,7 @@ class AdminControlView(APIView):
                     errors["profile_pic"] = ["Profile picture must be less than 10MB"]
 
                 if not profile_pic.content_type.startswith("image/"):
-                    errors["profile_pic"] = ["Only image files are allowe"]
+                    errors["profile_pic"] = ["Only image files are allowed"]
 
             if not email:
                 errors["email"] = ["Email is required"]
@@ -2050,7 +2016,7 @@ class AdminControlView(APIView):
     def delete(self, request, pk):
         try:
             admin = (
-                User.objects.filter(role__in=["admin", "staff"], is_staff=True, id=pk)
+                User.objects.filter(role="admin", is_staff=True, id=pk)
                 .exclude(id=request.user.id)
                 .first()
             )
@@ -2061,7 +2027,7 @@ class AdminControlView(APIView):
 
         admin.delete()
         return Response(
-            {"error": "Admin successfully deleted."}, status=status.HTTP_200_OK
+            {"message": "Admin successfully deleted."}, status=status.HTTP_200_OK
         )
 
 
@@ -2089,7 +2055,7 @@ class SettingUpdateView(APIView):
 class GradesRankExportPdfView(APIView):
 
     authentication_classes = [JWTCookieAuthentication]
-    permission_classes = [IsAuthenticated, RolePermissionFactory(["admin", "staff"])]
+    permission_classes = [IsAuthenticated, IsAdminUser]
 
     MAX_TEXT_LENGTH = 30
 
@@ -2372,12 +2338,19 @@ class StudentsBulkOperationView(APIView):
 
             with transaction.atomic():
                 if action == "delete":
-                    # Delete all matched users & profiles
-                    user_ids = profiles.values_list("user_id", flat=True)
-                    Profile.objects.filter(user_id__in=user_ids).delete()
-                    User.objects.filter(id__in=user_ids).delete()
+                    user_ids = list(
+                        profiles.values_list("user_id", flat=True).distinct()
+                    )
+                    # Count users BEFORE deletion
+                    user_deleted_count = len(user_ids)
+                    # Delete users (cascades will still happen, but not counted)
+                    deleted_detail = User.objects.filter(id__in=user_ids).delete()
+
                     return Response(
-                        {"deleted_count": affected_count},
+                        {
+                            "deleted_count": user_deleted_count,
+                            "cascaded_deletions": deleted_detail,  # optional debug info
+                        },
                         status=status.HTTP_200_OK,
                     )
 
@@ -2399,7 +2372,7 @@ class StudentsBulkOperationView(APIView):
                         if key not in allowed_fields:
                             continue
                         if key == "field" and value.lower() not in self.FIELD_LIST:
-                            continue  # ignore invalid field
+                            continue
                         if key == "section":
                             value = value.upper() if value else value
                         if key in [

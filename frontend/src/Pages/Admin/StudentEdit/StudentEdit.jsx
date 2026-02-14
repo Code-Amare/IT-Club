@@ -206,7 +206,7 @@ export default function StudentEdit() {
             newErrors.phone_number = "Phone number is invalid";
 
         // Validate task limit
-        if (formData.task_limit === "" || isNaN(formData.task_limit))
+        if (isNaN(formData.task_limit))
             newErrors.task_limit = "Task limit must be a number";
         else if (parseInt(formData.task_limit) < 0)
             newErrors.task_limit = "Task limit cannot be negative";
@@ -509,7 +509,6 @@ export default function StudentEdit() {
                                         <option value="">Select Gender</option>
                                         <option value="male">Male</option>
                                         <option value="female">Female</option>
-                                        <option value="other">Other</option>
                                     </select>
                                 </div>
                                 {errors.gender && <span className={styles.errorText}>{errors.gender}</span>}
@@ -635,14 +634,18 @@ export default function StudentEdit() {
                                         type="number"
                                         id="task_limit"
                                         name="task_limit"
-                                        value={formData.task_limit}
+                                        value={formData.task_limit ?? 0}
                                         onChange={(e) => {
-                                            handleChange({
-                                                target: {
-                                                    name: "task_limit",
-                                                    value: e.target.valueAsNumber,
-                                                },
-                                            })
+                                            const value = e.target.value === "" ? 0 : Number(e.target.value); // always number
+                                            setFormData(prev => ({ ...prev, task_limit: value }));
+
+                                            // also update hasChanges flag
+                                            if (originalData) {
+                                                const originalTaskLimit = originalData.task_limit?.limit || originalData.task_limit || 0;
+                                                setHasChanges(prev => value !== originalTaskLimit || prev);
+                                            }
+
+                                            if (errors.task_limit) setErrors(prev => ({ ...prev, task_limit: "" }));
                                         }}
                                         placeholder="0"
                                         min="0"

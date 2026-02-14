@@ -2,21 +2,6 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.exceptions import InvalidToken, AuthenticationFailed
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework.permissions import BasePermission
-from urllib.parse import parse_qs
-from channels.db import database_sync_to_async
-from django.contrib.auth.models import AnonymousUser
-from rest_framework_simplejwt.tokens import UntypedToken
-
-
-def RolePermissionFactory(allowed_roles):
-    class CustomRolePermission(BasePermission):
-        def has_permission(self, request, view):
-            user = request.user
-            if not user or not user.is_authenticated:
-                return False
-            return getattr(user, "role", None) in allowed_roles
-
-    return CustomRolePermission
 
 
 class JWTCookieAuthentication(JWTAuthentication):
