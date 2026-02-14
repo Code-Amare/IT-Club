@@ -1,177 +1,146 @@
+/* Header Container */
 .HeaderContainer {
-  width: 100%;
   background-color: var(--bg-surface);
-  color: var(--text-primary);
   border-bottom: 1px solid var(--border-color);
-  transition: background-color 0.3s, color 0.3s, border-color 0.3s;
   position: sticky;
   top: 0;
   z-index: 100;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  width: 100%;
 }
 
 .HeaderContent {
   max-width: 1200px;
   margin: 0 auto;
+  padding: 0.75rem 1.5rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.75rem 1rem;
-  position: relative;
+  height: 70px;
 }
 
+/* Logo */
 .Logo {
-  font-weight: 700;
   font-size: 1.5rem;
-  color: var(--text-primary);
+  font-weight: 600;
+  color: var(--primary);
   text-decoration: none;
-  display: flex;
-  align-items: center;
-  z-index: 101;
+  letter-spacing: -0.5px;
+  transition: color 0.3s;
 }
 
 .Logo:hover {
-  opacity: 0.9;
+  color: var(--primary-hover);
 }
 
-.Version {
-  font-weight: 400;
-  font-size: 0.9rem;
-  color: var(--text-secondary);
-  margin-left: 0.25rem;
-}
-
-/* Desktop Navigation */
-.Nav {
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-}
-
-.NavContent {
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-}
-
-.NavLink {
-  text-decoration: none;
-  color: var(--text-primary);
-  font-weight: 500;
-  transition: color 0.2s;
-  padding: 0.5rem 0;
-}
-
-.NavLink:hover {
-  color: var(--primary);
-}
-
-.ThemeToggleWrapper {
-  display: flex;
-  align-items: center;
-}
-
+/* Right Controls (Desktop: Theme Toggle + Login + Mobile Button) */
 .RightControls {
   display: flex;
   align-items: center;
   gap: 1rem;
 }
 
+/* Theme Toggle wrapper */
+.ThemeToggleWrapper {
+  display: flex;
+  align-items: center;
+}
+
+/* Login Button (Desktop) */
 .LoginBtn {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background-color: var(--bg-surface);
-  color: var(--text-primary);
-  border: 1px solid var(--border-color);
-  border-radius: 0.375rem;
-  padding: 0.5rem 1rem;
-  font-weight: 500;
-  cursor: pointer;
+  background-color: var(--primary);
+  color: var(--primary-contrast);
+  padding: 0.5rem 1.25rem;
+  border-radius: 8px;
   text-decoration: none;
-  transition: all 0.2s;
-  white-space: nowrap;
+  font-weight: 500;
+  font-size: 0.9rem;
+  transition: background-color 0.3s;
+  border: none;
+  cursor: pointer;
 }
 
 .LoginBtn:hover {
-  background-color: var(--bg-body);
-  border-color: var(--primary);
-  color: var(--primary);
+  background-color: var(--primary-hover);
 }
 
-/* Mobile Menu Button */
+/* Mobile Menu Button (Hamburger / X) */
 .MobileMenuBtn {
-  display: none;
+  display: none; /* Hidden on desktop */
   background: none;
   border: none;
   color: var(--text-primary);
   cursor: pointer;
   padding: 0.5rem;
-  border-radius: 0.375rem;
-  transition: all 0.2s;
-  z-index: 101;
+  border-radius: 8px;
+  transition: background-color 0.3s;
 }
 
 .MobileMenuBtn:hover {
-  background-color: var(--bg-body);
+  background-color: var(--border-color);
 }
 
-.MobileMenuBtn.MenuBtnOpen {
-  background-color: var(--bg-body);
+/* Optional class for menu open state */
+.MenuBtnOpen {
 }
 
-/* Backdrop Overlay */
+/* Backdrop overlay - now a sibling, positioned fixed */
 .Backdrop {
   position: fixed;
   top: 0;
   left: 0;
-  right: 0;
-  bottom: 0;
+  width: 100vw;
+  height: 100vh;
   background-color: rgba(0, 0, 0, 0.5);
-  z-index: 99;
-  animation: fadeIn 0.2s ease;
+  backdrop-filter: blur(3px);
+  z-index: 200; /* Above header (100) but below sidebar (300) */
+  opacity: 0;
+  animation: fadeIn 0.3s forwards;
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  to {
+    opacity: 1;
+  }
 }
 
-/* Side Drawer */
+/* Side Drawer (Mobile Menu) - now a sibling */
 .SideDrawer {
   position: fixed;
   top: 0;
-  right: -320px;
-  width: 320px;
+  right: -100%;
+  width: 300px;
+  max-width: 80vw;
   height: 100vh;
   background-color: var(--bg-surface);
-  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.15);
-  z-index: 100;
-  transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 300; /* Above backdrop */
+  transition: right 0.3s ease-in-out;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  box-shadow: -2px 0 10px var(--card-shadow);
+  pointer-events: auto;
 }
 
 .SideDrawerOpen {
   right: 0;
 }
 
+/* Drawer Header */
 .DrawerHeader {
-  padding: 1.5rem;
-  border-bottom: 1px solid var(--border-color);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background-color: var(--bg-surface);
-  flex-shrink: 0;
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .DrawerTitle {
-  margin: 0;
-  font-size: 1.25rem;
+  font-size: 1.2rem;
   font-weight: 600;
   color: var(--text-primary);
+  margin: 0;
 }
 
 .CloseDrawerBtn {
@@ -179,21 +148,21 @@
   border: none;
   color: var(--text-secondary);
   cursor: pointer;
-  padding: 0.25rem;
-  border-radius: 0.25rem;
-  transition: all 0.2s;
+  padding: 0.5rem;
+  border-radius: 8px;
+  transition: background-color 0.3s;
 }
 
 .CloseDrawerBtn:hover {
-  background-color: var(--bg-body);
+  background-color: var(--border-color);
   color: var(--text-primary);
 }
 
+/* Drawer Content */
 .DrawerContent {
   flex: 1;
   overflow-y: auto;
-  padding: 1.5rem;
-  padding-bottom: 0;
+  padding: 1rem 1.5rem;
 }
 
 .DrawerSection {
@@ -201,41 +170,26 @@
 }
 
 .DrawerSectionTitle {
-  font-size: 0.75rem;
-  font-weight: 600;
+  font-size: 0.8rem;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 1px;
   color: var(--text-secondary);
   margin-bottom: 1rem;
-  opacity: 0.7;
 }
 
 .DrawerLink {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.875rem 0;
+  padding: 0.75rem 0;
   color: var(--text-primary);
   text-decoration: none;
+  font-weight: 500;
   border-bottom: 1px solid var(--border-color);
-  transition: all 0.2s;
-}
-
-.DrawerLink:last-child {
-  border-bottom: none;
+  transition: color 0.3s;
 }
 
 .DrawerLink:hover {
-  color: var(--primary);
-}
-
-.DrawerLink svg {
-  color: var(--text-secondary);
-  transition: transform 0.2s;
-}
-
-.DrawerLink:hover svg {
-  transform: translateX(2px);
   color: var(--primary);
 }
 
@@ -243,7 +197,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.875rem 0;
+  padding: 0.5rem 0;
   color: var(--text-primary);
 }
 
@@ -251,143 +205,96 @@
   display: flex;
   align-items: center;
   gap: 1rem;
-  padding: 1.25rem;
+  padding: 1rem;
   background-color: var(--bg-body);
-  border: 1px solid var(--border-color);
-  border-radius: 0.75rem;
-  color: var(--text-primary);
+  border-radius: 12px;
   text-decoration: none;
-  transition: all 0.2s;
+  color: var(--text-primary);
+  transition: background-color 0.3s;
+  border: 1px solid var(--border-color);
 }
 
 .DrawerLoginBtn:hover {
-  background-color: var(--primary);
-  border-color: var(--primary);
-  color: var(--primary-contrast);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.2);
+  background-color: var(--border-color);
 }
 
 .LoginIconWrapper {
-  width: 40px;
-  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: var(--bg-surface);
-  border-radius: 0.5rem;
-  transition: all 0.2s;
-}
-
-.DrawerLoginBtn:hover .LoginIconWrapper {
-  background-color: rgba(255, 255, 255, 0.1);
+  width: 40px;
+  height: 40px;
+  background-color: var(--primary);
+  color: var(--primary-contrast);
+  border-radius: 50%;
 }
 
 .LoginText {
-  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .LoginText strong {
-  display: block;
   font-size: 1rem;
-  margin-bottom: 0.25rem;
+  font-weight: 600;
 }
 
 .LoginText small {
-  font-size: 0.75rem;
-  opacity: 0.8;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
 }
 
+/* Drawer Footer */
 .DrawerFooter {
   padding: 1.5rem;
   border-top: 1px solid var(--border-color);
-  background-color: var(--bg-surface);
-  flex-shrink: 0;
+  text-align: center;
 }
 
 .FooterLogo {
   font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: 0.5rem;
+  color: var(--primary);
+  margin-bottom: 0.25rem;
 }
 
 .FooterCopyright {
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   color: var(--text-secondary);
-  opacity: 0.7;
 }
 
-/* Mobile Styles */
+/* Responsive Styles */
 @media (max-width: 768px) {
+  /* Hide desktop theme toggle and login button in RightControls */
+  .RightControls .ThemeToggleWrapper,
+  .RightControls .LoginBtn {
+    display: none;
+  }
+
+  /* Show mobile menu button */
+  .MobileMenuBtn {
+    display: block;
+  }
+}
+
+@media (min-width: 769px) {
+  /* Hide drawer and backdrop on desktop */
+  .SideDrawer,
+  .Backdrop {
+    display: none;
+  }
+
+  /* Mobile menu button hidden on desktop */
+  .MobileMenuBtn {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
   .HeaderContent {
     padding: 0.5rem 1rem;
   }
 
-  /* Hide desktop nav on mobile */
-  .Nav {
-    display: none;
-  }
-
-  .MobileMenuBtn {
-    display: block;
-  }
-
-  .LoginBtn {
-    display: none; /* Hide desktop login button on mobile */
-  }
-
-  /* Adjust drawer width for small screens */
-  @media (max-width: 400px) {
-    .SideDrawer {
-      width: 280px;
-      right: -280px;
-    }
-    
-    .SideDrawerOpen {
-      right: 0;
-    }
-  }
-}
-
-/* Tablet Styles */
-@media (min-width: 769px) and (max-width: 1024px) {
-  .HeaderContent {
-    padding: 0.75rem 2rem;
-  }
-  
-  .NavContent {
-    gap: 1.25rem;
-  }
-}
-
-/* Small Mobile Styles */
-@media (max-width: 480px) {
   .Logo {
     font-size: 1.25rem;
   }
-  
-  .Version {
-    font-size: 0.8rem;
-  }
-  
-  .MobileMenuBtn {
-    padding: 0.375rem;
-  }
-  
-  .DrawerContent {
-    padding: 1.25rem;
-  }
-  
-  .DrawerHeader {
-    padding: 1.25rem;
-  }
-  
-  .DrawerFooter {
-    padding: 1.25rem;
-  }
-}
-
-/* Prevent body scroll when drawer is open */
-body:has(.SideDrawerOpen) {
-  overflow: hidden;
 }

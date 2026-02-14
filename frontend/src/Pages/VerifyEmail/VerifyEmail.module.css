@@ -63,12 +63,46 @@
   text-align: center;
 }
 
-/* Input */
+/* ---------- Email step styles (with icon) ---------- */
+.InputGroup {
+  position: relative;
+  margin-bottom: 1.5rem;
+}
+
+.InputIcon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-secondary);
+  font-size: 1rem;
+  pointer-events: none;
+}
+
+/* Input inside email step */
+.InputGroup .Input {
+  width: 100%;
+  padding: 0.75rem 1rem 0.75rem 2.5rem; /* space for icon */
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-body);
+  color: var(--text-primary);
+  font-size: 1rem;
+  text-align: left;
+  letter-spacing: normal;
+  font-weight: normal;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+  box-sizing: border-box;
+}
+
+/* ---------- Code step styles (centered, letter spacing) ---------- */
 .InputWrapper {
   margin-bottom: 2rem;
 }
 
-.Input {
+.InputWrapper .Input {
   width: 100%;
   padding: 0.75rem 1rem;
   border: 1px solid var(--border-color);
@@ -85,6 +119,7 @@
   box-sizing: border-box;
 }
 
+/* Shared input focus/disabled */
 .Input:focus {
   outline: none;
   border-color: var(--primary);
@@ -96,17 +131,14 @@
   cursor: not-allowed;
 }
 
-/* Button group */
-.ButtonGroup {
-  display: flex;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-}
-
-.PrimaryBtn,
-.SecondaryBtn {
-  flex: 1;
-  padding: 0.75rem;
+/* ---------- Buttons ---------- */
+/* Primary button (used in both steps) */
+.PrimaryBtn {
+  width: 100%;
+  padding: 0.875rem;
+  background: var(--primary);
+  color: white;
+  border: none;
   border-radius: 10px;
   font-size: 1rem;
   font-weight: 600;
@@ -119,12 +151,6 @@
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-}
-
-.PrimaryBtn {
-  background: var(--primary);
-  color: white;
-  border: none;
 }
 
 .PrimaryBtn:hover:not(:disabled) {
@@ -144,10 +170,35 @@
   pointer-events: none;
 }
 
+/* Arrow icon inside primary button (for email step) */
+.BtnIcon {
+  font-size: 0.9rem;
+  transition: transform 0.2s;
+}
+
+.PrimaryBtn:hover:not(:disabled) .BtnIcon {
+  transform: translateX(4px);
+}
+
+/* Secondary button (resend) */
 .SecondaryBtn {
+  flex: 1;
+  padding: 0.75rem;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 0.2s,
+    transform 0.1s,
+    box-shadow 0.2s;
   background: transparent;
   color: var(--primary);
   border: 1px solid var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
 }
 
 .SecondaryBtn:hover:not(:disabled) {
@@ -164,7 +215,14 @@
   cursor: not-allowed;
 }
 
-/* Spinner */
+/* Button group (for code step) */
+.ButtonGroup {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Spinner animation */
 .Spinner {
   animation: spin 1s linear infinite;
 }
@@ -203,7 +261,12 @@
     flex-direction: column;
   }
 
-  .Input {
+  /* Adjust letter spacing on small screens */
+  .InputWrapper .Input {
     letter-spacing: 0.25rem;
   }
+}
+.ButtonGroup .PrimaryBtn {
+  flex: 1;
+  width: auto;
 }

@@ -1,26 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { Rocket, Server, Code, Zap, CheckCircle, Moon, Sun } from 'lucide-react';
-import styles from "./Home.module.css"
-import Header from "../../Components/Header/Header"
-import useSite from '../../Context/SiteContext';
-import ImageSpinner from '../../Components/ImageSpinner/ImageSpinner';
+import React from 'react';
+import styles from "./Home.module.css";
+import Header from "../../Components/Header/Header";
 
 const App = () => {
-
-    const imgSrc = "https://upload.wikimedia.org/wikipedia/commons/8/8c/Cristiano_Ronaldo_2018.jpg";
-
-
-
-
     return (
         <div className={styles.homeContainer}>
             <Header />
             <main className={styles.mainContainer}>
-
-                <h1>DRT</h1>
-                <div className={styles.img}>
-
-                    <ImageSpinner src={imgSrc} alt={"Ronaldo Image"} />
+                <h1>CSSS IT Club</h1>
+                <p className={styles.tagline}>Code together. Learn together.</p>
+                <div className={styles.info}>
+                    <p>Dedicated to CSSS IT Club students.</p>
                 </div>
             </main>
         </div>

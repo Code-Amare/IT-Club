@@ -23,7 +23,6 @@ const Header = () => {
         document.body.style.overflow = 'unset';
     };
 
-    // Close menu when clicking outside or pressing Escape
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (menuRef.current && !menuRef.current.contains(event.target) &&
@@ -52,7 +51,7 @@ const Header = () => {
 
     return (
         <>
-            {/* Backdrop overlay when mobile menu is open */}
+            {/* Backdrop - placed before header, will be below sidebar */}
             {mobileOpen && (
                 <div
                     ref={backdropRef}
@@ -64,23 +63,12 @@ const Header = () => {
             <header className={styles.HeaderContainer}>
                 <div className={styles.HeaderContent}>
                     <Link to="/" className={styles.Logo} onClick={closeMobileMenu}>
-                        DRT <span className={styles.Version}>v1.0</span>
+                        CSSS IT Club
                     </Link>
 
-                    {/* Desktop Navigation */}
-                    <nav className={`${styles.Nav} ${mobileOpen ? styles.NavOpen : ""}`}>
-                        <div className={styles.NavContent}>
-                            <a href="#" className={styles.NavLink} onClick={closeMobileMenu}>
-                                Docs
-                            </a>
-                            <div className={styles.ThemeToggleWrapper}>
-                                <ThemeToggle />
-                            </div>
-                        </div>
-                    </nav>
-
-                    {/* Desktop Right Controls */}
+                    {/* Desktop Right Controls (Login + Theme Toggle) */}
                     <div className={styles.RightControls}>
+                        <ThemeToggle />
                         <Link to="/login" className={styles.LoginBtn}>
                             <LogIn size={16} />
                             <span>Login</span>
@@ -94,76 +82,68 @@ const Header = () => {
                             {mobileOpen ? <X size={24} /> : <Menu size={24} />}
                         </button>
                     </div>
-
-                    {/* Mobile Side Navigation Drawer */}
-                    <aside
-                        ref={menuRef}
-                        className={`${styles.SideDrawer} ${mobileOpen ? styles.SideDrawerOpen : ''}`}
-                    >
-                        <div className={styles.DrawerHeader}>
-                            <h3 className={styles.DrawerTitle}>Menu</h3>
-                            <button
-                                className={styles.CloseDrawerBtn}
-                                onClick={closeMobileMenu}
-                                aria-label="Close menu"
-                            >
-                                <X size={20} />
-                            </button>
-                        </div>
-
-                        <div className={styles.DrawerContent}>
-                            <div className={styles.DrawerSection}>
-                                <div className={styles.DrawerSectionTitle}>Navigation</div>
-                                <Link
-                                    to="/"
-                                    className={styles.DrawerLink}
-                                    onClick={closeMobileMenu}
-                                >
-                                    Home
-                                </Link>
-                                <a
-                                    href="#"
-                                    className={styles.DrawerLink}
-                                    onClick={closeMobileMenu}
-                                >
-                                    <span>Documentation</span>
-                                    <ChevronRight size={16} />
-                                </a>
-                            </div>
-
-                            <div className={styles.DrawerSection}>
-                                <div className={styles.DrawerSectionTitle}>Theme</div>
-                                <div className={styles.ThemeSection}>
-                                    <span>Appearance</span>
-                                    <ThemeToggle />
-                                </div>
-                            </div>
-
-                            <div className={styles.DrawerSection}>
-                                <div className={styles.DrawerSectionTitle}>Account</div>
-                                <Link
-                                    to="/login"
-                                    className={styles.DrawerLoginBtn}
-                                    onClick={closeMobileMenu}
-                                >
-                                    <div className={styles.LoginIconWrapper}>
-                                        <LogIn size={18} />
-                                    </div>
-                                    <div className={styles.LoginText}>
-                                        <strong>Login to Account</strong>
-                                        <small>Access your dashboard</small>
-                                    </div>
-                                </Link>
-                            </div>
-                        </div>
-
-                        <div className={styles.DrawerFooter}>
-                            <div className={styles.FooterLogo}>DRT v1.0</div>
-                            <div className={styles.FooterCopyright}>© 2024 All rights reserved</div>
-                        </div>
-                    </aside>
                 </div>
             </header>
+
+            {/* Mobile Side Navigation Drawer - outside header for proper stacking */}
+            <aside
+                ref={menuRef}
+                className={`${styles.SideDrawer} ${mobileOpen ? styles.SideDrawerOpen : ''}`}
+            >
+                <div className={styles.DrawerHeader}>
+                    <h3 className={styles.DrawerTitle}>Menu</h3>
+                    <button
+                        className={styles.CloseDrawerBtn}
+                        onClick={closeMobileMenu}
+                        aria-label="Close menu"
+                    >
+                        <X size={20} />
+                    </button>
+                </div>
+
+                <div className={styles.DrawerContent}>
+                    <div className={styles.DrawerSection}>
+                        <div className={styles.DrawerSectionTitle}>Navigation</div>
+                        <Link
+                            to="/"
+                            className={styles.DrawerLink}
+                            onClick={closeMobileMenu}
+                        >
+                            Home
+                        </Link>
+                    </div>
+
+                    <div className={styles.DrawerSection}>
+                        <div className={styles.DrawerSectionTitle}>Theme</div>
+                        <div className={styles.ThemeSection}>
+                            <span>Appearance</span>
+                            <ThemeToggle />
+                        </div>
+                    </div>
+
+                    <div className={styles.DrawerSection}>
+                        <div className={styles.DrawerSectionTitle}>Account</div>
+                        <Link
+                            to="/login"
+                            className={styles.DrawerLoginBtn}
+                            onClick={closeMobileMenu}
+                        >
+                            <div className={styles.LoginIconWrapper}>
+                                <LogIn size={18} />
+                            </div>
+                            <div className={styles.LoginText}>
+                                <strong>Login to Account</strong>
+                                <small>Access your dashboard</small>
+                            </div>
+                        </Link>
+                    </div>
+                </div>
+
+                <div className={styles.DrawerFooter}>
+                    <div className={styles.FooterLogo}>CSSS IT Club</div>
+                    <div className={styles.FooterCopyright}>© 2024 All rights reserved</div>
+                </div>
+            </aside>
         </>
     );
 };
