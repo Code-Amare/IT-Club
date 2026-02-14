@@ -134,11 +134,6 @@
   margin-bottom: 8px;
 }
 
-/* Remove automatic asterisk styling */
-.formGroup label::after {
-  content: "" !important;
-}
-
 .required {
   color: var(--danger);
   margin-left: 4px;
@@ -156,6 +151,7 @@
   color: var(--text-secondary);
   font-size: 16px;
   z-index: 1;
+  transition: opacity 0.2s ease;
 }
 
 .formGroup input,
@@ -198,7 +194,7 @@
   margin-top: 4px;
 }
 
-/* Color Input Styles - FIXED */
+/* Color Input Styles */
 .colorInputGroup {
   display: flex;
   gap: 12px;
@@ -232,7 +228,6 @@
   z-index: 1;
 }
 
-/* Hidden color picker input */
 .colorPickerInput {
   position: absolute;
   width: 100%;
@@ -244,7 +239,6 @@
   z-index: 2;
 }
 
-/* Hex input with # prefix */
 .hexInputContainer {
   flex: 1;
   position: relative;
@@ -283,7 +277,6 @@
   box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
 }
 
-/* Separate color picker button */
 .colorPickerBtn {
   min-width: 50px;
   height: 50px;
@@ -452,6 +445,7 @@
   display: flex;
   gap: 8px;
   align-items: center;
+  position: relative;
 }
 
 .bulkColorPreview {
@@ -463,29 +457,36 @@
   flex-shrink: 0;
 }
 
-.bulkColorInput input {
+.bulkHexInput {
+  position: relative;
   flex: 1;
-  padding: 6px 8px 6px 24px;
+}
+
+.bulkHexPrefix {
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.bulkHexInput input {
+  width: 100%;
+  padding: 6px 8px 6px 22px;
   border: 1px solid var(--border-color);
   border-radius: 4px;
   background: var(--bg-body);
   color: var(--text-primary);
   font-size: 12px;
   font-family: monospace;
-  position: relative;
   box-sizing: border-box;
 }
 
-.bulkColorInput::before {
-  content: "#";
-  position: absolute;
-  left: 8px;
-  color: var(--text-secondary);
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.bulkColorInput input:focus {
+.bulkHexInput input:focus {
   outline: none;
   border-color: var(--primary);
 }
@@ -639,36 +640,7 @@
   }
 }
 
-/* Responsive Design */
-@media (max-width: 1200px) {
-  .bulkTableHeader,
-  .bulkRow {
-    grid-template-columns: 2fr 1fr 1.2fr 50px;
-    gap: 10px;
-  }
-}
-
-@media (max-width: 992px) {
-  .bulkTableHeader,
-  .bulkRow {
-    grid-template-columns: 1fr;
-    gap: 8px;
-  }
-
-  .bulkTableHeader span:nth-child(4),
-  .bulkRow .bulkActions {
-    display: none;
-  }
-
-  .bulkColorInput {
-    width: 100%;
-  }
-
-  .colorInputGroup {
-    flex-wrap: wrap;
-  }
-}
-
+/* ===== RESPONSIVE FIXES ===== */
 @media (max-width: 768px) {
   .headerTop {
     flex-direction: column;
@@ -728,11 +700,77 @@
   .formGroup input,
   .formGroup select,
   .formGroup textarea {
-    padding: 12px 16px 12px 42px;
+    padding: 12px 16px 12px 42px; /* keep icon visible */
+  }
+}
+
+@media (max-width: 576px) {
+  .bulkTableHeader,
+  .bulkRow {
+    grid-template-columns: 1fr; /* stack on small screens */
+    gap: 8px;
+  }
+
+  .bulkTableHeader span:nth-child(4),
+  .bulkRow .bulkActions {
+    display: none; /* hide actions header and cell, they're not needed on mobile */
+  }
+
+  .bulkRow {
+    padding: 16px;
+  }
+
+  .bulkInputGroup {
+    width: 100%;
+  }
+
+  .bulkColorInput {
+    width: 100%;
   }
 }
 
 @media (max-width: 480px) {
+  .inputIcon {
+    display: none; /* hide icon so it doesn't overlap text */
+  }
+
+  .inputWithIcon input {
+    padding-left: 16px !important; /* reduce left padding when icon is hidden */
+  }
+
+  .formGroup input,
+  .formGroup select,
+  .formGroup textarea {
+    padding-left: 16px; /* reset left padding */
+    font-size: 16px; /* better for mobile touch */
+  }
+
+  .hexPrefix {
+    left: 12px; /* adjust for smaller screens */
+  }
+
+  .colorInput {
+    padding-left: 30px; /* keep space for # prefix */
+    font-size: 16px;
+  }
+
+  .bulkHexInput input {
+    padding-left: 22px; /* ensure space for # prefix */
+    font-size: 14px;
+  }
+
+  .bulkColorInput {
+    flex-wrap: wrap; /* allow preview to wrap if needed */
+  }
+
+  .bulkColorPreview {
+    margin-bottom: 4px;
+  }
+
+  .bulkHexInput {
+    width: 100%;
+  }
+
   .formSection {
     padding: 16px;
   }
@@ -741,44 +779,10 @@
     font-size: 16px;
   }
 
-  .formGroup input,
-  .formGroup select,
-  .formGroup textarea {
-    padding-left: 16px;
-    font-size: 16px; /* Better for mobile touch */
-  }
-
-  .inputIcon {
-    display: none;
-  }
-
-  .hexPrefix {
-    left: 16px;
-  }
-
-  .colorInput {
-    padding-left: 30px;
-    font-size: 16px;
-  }
-
   .colorPreview,
   .colorPickerBtn {
     width: 50px;
     height: 50px;
-  }
-
-  .bulkTextarea {
-    font-size: 14px;
-  }
-
-  .bulkInputGroup input {
-    font-size: 16px;
-    padding: 12px;
-  }
-
-  .bulkColorInput input {
-    font-size: 14px;
-    padding-left: 22px;
   }
 }
 
@@ -800,5 +804,10 @@
 
   .hexInputContainer {
     min-width: 0;
+  }
+
+  .bulkHexInput input {
+    padding-left: 20px;
+    font-size: 13px;
   }
 }

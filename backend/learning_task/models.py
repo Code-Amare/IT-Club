@@ -33,7 +33,7 @@ class LearningTask(models.Model):
         return f"{self.title} - {self.user.full_name}"
 
 
-class TaskReview(models.Model):
+class TaskReview(models.Model): 
     task = models.ForeignKey(
         LearningTask, on_delete=models.CASCADE, related_name="reviews"
     )

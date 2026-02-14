@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../../Context/UserContext";
 import api from "../../../Utils/api";
@@ -281,7 +281,6 @@ export default function LanguagesAdd() {
                                     Language Name <span className={styles.required}>*</span>
                                 </label>
                                 <div className={styles.inputWithIcon}>
-                                    <MdLanguage className={styles.inputIcon} />
                                     <input
                                         type="text"
                                         id="name"
@@ -301,7 +300,6 @@ export default function LanguagesAdd() {
                                     Language Code <span className={styles.required}>*</span>
                                 </label>
                                 <div className={styles.inputWithIcon}>
-                                    <MdCode className={styles.inputIcon} />
                                     <input
                                         type="text"
                                         id="code"
@@ -333,7 +331,6 @@ export default function LanguagesAdd() {
                                         <FaPalette className={styles.colorIcon} />
                                     </div>
                                     <div className={styles.hexInputContainer}>
-                                        <span className={styles.hexPrefix}>#</span>
                                         <input
                                             type="text"
                                             id="color"

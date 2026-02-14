@@ -568,9 +568,7 @@ class StudentLearningTaskView(APIView):
         tasks = LearningTask.objects.filter(user=student).exclude(status="draft")
 
         if not tasks.exists():
-            return Response(
-                {"warning": "No tasks yet"}, status=status.HTTP_404_NOT_FOUND
-            )
+            return Response({"error": "No tasks yet"}, status=status.HTTP_404_NOT_FOUND)
 
         serialzier = LearningTaskNonExtraSerializer(tasks, many=True)
         return Response({"tasks": serialzier.data}, status=status.HTTP_200_OK)

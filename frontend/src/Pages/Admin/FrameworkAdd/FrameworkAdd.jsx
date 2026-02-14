@@ -22,7 +22,6 @@ import { useNotifContext } from "../../../Context/NotifContext";
 
 export default function FrameworkAdd() {
     const navigate = useNavigate();
-    const { user } = useUser();
 
     const [mode, setMode] = useState("single");
     const [languages, setLanguages] = useState([]);
@@ -332,7 +331,6 @@ export default function FrameworkAdd() {
                                     Framework Name <span className={styles.required}>*</span>
                                 </label>
                                 <div className={styles.inputWithIcon}>
-                                    <MdCode className={styles.inputIcon} />
                                     <input
                                         type="text"
                                         id="name"

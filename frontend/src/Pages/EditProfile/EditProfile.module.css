@@ -1,28 +1,26 @@
-/* Base */
+/* EditProfile.module.css */
+
+/* Container */
 .editProfilePage {
   width: 100%;
   min-height: 100vh;
   background: var(--bg-body);
 }
 
-.editProfileContent {
-  max-width: 1000px;
-  margin: 0 auto;
-  padding: 2rem 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-}
-
-/* Loading */
+/* Loading state (matches Profile) */
 .loadingContainer {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 60vh;
-  gap: 1rem;
+  min-height: 400px;
+  gap: 16px;
+}
+
+.loadingContainer p {
   color: var(--text-secondary);
+  font-size: 16px;
+  font-weight: 400;
 }
 
 .loadingSpinner {
@@ -40,61 +38,74 @@
   }
 }
 
+/* Main content area (inside SideBar) */
+.editProfileContent {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
 /* Avatar Card */
 .avatarCard {
   background: var(--bg-surface);
   border: 1px solid var(--border-color);
-  border-radius: 16px;
-  padding: 2rem;
+  border-radius: 12px;
+  padding: 28px;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1rem;
-  transition: box-shadow 0.2s;
+  gap: 16px;
 }
 
 .avatarCard:hover {
-  box-shadow: 0 8px 20px var(--card-shadow);
+  border-color: var(--primary);
+  box-shadow: 0 4px 16px var(--card-shadow);
 }
 
 .avatarWrapper {
   position: relative;
   width: 120px;
   height: 120px;
+  border-radius: 50%;
+  overflow: hidden;
+  cursor: pointer;
 }
 
 .avatarLabel {
   display: block;
   width: 100%;
   height: 100%;
-  border-radius: 50%;
-  overflow: hidden;
   cursor: pointer;
-  border: 3px solid var(--primary);
-  transition: transform 0.2s;
-}
-
-.avatarLabel:hover {
-  transform: scale(1.02);
 }
 
 .avatar {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  border-radius: 50%;
+  border: 3px solid var(--border-color);
+  transition: filter 0.2s ease;
 }
 
 .avatarPlaceholder {
   width: 100%;
   height: 100%;
+  border-radius: 50%;
   background: var(--primary);
-  color: var(--primary-contrast);
-  font-size: 3rem;
-  font-weight: 600;
+  color: var(--white);
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 48px;
+  font-weight: 600;
   text-transform: uppercase;
+  border: 3px solid var(--border-color);
 }
 
 .avatarOverlay {
@@ -104,20 +115,23 @@
   width: 100%;
   height: 100%;
   background: rgba(0, 0, 0, 0.5);
-  border-radius: 50%;
+  color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
-  font-size: 0.9rem;
-  font-weight: 500;
+  border-radius: 50%;
   opacity: 0;
-  transition: opacity 0.2s;
-  pointer-events: none;
+  transition: opacity 0.2s ease;
+  font-size: 14px;
+  font-weight: 500;
 }
 
-.avatarLabel:hover .avatarOverlay {
+.avatarWrapper:hover .avatarOverlay {
   opacity: 1;
+}
+
+.avatarWrapper:hover .avatar {
+  filter: brightness(0.8);
 }
 
 .fileInput {
@@ -126,28 +140,29 @@
 
 .removeAvatarBtn {
   position: absolute;
-  bottom: 0;
+  top: 0;
   right: 0;
   width: 32px;
   height: 32px;
   border-radius: 50%;
   background: var(--toast-error);
   color: white;
-  border: 2px solid var(--bg-surface);
+  border: none;
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  font-size: 1.2rem;
-  transition: transform 0.2s;
+  font-size: 18px;
+  transition: background 0.2s ease;
+  z-index: 2;
 }
 
 .removeAvatarBtn:hover {
-  transform: scale(1.1);
+  background: #c00; /* darker red */
 }
 
 .avatarHint {
-  font-size: 0.85rem;
+  font-size: 14px;
   color: var(--text-secondary);
   margin: 0;
 }
@@ -156,98 +171,108 @@
 .formCard {
   background: var(--bg-surface);
   border: 1px solid var(--border-color);
-  border-radius: 16px;
-  padding: 2rem;
+  border-radius: 12px;
+  padding: 28px;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.formCard:hover {
+  border-color: var(--primary);
+  box-shadow: 0 4px 16px var(--card-shadow);
 }
 
 .formTitle {
-  font-size: 1.5rem;
+  font-size: 24px;
   font-weight: 600;
   color: var(--text-primary);
-  margin: 0 0 1.5rem 0;
-  padding-bottom: 0.75rem;
+  margin: 0 0 24px 0;
+  padding-bottom: 16px;
   border-bottom: 1px solid var(--border-color);
+  letter-spacing: -0.5px;
 }
 
+/* Form */
 .form {
-  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }
 
 .formGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 2rem;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
 }
 
+/* Field */
 .field {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 8px;
 }
 
 .field label {
-  font-size: 0.9rem;
+  font-size: 14px;
   font-weight: 500;
   color: var(--text-secondary);
+  letter-spacing: 0.3px;
 }
 
 .field input,
 .field select {
-  padding: 0.75rem 1rem;
+  width: 100%;
+  padding: 12px 16px;
   border: 1px solid var(--border-color);
-  border-radius: 10px;
-  font-size: 1rem;
-  background: var(--bg-surface);
+  border-radius: 8px;
+  font-size: 14px;
   color: var(--text-primary);
+  background: var(--bg-body);
   transition:
-    border-color 0.2s,
-    box-shadow 0.2s;
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+  outline: none;
 }
 
 .field input:focus,
 .field select:focus {
-  outline: none;
   border-color: var(--primary);
   box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1);
 }
 
-.field input:hover,
-.field select:hover {
-  border-color: var(--primary-light);
+.field input::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.6;
 }
 
-/* Actions */
+/* Form Actions */
 .formActions {
   display: flex;
-  gap: 1rem;
-  padding-top: 1.5rem;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 8px;
   border-top: 1px solid var(--border-color);
-}
-
-.saveBtn,
-.cancelBtn {
-  padding: 0.75rem 1.5rem;
-  border-radius: 10px;
-  font-size: 1rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
+  padding-top: 24px;
 }
 
 .saveBtn {
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
   background: var(--primary);
   color: var(--primary-contrast);
-  border: none;
+  transition: all 0.2s ease;
+  min-width: 140px;
 }
 
 .saveBtn:hover:not(:disabled) {
   background: var(--primary-dark);
   transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.3);
 }
 
 .saveBtn:disabled {
@@ -256,44 +281,115 @@
 }
 
 .cancelBtn {
-  background: transparent;
-  color: var(--text-primary);
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
   border: 1px solid var(--border-color);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  transition: all 0.2s ease;
+  min-width: 100px;
 }
 
 .cancelBtn:hover {
-  border-color: var(--primary);
-  color: var(--primary);
+  background: var(--bg-body);
+  border-color: var(--text-secondary);
+  color: var(--text-primary);
 }
 
-/* Responsive */
+/* Responsive Design */
 @media (max-width: 768px) {
   .editProfileContent {
-    padding: 1rem;
+    padding: 20px 16px;
   }
 
-  .formGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .formActions {
-    flex-direction: column;
-  }
-
-  .saveBtn,
-  .cancelBtn {
-    width: 100%;
-  }
-}
-
-@media (max-width: 480px) {
-  .avatarCard,
-  .formCard {
-    padding: 1.5rem;
+  .avatarCard {
+    padding: 20px;
   }
 
   .avatarWrapper {
     width: 100px;
     height: 100px;
+  }
+
+  .avatarPlaceholder {
+    font-size: 40px;
+  }
+
+  .formCard {
+    padding: 20px;
+  }
+
+  .formTitle {
+    font-size: 20px;
+    margin-bottom: 20px;
+  }
+
+  .formGrid {
+    grid-template-columns: 1fr; /* stack on mobile */
+    gap: 16px;
+  }
+
+  .field input,
+  .field select {
+    padding: 10px 14px;
+  }
+
+  .formActions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .saveBtn,
+  .cancelBtn {
+    width: 100%;
+    min-width: auto;
+  }
+}
+
+@media (max-width: 576px) {
+  .editProfileContent {
+    padding: 16px 12px;
+  }
+
+  .avatarWrapper {
+    width: 80px;
+    height: 80px;
+  }
+
+  .avatarPlaceholder {
+    font-size: 32px;
+  }
+
+  .removeAvatarBtn {
+    width: 28px;
+    height: 28px;
+    font-size: 16px;
+  }
+
+  .avatarHint {
+    font-size: 13px;
+  }
+
+  .formTitle {
+    font-size: 18px;
+  }
+
+  .field label {
+    font-size: 13px;
+  }
+
+  .field input,
+  .field select {
+    font-size: 13px;
+    padding: 8px 12px;
+  }
+
+  .saveBtn,
+  .cancelBtn {
+    font-size: 13px;
+    padding: 10px 20px;
   }
 }

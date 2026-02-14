@@ -271,6 +271,13 @@ export default function LearningTaskDetail() {
         try {
             await api.delete(`/api/management/review/delete/${taskId}/`);
             neonToast.success("Review deleted successfully!", "success");
+            setUserReview(null);
+            setEditingReview(false);
+            setReviewForm({
+                rating: 5,
+                feedback: ""
+            });
+
             await fetchTaskData();
         } catch (error) {
             console.error("Error deleting review:", error);

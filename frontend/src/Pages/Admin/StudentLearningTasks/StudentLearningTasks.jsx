@@ -33,7 +33,6 @@ const normalizeTask = (task) => ({
 
 const normalizeTasks = (tasks = []) => tasks.map(normalizeTask);
 
-/* ─────────────── COMPONENT ─────────────── */
 
 export default function StudentLearningTasks() {
     const { id } = useParams();
@@ -96,8 +95,12 @@ export default function StudentLearningTasks() {
             const rawTasks = response.data?.tasks || [];
             setTasks(normalizeTasks(rawTasks));
         } catch (error) {
-            console.error(error);
-            neonToast.error("Failed to load learning tasks");
+            const errMsg =
+                error.response?.data?.error ||
+                error.response?.data?.detail ||
+                "Something went wrong";
+
+            neonToast.error(errMsg);
             setTasks([]);
         } finally {
             setLoadingTasks(false);

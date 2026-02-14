@@ -42,7 +42,7 @@ urlpatterns = [
         name="task-delete",
     ),
     path(
-        "review/delete/<int:review_id>/",
+        "review/delete/<int:task_id>/",
         DeleteTaskReviewView.as_view(),
         name="task-delete",
     ),

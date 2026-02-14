@@ -560,7 +560,6 @@ export default function SessionDetail() {
                         </div>
 
                         <div className={styles.searchGroup}>
-                            <FaSearch />
                             <input
                                 type="text"
                                 placeholder="Search by name or email..."

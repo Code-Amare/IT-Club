@@ -1564,15 +1564,19 @@ class DeleteTaskReviewView(APIView):
     authentication_classes = [JWTCookieAuthentication]
     permission_classes = [RolePermissionFactory(["admin", "staff"])]
 
-    def delete(self, request, review_id):
+    def delete(self, request, task_id):
         try:
-            task_review = TaskReview.objects.get(id=review_id, user=request.user)
+            task_review = TaskReview.objects.get(task__id=task_id, user=request.user)
+            task = task_review.task
 
             with transaction.atomic():
+                if task_review.is_admin:
+                    task.status = "under_review"
+                    task.save()
                 task_review.delete()
             return Response(
                 {"message": "Task review deleted successfully."},
-                status=status.HTTP_204_NO_CONTENT,
+                status=status.ok,
             )
 
         except TaskReview.DoesNotExist:

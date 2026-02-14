@@ -301,8 +301,8 @@ export default function StudentDetail() {
                             <MdGrade />
                         </div>
                         <div className={styles.statContent}>
-                            <h3>Average Grade</h3>
-                            <p className={styles.statNumber}>{performance.averageGrade}</p>
+                            <h3>Total Score</h3>
+                            <p className={styles.statNumber}>{student.learning_tasks.total_admin_rating_plus_bonus}</p>
                         </div>
                     </div>
                     <div className={styles.statCard}>
@@ -323,15 +323,7 @@ export default function StudentDetail() {
                             <p className={styles.statNumber}>{performance.attendanceRate.toFixed(1)}%</p>
                         </div>
                     </div>
-                    <div className={styles.statCard}>
-                        <div className={styles.statIcon}>
-                            <FaStar />
-                        </div>
-                        <div className={styles.statContent}>
-                            <h3>Class Rank</h3>
-                            <p className={styles.statNumber}>{performance.rank}</p>
-                        </div>
-                    </div>
+
                 </div>
 
                 {/* ATTENDANCE SUMMARY */}
@@ -555,41 +547,7 @@ export default function StudentDetail() {
                             </div>
                         )}
 
-                        {/* Recent Activities Card */}
-                        <div className={styles.card}>
-                            <div className={styles.cardHeader}>
-                                <h2 className={styles.cardTitle}><FaHistory /> Recent Activities</h2>
-                                <button className={styles.viewAllBtn} onClick={() => navigate(`/admin/students/${id}/activities`)}>
-                                    View All
-                                </button>
-                            </div>
-
-                            <div className={styles.activitiesList}>
-                                {activities.length > 0 ? (
-                                    activities.slice(0, 5).map((activity, idx) => (
-                                        <div key={idx} className={styles.activityItem}>
-                                            <div className={styles.activityIcon}>
-                                                {activity.type === "task" && <MdAssignment />}
-                                                {activity.type === "attendance" && <FaCheckCircle />}
-                                                {activity.type === "grade" && <MdGrade />}
-                                                {activity.type === "system" && <FaUser />}
-                                            </div>
-                                            <div className={styles.activityContent}>
-                                                <p className={styles.activityText}>{activity.description}</p>
-                                                <span className={styles.activityTime}>
-                                                    {formatDate(activity.timestamp)} • {activity.timestamp ? new Date(activity.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ""}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    ))
-                                ) : (
-                                    <div className={styles.emptyActivities}>
-                                        <FaHistory />
-                                        <p>No recent activities</p>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
+    
                     </div>
                 </div>
             </SideBar>

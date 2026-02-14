@@ -97,86 +97,145 @@ export default function LearningTasksList() {
         }
     };
 
-    // Transform task data for LearningTaskCard component
-    const transformTaskForCard = (task) => {
-        const adminReview = getAdminReview(task);
+    // Helper functions
+    const formatDate = (dateString) => {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        });
+    };
 
-        // Determine status for the card
-        let componentStatus = task.status;
-        if (!componentStatus) {
-            if (task.is_rated || task.status === "rated") {
-                componentStatus = "graded";
-            } else if (task.status === "under_review" || task.is_public) {
-                componentStatus = "under_review";
-            } else {
-                componentStatus = "draft";
+    const getUserProfilePic = (task) => {
+        return task.user?.profile_pic_url || task.profile?.profile_pic_url || null;
+    };
+
+    const getUserDisplayName = (task) => {
+        if (task.user?.full_name) {
+            return task.user.full_name;
+        } else if (task.user?.username) {
+            return task.user.username;
+        } else if (task.user?.email) {
+            return task.user.email;
+        } else {
+            return "Unknown User";
+        }
+    };
+
+    const getUserEmail = (task) => {
+        return task.user?.email || "";
+    };
+
+    const getAdminReview = (task) => {
+        if (task.reviews && task.reviews.length > 0) {
+            const adminReview = task.reviews.find(review => review.is_admin || review.user?.is_staff);
+            if (adminReview) {
+                return {
+                    rating: adminReview.rating,
+                    feedback: adminReview.feedback
+                };
             }
         }
-
-        const languageNames = task.languages?.map(lang =>
-            typeof lang === 'object' ? lang.name :
-                languages.find(l => l.id === lang)?.name || lang.name || "Unknown"
-        ) || [];
-
-        const frameworkNames = task.frameworks?.map(fw =>
-            typeof fw === 'object' ? fw.name :
-                frameworks.find(f => f.id === fw)?.name || fw.name || "Unknown"
-        ) || [];
-
-        return {
-            id: task.id,
-            title: task.title,
-            description: task.description,
-            githubLink: task.git_link || "",
-            languages: languageNames.filter(Boolean),
-            frameworks: frameworkNames.filter(Boolean),
-            status: componentStatus,
-            grade: adminReview?.rating || 0,
-            adminFeedback: adminReview?.feedback || "",
-            createdAt: formatDate(task.created_at),
-            adminEditable: true, // Admin can edit any task
-            likes_count: task.likes_count || 0,
-            is_public: task.is_public || false,
-            user: {
-                ...task.user,
-                profile_pic_url: getUserProfilePic(task),
-                displayName: getUserDisplayName(task)
-            },
-            profile: task.profile || {},
-            reviews: task.reviews || []
-        };
+        return null;
     };
+
+    // Enrich tasks with all needed data for display and search
+    const enrichedTasks = useMemo(() => {
+        return tasks.map(task => {
+            // Resolve language names (handle both ID and full object)
+            const languageNames = (task.languages || []).map(lang => {
+                if (typeof lang === 'object' && lang.name) return lang.name;
+                const found = languages.find(l => l.id === lang);
+                return found ? found.name : null;
+            }).filter(Boolean);
+
+            // Resolve framework names
+            const frameworkNames = (task.frameworks || []).map(fw => {
+                if (typeof fw === 'object' && fw.name) return fw.name;
+                const found = frameworks.find(f => f.id === fw);
+                return found ? found.name : null;
+            }).filter(Boolean);
+
+            const userDisplayName = getUserDisplayName(task);
+            const userEmail = getUserEmail(task);
+            const adminReview = getAdminReview(task);
+
+            // Determine status for card
+            let componentStatus = task.status;
+            if (!componentStatus) {
+                if (task.is_rated || task.status === "rated") {
+                    componentStatus = "graded";
+                } else if (task.status === "under_review" || task.is_public) {
+                    componentStatus = "under_review";
+                } else {
+                    componentStatus = "draft";
+                }
+            }
+
+            return {
+                ...task,
+                _enriched: true,
+                languageNames,
+                frameworkNames,
+                userDisplayName,
+                userEmail,
+                componentStatus,
+                adminReview,
+                cardData: {
+                    id: task.id,
+                    title: task.title,
+                    description: task.description,
+                    githubLink: task.git_link || "",
+                    languages: languageNames,
+                    frameworks: frameworkNames,
+                    status: componentStatus,
+                    grade: adminReview?.rating || 0,
+                    adminFeedback: adminReview?.feedback || "",
+                    createdAt: formatDate(task.created_at),
+                    adminEditable: true,
+                    likes_count: task.likes_count || 0,
+                    is_public: task.is_public || false,
+                    user: {
+                        ...task.user,
+                        profile_pic_url: getUserProfilePic(task),
+                        displayName: userDisplayName
+                    },
+                    profile: task.profile || {},
+                    reviews: task.reviews || []
+                }
+            };
+        });
+    }, [tasks, languages, frameworks]);
 
     // Filter and sort tasks
     const filteredTasks = useMemo(() => {
-        let result = [...tasks];
+        let result = [...enrichedTasks];
 
         // Apply search
         if (searchQuery.trim()) {
             const query = searchQuery.toLowerCase().trim();
             result = result.filter(task => {
-                const taskForCard = transformTaskForCard(task);
-                const searchableText = [
-                    task.title?.toLowerCase() || '',
-                    task.description?.toLowerCase() || '',
-                    getUserDisplayName(task).toLowerCase(),
-                    task.user?.email?.toLowerCase() || '',
-                    task.git_link?.toLowerCase() || '',
-                    ...taskForCard.languages.map(lang => lang.toLowerCase()),
-                    ...taskForCard.frameworks.map(fw => fw.toLowerCase())
-                ].join(' ');
+                // Build searchable text from all relevant fields
+                const searchableFields = [
+                    task.title,
+                    task.description,
+                    task.userDisplayName,
+                    task.userEmail,
+                    task.git_link,
+                    ...task.languageNames,
+                    ...task.frameworkNames
+                ].map(field => (field || '').toLowerCase());
 
-                return searchableText.includes(query);
+                // Also include any other text fields you want
+                return searchableFields.some(field => field.includes(query));
             });
         }
 
         // Apply filters
         if (filters.visibility) {
-            if (filters.visibility === "public") {
-                result = result.filter(task => task.is_public === true);
-            } else if (filters.visibility === "private") {
-                result = result.filter(task => task.is_public === false);
-            }
+            const isPublic = filters.visibility === "public";
+            result = result.filter(task => task.is_public === isPublic);
         }
 
         if (filters.language) {
@@ -228,9 +287,9 @@ export default function LearningTasksList() {
         });
 
         return result;
-    }, [tasks, searchQuery, filters, languages, frameworks]);
+    }, [enrichedTasks, searchQuery, filters]);
 
-    // Handle task actions
+    // Handle task actions (unchanged)
     const handleViewTask = (task) => {
         navigate(`/admin/learning-task/${task.id}`);
     };
@@ -271,12 +330,10 @@ export default function LearningTasksList() {
         }
     };
 
-    // Navigation to Task Limit Bulk Management
     const handleNavigateToTaskLimitBulk = () => {
         navigate("/admin/task-limit");
     };
 
-    // Clear all filters
     const clearFilters = () => {
         setFilters({
             visibility: "",
@@ -289,52 +346,10 @@ export default function LearningTasksList() {
         setShowAdvancedFilters(false);
     };
 
-    // Format date for display
-    const formatDate = (dateString) => {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric'
-        });
-    };
-
-    // Get user profile picture URL
-    const getUserProfilePic = (task) => {
-        return task.user?.profile_pic_url || task.profile?.profile_pic_url || null;
-    };
-
-    // Get user display name
-    const getUserDisplayName = (task) => {
-        if (task.user?.full_name) {
-            return task.user.full_name;
-        } else if (task.user?.username) {
-            return task.user.username;
-        } else if (task.user?.email) {
-            return task.user.email;
-        } else {
-            return "Unknown User";
-        }
-    };
-
-    // Get admin review for grade
-    const getAdminReview = (task) => {
-        if (task.reviews && task.reviews.length > 0) {
-            const adminReview = task.reviews.find(review => review.is_admin || review.user?.is_staff);
-            if (adminReview) {
-                return {
-                    rating: adminReview.rating,
-                    feedback: adminReview.feedback
-                };
-            }
-        }
-        return null;
-    };
-
     return (
         <div className={styles.container}>
             <SideBar>
-                {/* Header */}
+                {/* Header (unchanged) */}
                 <div className={styles.header}>
                     <div className={styles.headerContent}>
                         <div className={styles.titleSection}>
@@ -357,7 +372,7 @@ export default function LearningTasksList() {
                     </div>
                 </div>
 
-                {/* Stats Bar */}
+                {/* Stats Bar (unchanged) */}
                 <div className={styles.statsBar}>
                     <div className={styles.statItem}>
                         <FaTasks className={styles.statIcon} />
@@ -389,7 +404,7 @@ export default function LearningTasksList() {
                     </div>
                 </div>
 
-                {/* Search and Filters */}
+                {/* Search and Filters (unchanged) */}
                 <div className={styles.filtersCard}>
                     <div className={styles.searchSection}>
                         <div className={styles.searchInputWrapper}>
@@ -437,7 +452,7 @@ export default function LearningTasksList() {
                         </div>
                     </div>
 
-                    {/* Advanced Filters */}
+                    {/* Advanced Filters (unchanged) */}
                     {showAdvancedFilters && (
                         <div className={styles.advancedFilters}>
                             <div className={styles.filterGrid}>
@@ -533,22 +548,18 @@ export default function LearningTasksList() {
                         </div>
                     ) : (
                         <div className={styles.tasksGrid}>
-                            {filteredTasks.map((task) => {
-                                const cardTask = transformTaskForCard(task);
-
-                                return (
-                                    <LearningTaskCard
-                                        key={task.id}
-                                        task={cardTask}
-                                        isOwner={false} // Admin is not the task owner
-                                        onView={() => handleViewTask(task)}
-                                        onEdit={() => handleEditTask(task)}
-                                        onDelete={() => handleDeleteTask(task.id)}
-                                        loadingDelete={false}
-                                        isAdmin={true}
-                                    />
-                                );
-                            })}
+                            {filteredTasks.map((task) => (
+                                <LearningTaskCard
+                                    key={task.id}
+                                    task={task.cardData}
+                                    isOwner={false}
+                                    onView={() => handleViewTask(task)}
+                                    onEdit={() => handleEditTask(task)}
+                                    onDelete={() => handleDeleteTask(task.id)}
+                                    loadingDelete={false}
+                                    isAdmin={true}
+                                />
+                            ))}
                         </div>
                     )}
                 </div>

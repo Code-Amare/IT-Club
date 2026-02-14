@@ -194,7 +194,7 @@ const VerifyEmail = () => {
 
                             <div className={styles.HelpText}>
                                 <p>Didn't receive the code? Check spam or resend.</p>
-                                <p>Code expires in 10 minutes.</p>
+                                <p>Code expires in 5 minutes.</p>
                             </div>
                         </>
                     )}
