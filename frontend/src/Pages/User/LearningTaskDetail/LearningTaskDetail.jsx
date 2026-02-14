@@ -84,7 +84,6 @@ export default function LearningTaskDetail() {
         try {
             const taskResponse = await api.get(`/api/learning-task/${id}/`);
             const responseData = taskResponse.data;
-            console.log("Task data:", responseData);
 
             let taskData;
             if (responseData.task) {

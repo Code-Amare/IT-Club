@@ -31,7 +31,6 @@ export function UserProvider({ children }) {
     const getUser = async () => {
         try {
             const res = await api.get("/api/users/get/")
-            console.log(res)
             if (res.status === 200 && res.data) {
                 const user = res.data.user
                 setUser({
@@ -56,7 +55,6 @@ export function UserProvider({ children }) {
                 })
             }
         } catch (error) {
-            console.log(error)
             setUser(prev => ({ ...prev, isAuthenticated: false }))
         }
     }
@@ -75,7 +73,7 @@ export function UserProvider({ children }) {
             api.post("api/users/logout/")
             navigate("login/")
         } catch (err) {
-            console.log(err)
+            console.error(err)
         }
         setUser({
             id: null,

@@ -107,10 +107,6 @@ export default function StudentLearningTasks() {
         }
     };
 
-    useEffect(() => {
-        console.log(tasks)
-
-    }, [tasks])
 
     const getFilteredAndSortedTasks = () => {
         let filtered = tasks;

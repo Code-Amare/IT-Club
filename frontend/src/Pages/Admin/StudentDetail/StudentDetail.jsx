@@ -61,7 +61,6 @@ export default function StudentDetail() {
 
                 // Handle the nested response structure
                 const studentData = response.data.student || response.data;
-                console.log(studentData)
                 setStudent(studentData || null);
             } catch (error) {
                 neonToast.error("Failed to load student details", "error");

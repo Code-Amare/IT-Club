@@ -52,9 +52,8 @@ const UserDashboard = () => {
                 setLoading(true);
                 const res = await api.get("api/users/data/");
                 setDashboardData(res.data);
-                console.log(res.data)
             } catch (err) {
-                console.log(err);
+                console.error(err);
             } finally {
                 setLoading(false);
             }

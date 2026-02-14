@@ -38,7 +38,6 @@ export default function AttendanceList() {
             setLoading(true);
             const res = await api.get("/api/attendance/sessions/all/");
             const sessionsData = res.data.sessions || [];
-            console.log(res.data);
             setSessions(sessionsData);
 
             const openSessions = sessionsData.filter(s => !s.is_ended);

@@ -245,7 +245,6 @@ export default function EditAnnouncement() {
             };
 
             const response = await api.patch(`/api/announcement/${announcementId}/`, payload);
-            console.log("Announcement updated:", response.data);
 
             setSuccess("Announcement updated successfully! Redirecting...");
             neonToast.success("Announcement updated");

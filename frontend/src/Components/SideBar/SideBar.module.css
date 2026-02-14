@@ -112,7 +112,6 @@
   background-color: var(--primary);
   color: var(--primary-contrast);
 }
-
 .item.active svg {
   color: var(--primary-contrast);
 }
@@ -787,7 +786,7 @@
   position: fixed;
   top: 10px;
   left: 10px;
-  z-index: 1003;
+  z-index: 90;
   background: var(--bg-surface);
   border: none;
   cursor: pointer;
@@ -917,7 +916,7 @@
 
 .mobileItem.active {
   background-color: var(--primary);
-  color: var(--primary-contrast);
+  color: var(--primary-contrast) !important;
 }
 
 .mobileItem.active svg {

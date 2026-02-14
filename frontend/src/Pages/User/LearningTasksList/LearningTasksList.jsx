@@ -42,7 +42,6 @@ export default function LearningTasksList() {
             try {
                 const res = await api.get("api/learning-task/limit/")
                 setTaskLimit(res.data?.task_limit.limit)
-                console.log(res)
             } catch (err) {
                 neonToast.error(err?.data?.error)
             }

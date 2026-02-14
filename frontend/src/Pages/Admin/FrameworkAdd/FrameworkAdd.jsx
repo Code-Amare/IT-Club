@@ -137,7 +137,6 @@ export default function FrameworkAdd() {
                 name: singleFramework.name.trim()
             };
 
-            console.log("Sending framework data:", frameworkData); // Debug log
 
             await api.post("/api/management/frameworks/create/", frameworkData);
 
@@ -190,7 +189,6 @@ export default function FrameworkAdd() {
                 name: framework.name.trim()
             }));
 
-            console.log("Sending bulk frameworks data:", frameworksData); // Debug log
 
             const response = await api.post("/api/management/frameworks/bulk/", frameworksData);
 

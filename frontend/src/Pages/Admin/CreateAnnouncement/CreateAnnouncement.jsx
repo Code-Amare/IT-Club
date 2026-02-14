@@ -217,14 +217,12 @@ export default function CreateAnnouncement() {
             };
 
             const response = await api.post("/api/announcement/", payload);
-            console.log("Announcement created:", response.data);
 
             setSuccess("Announcement created successfully! Redirecting...");
             neonToast.success("Announcement published");
 
             setTimeout(() => navigate("/admin/announcements"), 1500);
         } catch (error) {
-            console.log(error.response);
             console.error("Error creating announcement:", error);
             setError(
                 error.response?.data?.error ||

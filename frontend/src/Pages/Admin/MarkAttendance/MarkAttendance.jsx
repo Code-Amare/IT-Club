@@ -62,8 +62,6 @@ export default function MarkAttendance() {
                 const sessionData = res.data.session;
                 const attendancesData = res.data.attendances || [];
 
-                console.log("Session data:", sessionData);
-                console.log("Attendances data:", attendancesData);
 
                 // Check if session is ended
                 if (sessionData.is_ended) {
@@ -336,7 +334,6 @@ export default function MarkAttendance() {
             navigate(`/admin/session/${sessionId}`)
 
         } catch (error) {
-            console.log(error.response);
             if (error.response?.data?.error) {
                 setError(`Error: ${error.response.data.error}`);
             } else if (error.response?.data?.errors) {

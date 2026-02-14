@@ -54,7 +54,6 @@ export default function CreateAttendanceSession() {
                 setLoading(true);
                 const res = await api.get("/api/management/users/");
                 const users = res.data.users || [];
-                console.log("Fetched users:", users);
                 setAllUsers(users);
                 setFilteredUsers(users);
             } catch (error) {
@@ -194,7 +193,6 @@ export default function CreateAttendanceSession() {
 
             const response = await api.post("/api/attendance/sessions/", payload);
             const sessionId = response.data?.session_id
-            console.log(payload)
             setSuccess(`Session created successfully! Redirecting...`);
             if (sessionId) {
                 navigate(`/admin/session/${sessionId}`)

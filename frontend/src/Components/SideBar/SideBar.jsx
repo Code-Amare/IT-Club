@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import styles from "./SideBar.module.css";
 import ConfirmAction from "../ConfirmAction/ConfirmAction";
+import neonToast from "../../Components/NeonToast/NeonToast"
 import {
     MdMenu,
     MdChevronLeft,
@@ -160,7 +161,10 @@ export default function SideBar({ children }) {
     // Logout handler
     const handleLogout = () => {
         logout();
-        navigate("/login");
+        setTimeout(() => {
+            navigate("/login");
+            neonToast.success("Logged out successfully")
+        }, 2000); //
     };
 
 

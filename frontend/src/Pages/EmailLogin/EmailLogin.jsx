@@ -36,7 +36,6 @@ const EmailLogin = () => {
             // Navigate to verification page
             navigate(`/verify-email?email=${encodeURIComponent(email)}`);
         } catch (err) {
-            console.log(err)
             let errMsg = err.response?.data?.error || "Failed to send verification code";
             neonToast.error(errMsg);
         } finally {

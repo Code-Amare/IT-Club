@@ -65,8 +65,6 @@ export default function SessionDetail() {
             const sessionData = res.data.session || res.data;
             const attendancesData = res.data.attendances || [];
 
-            console.log("Session data:", sessionData);
-            console.log("Attendances data:", attendancesData);
 
             setSession(sessionData);
             setAttendances(attendancesData);
