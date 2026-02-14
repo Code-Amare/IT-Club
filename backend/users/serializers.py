@@ -19,8 +19,8 @@ environ.Env.read_env(str(BASE_DIR / ".env"))
 
 cloudinary.config(
     cloud_name=env("CLOUD_NAME"),
-    api_key=env("API_KEY"),
-    api_secret=env("API_SECRET"),
+    api_key=env("CLOUD_API_KEY"),
+    api_secret=env("CLOUD_API_SECRET"),
     secure=True,
 )
 

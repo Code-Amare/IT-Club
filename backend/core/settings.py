@@ -182,8 +182,8 @@ if IS_CLOUDINARY:
     SECURE_CONTENT_SECURITY_POLICY = "default-src 'self' https://res.cloudinary.com;"
     CLOUDINARY_STORAGE = {
         "CLOUD_NAME": env("CLOUD_NAME"),
-        "API_KEY": env("API_KEY"),
-        "API_SECRET": env("API_SECRET"),
+        "API_KEY": env("CLOUD_API_KEY"),
+        "API_SECRET": env("CLOUD_API_SECRET"),
         # "SIGN_URL": True,
     }
     cloudinary.config(**CLOUDINARY_STORAGE)
