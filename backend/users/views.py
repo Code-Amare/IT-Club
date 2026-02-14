@@ -22,7 +22,7 @@ from utils.notif import notify_user
 from utils.auth import JWTCookieAuthentication
 from django.db.models import Avg, Sum
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework import status
 from attendance.serializers import AttendanceSerializer, AttendanceWithSessionSerializer
@@ -65,15 +65,9 @@ class GetProfileView(APIView):
 
 
 class SendVerificationCodeView(APIView):
-    authentication_classes = [JWTCookieAuthentication]
 
     def post(self, request):
 
-        if request.user.is_authenticated:
-            return Response(
-                {"error": "Already authenticated."},
-                status=status.HTTP_200_OK,
-            )
 
         email = request.data.get("email", "").strip()
         if not email:

@@ -24,7 +24,10 @@ import {
     MdAnnouncement,
     MdAdminPanelSettings,
     MdSelectAll,
+    MdCampaign,
 } from "react-icons/md";
+
+import { FaBullhorn } from "react-icons/fa"
 import { useUser } from "../../Context/UserContext";
 import { useNotifContext } from "../../Context/NotifContext";
 import ThemeToggle from "../ThemeToggle/ThemeToggle";
@@ -46,17 +49,22 @@ export default function SideBar({ children }) {
 
 
 
-    const adminMenuItems = [
+    let adminMenuItems = [
         { icon: <MdDashboard />, text: "Dashboard", to: `/${role}` },
         { icon: <MdPeople />, text: "Students", to: "/admin/students" },
         { icon: <MdSchool />, text: "Learning Tasks", to: "/admin/learning-tasks" },
         { icon: <MdCode />, text: "Languages", to: "/admin/languages" },
         { icon: <MdAccountTree />, text: "Frameworks", to: "/admin/frameworks" },
-        { icon: <MdAnnouncement />, text: "Announcements", to: "/admin/announcements" },
+        { icon: <FaBullhorn size={25} />, text: "Announcements", to: "/admin/announcements" },
         { icon: <MdChecklist />, text: "Attendance", to: "/admin/attendance" },
         { icon: <MdSelectAll />, text: "Bulk Operation", to: "/admin/students/bulk-operation" },
         { icon: <MdAdminPanelSettings />, text: "Admins", to: "/admin/staff" },
     ];
+
+
+    adminMenuItems = user?.isSuperUser
+        ? adminMenuItems
+        : adminMenuItems.filter(item => item.text !== "Bulk Operation" && item.text !== "Admins");
 
     const userMenuItems = [
         { icon: <MdDashboard />, text: "Dashboard", to: `/${role}` },

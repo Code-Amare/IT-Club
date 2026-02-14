@@ -14,7 +14,7 @@ import {
     FaExclamationCircle,
     FaCheckCircle,
     FaCalendarAlt,
-    FaFileAlt          // icon for content
+    FaFileAlt
 } from "react-icons/fa";
 import styles from "./CreateAnnouncement.module.css";
 import { neonToast } from "../../../Components/NeonToast/NeonToast";
@@ -184,7 +184,7 @@ export default function CreateAnnouncement() {
         setError("");
         setSuccess("");
 
-        // Validation
+        // Validation – only title and content are required now
         if (!formData.title.trim()) {
             setError("Please enter an announcement title");
             return;
@@ -192,11 +192,6 @@ export default function CreateAnnouncement() {
 
         if (!formData.content.trim()) {
             setError("Please enter announcement content");
-            return;
-        }
-
-        if (!formData.announcement_date) {
-            setError("Please select an announcement date");
             return;
         }
 
@@ -208,13 +203,17 @@ export default function CreateAnnouncement() {
         setSubmitting(true);
 
         try {
+            // Build payload – only include announcement_date if it has a value
             const payload = {
                 title: formData.title,
                 content: formData.content,
-                announcement_date: formData.announcement_date,
                 targets: formData.targets,
                 is_important: formData.is_important
             };
+
+            if (formData.announcement_date) {
+                payload.announcement_date = formData.announcement_date;
+            }
 
             const response = await api.post("/api/announcement/", payload);
 
@@ -343,20 +342,19 @@ export default function CreateAnnouncement() {
                             </div>
                         </div>
 
-                        {/* Date & Importance */}
+                        {/* Date & Importance – date no longer required */}
                         <div className={styles.formSection}>
                             <div style={{ display: "flex", gap: "24px", flexWrap: "wrap" }}>
                                 <div style={{ flex: "1 1 200px" }}>
                                     <label className={styles.inputLabel}>
                                         <FaCalendarAlt style={{ marginRight: "6px" }} />
-                                        Announcement Date *
+                                        Announcement Date (optional)
                                     </label>
                                     <input
                                         type="date"
                                         value={formData.announcement_date}
                                         onChange={handleDateChange}
                                         className={styles.textInput}
-                                        required
                                         disabled={submitting}
                                     />
                                 </div>

@@ -158,6 +158,10 @@ class UserSerializer(serializers.ModelSerializer):
         return user
 
     def update(self, instance, validated_data):
+
+        if "email" in validated_data:
+            validated_data.pop("email")
+
         password = validated_data.pop("password", None)
         profile_pic_file = self.context["request"].FILES.get("profile_pic")
         if profile_pic_file:

@@ -31,8 +31,12 @@ export default function AdminList() {
     const { updatePageTitle } = useNotifContext();
 
     useEffect(() => {
+        if (!user?.isSuperUser) {
+            navigate(-1)
+        }
         updatePageTitle("Administrators");
     }, []);
+
 
     // Data states
     const [admins, setAdmins] = useState([]);

@@ -314,8 +314,12 @@ class StudentsView(APIView):
                 else 0
             )
 
-            active_students = Profile.objects.filter(user__is_active=True).count()
-            inactive_students = Profile.objects.filter(user__is_active=False).count()
+            active_students = Profile.objects.filter(
+                user__is_active=True, user__role="user"
+            ).count()
+            inactive_students = Profile.objects.filter(
+                user__is_active=False, user__role="user"
+            ).count()
             total_students = User.objects.filter(role="user").count()
 
             return Response(
@@ -1727,6 +1731,7 @@ class DashboardView(APIView):
             Profile.objects.values("grade")
             .annotate(count=Count("id"))
             .order_by("grade")
+            .exclude(user__role="admin")
         )
         grade_distribution = {
             item["grade"]: item["count"] for item in grade_distribution_query
@@ -1899,6 +1904,8 @@ class AdminControlView(APIView):
     def put(self, request, pk):
         try:
             admin = User.objects.get(pk=pk, role="admin")
+
+            old_email = admin.email
             profile = Profile.objects.get(user=admin)
 
             errors = {}
@@ -1970,7 +1977,6 @@ class AdminControlView(APIView):
                 user_serializer = UserSerializer(
                     admin,
                     data={
-                        "email": email,
                         "full_name": full_name,
                         "gender": gender,
                         "is_active": account_status == "active",
@@ -1979,7 +1985,12 @@ class AdminControlView(APIView):
                     context={"request": request},
                 )
                 user_serializer.is_valid(raise_exception=True)
-                user_serializer.save()
+                user = user_serializer.save()
+
+                if old_email != email:
+                    user.email_verified = False
+                    user.email = email
+                    user.save(update_fields=["email_verified", "email"])
 
                 # update profile
                 profile.grade = grade

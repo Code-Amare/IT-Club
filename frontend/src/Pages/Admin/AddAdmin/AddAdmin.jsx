@@ -26,9 +26,13 @@ import styles from "./AddAdmin.module.css";
 import { useNotifContext } from "../../../Context/NotifContext";
 
 export default function AddAdmin() {
+    const { user } = useUser()
     const navigate = useNavigate();
     const { updatePageTitle } = useNotifContext();
     useEffect(() => {
+        if (!user?.isSuperUser) {
+            navigate(-1)
+        }
         updatePageTitle("Add Administrator");
     }, []);
 

@@ -210,7 +210,7 @@ export default function CreateAttendanceSession() {
     };
 
     const handleCancel = () => {
-        navigate("/admin/attendance/sessions");
+        navigate("/admin/attendance");
     };
 
     const getDisplayName = (user) => {
@@ -229,7 +229,7 @@ export default function CreateAttendanceSession() {
                 <div className={styles.header}>
                     <div className={styles.headerContent}>
                         <div className={styles.titleSection}>
-                            <Link to="/admin/attendance/sessions" className={styles.backButton}>
+                            <Link to="/admin/attendance" className={styles.backButton}>
                                 <FaArrowLeft />
                             </Link>
                             <div>

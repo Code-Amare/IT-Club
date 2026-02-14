@@ -54,6 +54,7 @@ import BulkOperations from './Pages/Admin/BulkOperations/BulkOperations'
 import AdminList from "./Pages/Admin/AdminList/AdminList"
 import AddAdmin from './Pages/Admin/AddAdmin/AddAdmin'
 import AdminDetail from './Pages/Admin/AdminDetail/AdminDetail'
+import AdminEdit from './Pages/Admin/AdminEdit/AdminEdit'
 
 function App() {
   return (
@@ -70,7 +71,7 @@ function App() {
           <Route path='/login/email' element={<EmailLogin />} />
 
         </Route>
-        <Route element={<ProtectedRoute requiredRole={["admin", "staff", "user"]} />}>
+        <Route element={<ProtectedRoute requiredRole={["admin", "user"]} />}>
           <Route path="/profile" element={<Profile />} />
           <Route path="/profile/edit" element={<ProfileEdit />} />
           <Route path="/security" element={<Security />} />
@@ -80,7 +81,7 @@ function App() {
           <Route path="/notifications" element={<NotificationsList />} />
           <Route path="/notification/:notif_id/" element={<NotificationDetail />} />
         </Route>
-        <Route element={<ProtectedRoute requiredRole={["admin", "staff"]} />}>
+        <Route element={<ProtectedRoute requiredRole={["admin"]} />}>
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/staff" element={<AdminDashboard />} />
           <Route path="/admin/students" element={<Students />} />
@@ -110,6 +111,7 @@ function App() {
           <Route path="/admin/staff" element={<AdminList />} />
           <Route path="/admin/staff/add" element={<AddAdmin />} />
           <Route path="/admin/staff/:id" element={<AdminDetail />} />
+          <Route path="/admin/staff/edit/:id" element={<AdminEdit />} />
         </Route>
         <Route element={<ProtectedRoute requiredRole={["user"]} />}>
           <Route path='/user' element={<UserDashboard />} />

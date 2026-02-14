@@ -20,14 +20,14 @@ const FIELD_CHOICES = [
 export default function EditProfile() {
     const navigate = useNavigate();
     const { user, getUser } = useUser();
-    const { updatePageTitle } = useNotifContext()
+    const { updatePageTitle } = useNotifContext();
+
     useEffect(() => {
-        updatePageTitle("Edit Profile")
-    }, [])
+        updatePageTitle("Edit Profile");
+    }, []);
 
     const [form, setForm] = useState({
         full_name: "",
-        email: "",
         grade: "",
         section: "",
         field: "",
@@ -53,7 +53,6 @@ export default function EditProfile() {
         // User is authenticated – fill form from context
         setForm({
             full_name: user.fullName || "",
-            email: user.email || "",
             grade: user.grade || "",
             section: user.section || "",
             field: user.field || "",
@@ -108,7 +107,6 @@ export default function EditProfile() {
         try {
             const data = new FormData();
             data.append("full_name", form.full_name.trim());
-            data.append("email", form.email.trim());
             data.append("grade", form.grade || "");
             data.append("section", form.section || "");
             data.append("field", form.field || "");
@@ -205,18 +203,6 @@ export default function EditProfile() {
                                         value={form.full_name}
                                         onChange={handleChange}
                                         placeholder="Your full name"
-                                    />
-                                </div>
-
-                                {/* Email */}
-                                <div className={styles.field}>
-                                    <label>Email</label>
-                                    <input
-                                        type="email"
-                                        name="email"
-                                        value={form.email}
-                                        onChange={handleChange}
-                                        placeholder="email@example.com"
                                     />
                                 </div>
 

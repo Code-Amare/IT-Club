@@ -35,7 +35,7 @@
   background-color: var(--bg-surface);
   box-shadow: 2px 0 5px var(--card-shadow);
   overflow: hidden;
-  transition: width 0.3s ease;
+  transition: width 0.3s ease !important;
   flex-shrink: 0;
   position: fixed;
   top: 0;
@@ -171,7 +171,7 @@
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  transition: margin-left 0.3s ease;
+  transition: margin-left 0.3s ease !important;
   width: 100%;
   position: relative;
 }
@@ -827,7 +827,7 @@
   box-shadow: 2px 0 10px var(--card-shadow);
   z-index: 1003;
   transform: translateX(-100%);
-  transition: transform 0.3s ease;
+  transition: transform 0.3s ease !important;
   display: flex;
   flex-direction: column;
 }
@@ -1014,4 +1014,31 @@
 .mobileThemeToggle .themeToggleInner {
   margin: 0;
   padding: 0;
+}
+/* Mobile Drawer */
+.mobileDrawer {
+  position: fixed;
+  padding: 0 0 1em 0;
+  left: 0;
+  top: 0;
+  height: 100vh;
+  width: 280px;
+  background: var(--bg-surface);
+  box-shadow: 2px 0 10px var(--card-shadow);
+  z-index: 1003;
+  transform: translateX(-100%);
+  transition: transform 0.3s ease !important;
+  display: flex;
+  flex-direction: column;
+}
+
+.mobileDrawer .profilePic {
+  width: 45px;
+  height: 45px;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.mobileDrawerOpen {
+  transform: translateX(0);
 }

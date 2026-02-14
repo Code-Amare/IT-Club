@@ -38,6 +38,9 @@ export default function AdminDetail() {
     const [deleteLoading, setDeleteLoading] = useState(false);
 
     useEffect(() => {
+        if (!user?.isSuperUser) {
+            navigate(-1)
+        }
         updatePageTitle("Admin Details");
     }, []);
 
@@ -139,7 +142,7 @@ export default function AdminDetail() {
                         <div className={styles.headerActions}>
                             <button
                                 className={styles.editBtn}
-                                onClick={() => navigate(`/admin/staff/${id}/edit`)}
+                                onClick={() => navigate(`/admin/staff/edit/${id}`)}
                             >
                                 <FaEdit /> Edit
                             </button>
