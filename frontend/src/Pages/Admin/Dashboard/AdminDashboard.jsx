@@ -48,12 +48,13 @@ const AdminDashboard = () => {
             status_percentages: { present: 0, late: 0, absent: 0, special_case: 0 }
         },
         grade_distribution: {},
-        top_learning_tasks: []
+        top_learning_tasks: [],
+        total_students: 0,
     });
-    const { updatePageTitle } = useNotifContext()
+    const { updatePageTitle } = useNotifContext();
     useEffect(() => {
-        updatePageTitle("Admin Dashboard")
-    }, [])
+        updatePageTitle("Admin Dashboard");
+    }, []);
 
     const [gradeData, setGradeData] = useState([]);
     const [genderData, setGenderData] = useState([
@@ -65,26 +66,23 @@ const AdminDashboard = () => {
         textSecondary: "#4b5563"
     });
 
-    // Calculate total students from grade distribution
-    const totalStudents = Object.values(dashboardData.grade_distribution || {}).reduce((sum, count) => sum + count, 0);
+    // Calculate total students: use backend value if available, otherwise sum of grade_distribution
+    const totalStudents = dashboardData.total_students ||
+        Object.values(dashboardData.grade_distribution || {}).reduce((sum, count) => sum + count, 0);
 
     // Calculate attendance average (present + late percentage)
     const attendanceAverage = (dashboardData.attendance_summary?.status_percentages?.present || 0) +
         (dashboardData.attendance_summary?.status_percentages?.late || 0);
 
-    // Calculate special case attendance
     const specialCasePercentage = dashboardData.attendance_summary?.status_percentages?.special_case || 0;
 
-    // Fetch all dashboard data from new endpoint
+    // Fetch all dashboard data
     useEffect(() => {
         if (user.isAuthenticated === null) return;
-        if (!user.isAuthenticated) {
-            return;
-        }
+        if (!user.isAuthenticated) return;
 
         fetchDashboardData();
 
-        // Get CSS variables for chart styling
         const getCssVariable = (name) => {
             return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
         };
@@ -98,7 +96,6 @@ const AdminDashboard = () => {
     const fetchDashboardData = async () => {
         setLoading(true);
         try {
-            // Fetch dashboard data from new endpoint
             const dashboardRes = await api.get("/api/management/dashboard/");
             const data = dashboardRes.data;
 
@@ -110,21 +107,16 @@ const AdminDashboard = () => {
                     status_percentages: { present: 0, late: 0, absent: 0, special_case: 0 }
                 },
                 grade_distribution: data.grade_distribution || {},
-                top_learning_tasks: data.top_learning_tasks || []
+                top_learning_tasks: data.top_learning_tasks || [],
+                total_students: data.total_students || 0,
             });
 
-            // Process grade data for chart
             const gradeChartData = Object.entries(data.grade_distribution || {}).map(([grade, count]) => ({
                 grade: `Grade ${grade}`,
                 students: count
-            })).sort((a, b) => {
-                const gradeA = parseInt(a.grade.replace('Grade ', ''));
-                const gradeB = parseInt(b.grade.replace('Grade ', ''));
-                return gradeA - gradeB;
-            });
+            })).sort((a, b) => parseInt(a.grade.replace('Grade ', '')) - parseInt(b.grade.replace('Grade ', '')));
             setGradeData(gradeChartData);
 
-            // Process gender data for chart
             const maleCount = data.gender_counts?.male || 0;
             const femaleCount = data.gender_counts?.female || 0;
             const totalGender = maleCount + femaleCount;
@@ -133,18 +125,8 @@ const AdminDashboard = () => {
             const femalePercentage = totalGender > 0 ? (femaleCount / totalGender) * 100 : 0;
 
             setGenderData([
-                {
-                    name: "Male",
-                    value: Math.round(malePercentage),
-                    count: maleCount,
-                    color: "#4f46e5"
-                },
-                {
-                    name: "Female",
-                    value: Math.round(femalePercentage),
-                    count: femaleCount,
-                    color: "#ec4899"
-                }
+                { name: "Male", value: Math.round(malePercentage), count: maleCount, color: "#4f46e5" },
+                { name: "Female", value: Math.round(femalePercentage), count: femaleCount, color: "#ec4899" }
             ]);
 
         } catch (error) {
@@ -155,12 +137,10 @@ const AdminDashboard = () => {
         }
     };
 
-    // Process learning tasks data
     const processedLearningTasks = dashboardData.top_learning_tasks.map(task => {
         let averageRating = 0;
         if (task.reviews && task.reviews.length > 0) {
-            const totalRating = task.reviews.reduce((sum, review) => sum + review.rating, 0);
-            averageRating = totalRating / task.reviews.length;
+            averageRating = task.reviews.reduce((sum, review) => sum + review.rating, 0) / task.reviews.length;
         }
 
         return {
@@ -179,7 +159,6 @@ const AdminDashboard = () => {
         };
     });
 
-    // Custom tooltip for charts
     const CustomTooltip = ({ active, payload, label }) => {
         if (active && payload && payload.length) {
             return (
@@ -196,36 +175,27 @@ const AdminDashboard = () => {
         return null;
     };
 
-    // Handle image error
     const handleImageError = (e) => {
         e.target.style.display = "none";
         const nextSibling = e.target.nextElementSibling;
-        if (nextSibling) {
-            nextSibling.style.display = "flex";
-        }
+        if (nextSibling) nextSibling.style.display = "flex";
     };
 
-    // Get attendance status badge
-    const getAttendanceStatusBadge = (status, percentage) => {
+    const getAttendanceStatusBadge = (status) => {
         const badges = {
             present: { icon: <FaCheckCircle />, bgColor: "#10b98120", color: "#10b981", label: "Present" },
             late: { icon: <FaClock />, bgColor: "#f59e0b20", color: "#f59e0b", label: "Late" },
             absent: { icon: <FaTimesCircle />, bgColor: "#ef444420", color: "#ef4444", label: "Absent" },
             special_case: { icon: <FaUserCheck />, bgColor: "#8b5cf620", color: "#8b5cf6", label: "Special Case" }
         };
-
         const badge = badges[status] || badges.absent;
         return (
-            <span className={styles.statusBadge} style={{
-                backgroundColor: badge.bgColor,
-                color: badge.color
-            }}>
+            <span className={styles.statusBadge} style={{ backgroundColor: badge.bgColor, color: badge.color }}>
                 {badge.icon} {badge.label}
             </span>
         );
     };
 
-    // Get status description
     const getStatusDescription = (status) => {
         const descriptions = {
             present: "Students who attended on time",
@@ -251,6 +221,7 @@ const AdminDashboard = () => {
         );
     }
 
+
     return (
         <div className={styles.AdminDashboardContainer}>
             <SideBar>
@@ -268,7 +239,7 @@ const AdminDashboard = () => {
                             </div>
                             <div className={styles.statContent}>
                                 <h3>Total Students</h3>
-                                <p className={styles.statValue}>{totalStudents.toLocaleString()}</p>
+                                <p className={styles.statValue}>{dashboardData.total_students}</p>
                                 <span className={styles.statTrend}>
                                     <FiTrendingUp /> {dashboardData.gender_counts?.male || 0} male, {dashboardData.gender_counts?.female || 0} female
                                 </span>

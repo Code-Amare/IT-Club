@@ -2,7 +2,7 @@ import pandas as pd
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.db.models import Count, Q
@@ -20,6 +20,7 @@ from learning_task.serializers import (
     LearningTaskSerializer,
     LearningTaskLimitSerializer,
 )
+import io
 from learning_task.models import LearningTaskLimit
 from .models import Framework, Language, Setting
 from attendance.models import Attendance, AttendanceSession
@@ -37,6 +38,7 @@ from django.db.models import (
     FloatField,
     Avg,
 )
+from django.db.models.functions import Coalesce
 from django.utils import timezone
 from datetime import timedelta
 import math
@@ -48,6 +50,18 @@ import cloudinary.utils
 from pathlib import Path
 from asgiref.sync import async_to_sync
 from utils.notif import notify_user, notify_users_bulk
+
+from reportlab.platypus import (
+    SimpleDocTemplate,
+    Paragraph,
+    Spacer,
+    Table,
+    TableStyle,
+)
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.units import inch
 
 
 env = environ.Env()
@@ -73,6 +87,7 @@ class StudentsView(APIView):
             search = request.query_params.get("search", "").strip()
             grade = request.query_params.get("grade", "").strip()
             section = request.query_params.get("section", "").strip()
+            field = request.query_params.get("field", "").strip()
             account_status = request.query_params.get("accountStatus", "").strip()
             sort_by = request.query_params.get("sort_by", "-user__date_joined")
             sort_order = request.query_params.get("sort_order", "desc")
@@ -98,9 +113,18 @@ class StudentsView(APIView):
                 .distinct()
                 .order_by("section")
             )
+            all_fields = (
+                base_profiles.exclude(field__isnull=True)
+                .exclude(field="")
+                .values_list("field", flat=True)
+                .distinct()
+                .order_by("field")
+            )
+
             filter_options = {
                 "grades": list(all_grades),
                 "sections": list(all_sections),
+                "fields": list(all_fields),
             }
 
             # Now build the main queryset with annotations for the table
@@ -148,6 +172,7 @@ class StudentsView(APIView):
                     | Q(user__email__icontains=search)
                     | Q(grade__icontains=search)
                     | Q(section__icontains=search)
+                    | Q(field__icontains=search)
                 )
                 profiles = profiles.filter(search_filter)
 
@@ -159,6 +184,9 @@ class StudentsView(APIView):
 
             if section:
                 profiles = profiles.filter(section__iexact=section)
+
+            if field:
+                profiles = profiles.filter(field__iexact=field)
 
             if account_status:
                 if account_status.lower() == "active":
@@ -172,6 +200,7 @@ class StudentsView(APIView):
                 "email": "user__email",
                 "grade": "grade",
                 "section": "section",
+                "field": "field",
                 "account_status": "user__is_active",
                 "attendance_percentage": "attendance_percentage",
                 "total_sessions": "total_sessions_attended",
@@ -239,6 +268,7 @@ class StudentsView(APIView):
                         "email": user.email or "",
                         "grade": profile.grade or "",
                         "section": profile.section or "",
+                        "field": profile.field or "",
                         "profile_pic_url": profile_pic_url or "",
                         "account_status": "active" if user.is_active else "inactive",
                         "attendance": {
@@ -683,14 +713,15 @@ class StudentDeleteView(APIView):
 class StudentCreateView(APIView):
     authentication_classes = [JWTCookieAuthentication]
     permission_classes = [IsAuthenticated, RolePermissionFactory(["admin", "staff"])]
+    FIELD_LIST = ["ai", "other", "backend", "frontend", "embedded", "cyber"]
 
     def post(self, request):
         try:
             email = (request.data.get("email") or "").strip()
             full_name = (request.data.get("full_name") or "").strip()
             grade = request.data.get("grade")
-            section = (request.data.get("section") or "").strip()
-            field = (request.data.get("field") or "").strip()
+            section = (request.data.get("section") or "").strip().upper()
+            field = (request.data.get("field") or "").strip().lower()
             account = (request.data.get("account") or "N/A").strip()
             phone_number = (request.data.get("phone_number") or "").strip()
 
@@ -726,6 +757,9 @@ class StudentCreateView(APIView):
             if not field:
                 errors["field"] = ["Field is required"]
 
+            if field not in self.FIELD_LIST:
+                errors["field"] = ["Invalid field name"]
+
             if not phone_number:
                 errors["phone_number"] = ["Phone number is required"]
 
@@ -756,16 +790,16 @@ class StudentCreateView(APIView):
                 profile = Profile.objects.create(
                     user=user,
                     grade=grade,
-                    section=section.upper() if section else None,
-                    field=field if field else None,
+                    section=section,
+                    field=field,
                     account=account,
-                    phone_number=phone_number if phone_number else None,
+                    phone_number=phone_number,
                 )
 
                 LearningTaskLimit.objects.create(user=user)
 
             response_data = {
-                "id": user.id,  # Changed from nested "student" to match frontend expectation
+                "id": user.id,
                 "full_name": user.full_name,
                 "email": user.email,
                 "grade": profile.grade,
@@ -786,7 +820,6 @@ class StudentCreateView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         except Exception as e:
-            # Log the error for debugging
             import traceback
 
             print(f"Error creating student: {str(e)}")
@@ -921,7 +954,7 @@ class StudentsBulkUploadView(APIView):
                 if not field:
                     row_errors["field"] = ["Field is required"]
 
-                if field.lower() not in self.FIELD_LIST:
+                if field not in self.FIELD_LIST:
                     row_errors["field"] = [f"'{field}' is invalid field name."]
 
                 # Phone number validation
@@ -1576,7 +1609,7 @@ class DeleteTaskReviewView(APIView):
                 task_review.delete()
             return Response(
                 {"message": "Task review deleted successfully."},
-                status=status.ok,
+                status=status.HTTP_200_OK,
             )
 
         except TaskReview.DoesNotExist:
@@ -1750,6 +1783,7 @@ class DashboardView(APIView):
             },
             "grade_distribution": grade_distribution,
             "top_learning_tasks": top_learning_tasks,
+            "total_students": students.count(),
         }
 
         return Response(response_data)
@@ -2050,3 +2084,358 @@ class SettingUpdateView(APIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class GradesRankExportPdfView(APIView):
+
+    authentication_classes = [JWTCookieAuthentication]
+    permission_classes = [IsAuthenticated, RolePermissionFactory(["admin", "staff"])]
+
+    MAX_TEXT_LENGTH = 30
+
+    def truncate(self, text):
+        if not text:
+            return ""
+        return (
+            text
+            if len(text) <= self.MAX_TEXT_LENGTH
+            else text[: self.MAX_TEXT_LENGTH - 3] + "..."
+        )
+
+    def get(self, request):
+        try:
+            # ----------------------------
+            # Filters
+            # ----------------------------
+            search = request.query_params.get("search", "").strip()
+            grade_q = request.query_params.get("grade", "").strip()
+            section_q = request.query_params.get("section", "").strip()
+            field_q = request.query_params.get("field", "").strip()
+            account_status = request.query_params.get("account_status", "").strip()
+
+            profiles = Profile.objects.select_related("user").filter(
+                user__role="user",
+                user__is_deleted=False,
+            )
+
+            if search:
+                profiles = profiles.filter(
+                    Q(user__full_name__icontains=search)
+                    | Q(user__email__icontains=search)
+                    | Q(grade__icontains=search)
+                    | Q(section__icontains=search)
+                    | Q(field__icontains=search)
+                )
+
+            if grade_q:
+                try:
+                    profiles = profiles.filter(grade=int(grade_q))
+                except ValueError:
+                    pass
+
+            if section_q:
+                profiles = profiles.filter(section=section_q)
+
+            if field_q:
+                profiles = profiles.filter(field=field_q)
+
+            if account_status == "active":
+                profiles = profiles.filter(user__is_active=True)
+            elif account_status == "inactive":
+                profiles = profiles.filter(user__is_active=False)
+
+            # ----------------------------
+            # Score Annotation (Fast DB Aggregation)
+            # ----------------------------
+            annotated_qs = (
+                profiles.annotate(
+                    reviews_sum=Coalesce(
+                        Sum(
+                            "user__learningtask__reviews__rating",
+                            filter=Q(user__learningtask__reviews__is_admin=True),
+                        ),
+                        0,
+                    ),
+                    bonus_sum=Coalesce(
+                        Sum("user__learningtask__bonuses__score"),
+                        0,
+                    ),
+                )
+                .annotate(score=F("reviews_sum") + F("bonus_sum"))
+                .order_by("-score", "user__full_name")
+                .values(
+                    "user__full_name",
+                    "grade",
+                    "section",
+                    "field",
+                    "score",
+                )
+            )
+
+            rows = list(annotated_qs)
+
+            # ----------------------------
+            # Dense Ranking
+            # ----------------------------
+            result_rows = []
+            prev_score = None
+            rank = 0
+
+            for idx, row in enumerate(rows, start=1):
+                score = int(row["score"]) if row["score"] else 0
+
+                if prev_score is None or score != prev_score:
+                    rank += 1
+                    prev_score = score
+
+                result_rows.append(
+                    [
+                        str(idx),
+                        self.truncate(row["user__full_name"]),
+                        row["grade"] or "",
+                        row["section"] or "",
+                        row["field"] or "",
+                        str(score),
+                        str(rank),
+                    ]
+                )
+
+            # ----------------------------
+            # Build PDF
+            # ----------------------------
+            buffer = io.BytesIO()
+            doc = SimpleDocTemplate(
+                buffer,
+                pagesize=A4,
+                rightMargin=30,
+                leftMargin=30,
+                topMargin=30,
+                bottomMargin=30,
+            )
+
+            elements = []
+            styles = getSampleStyleSheet()
+
+            # Title
+            elements.append(
+                Paragraph("<b>Student Score Ranking Report</b>", styles["Title"])
+            )
+            elements.append(Spacer(1, 0.2 * inch))
+
+            # Metadata
+            metadata_lines = [
+                f"Total Students: {len(result_rows)}",
+                f"Exported At: {timezone.now().strftime('%Y-%m-%d %H:%M:%S')}",
+            ]
+
+            for line in metadata_lines:
+                elements.append(Paragraph(line, styles["Normal"]))
+
+            elements.append(Spacer(1, 0.4 * inch))
+
+            # ----------------------------
+            # Table Setup (90% Width)
+            # ----------------------------
+            table_data = [
+                ["#", "Full Name", "Grade", "Section", "Field", "Score", "Rank"]
+            ] + result_rows
+
+            wrapped_data = [
+                [Paragraph(str(cell), styles["Normal"]) for cell in row]
+                for row in table_data
+            ]
+
+            available_width = doc.width
+            table_width = available_width * 0.90  # EXACT 90%
+
+            col_widths = [
+                table_width * 0.06,  # #
+                table_width * 0.28,  # Full Name
+                table_width * 0.12,  # Grade
+                table_width * 0.12,  # Section
+                table_width * 0.12,  # Field
+                table_width * 0.15,  # Score
+                table_width * 0.15,  # Rank
+            ]
+
+            table = Table(
+                wrapped_data,
+                repeatRows=1,
+                colWidths=col_widths,
+            )
+
+            table.hAlign = "CENTER"
+
+            table.setStyle(
+                TableStyle(
+                    [
+                        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#e0e0e0")),
+                        ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+                        # Alignments
+                        ("ALIGN", (0, 1), (0, -1), "CENTER"),  # Index
+                        ("ALIGN", (5, 1), (6, -1), "CENTER"),  # Score + Rank
+                        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                        # Padding
+                        ("LEFTPADDING", (0, 0), (-1, -1), 4),
+                        ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+                        ("TOPPADDING", (0, 0), (-1, -1), 3),
+                        ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+                    ]
+                )
+            )
+
+            elements.append(table)
+
+            doc.build(elements)
+            buffer.seek(0)
+
+            filename = (
+                f"student_score_ranking_{timezone.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+            )
+
+            response = HttpResponse(
+                buffer.read(),
+                content_type="application/pdf",
+            )
+            response["Content-Disposition"] = f'attachment; filename="{filename}"'
+
+            return response
+
+        except Exception as e:
+            return Response(
+                {"error": "Failed to export ranking", "detail": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+
+@method_decorator(csrf_protect, name="dispatch")
+class StudentsBulkOperationView(APIView):
+    authentication_classes = [JWTCookieAuthentication]
+    permission_classes = [IsSuperUser]
+
+    FIELD_LIST = ["ai", "other", "backend", "frontend", "embedded", "cyber"]
+
+    def post(self, request):
+        try:
+            action = request.data.get("action")
+            if action not in ["delete", "edit"]:
+                return Response(
+                    {"error": "Invalid action. Must be 'delete' or 'edit'."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            # --- Filters ---
+            search = (request.data.get("search") or "").strip()
+            grade_q = request.data.get("grade")
+            section_q = (request.data.get("section") or "").strip().upper()
+            field_q = (request.data.get("field") or "").strip().lower()
+            account_status = (request.data.get("account_status") or "").strip().lower()
+
+            profiles = Profile.objects.select_related("user").filter(
+                user__role="user", user__is_deleted=False
+            )
+
+            if search:
+                profiles = profiles.filter(
+                    Q(user__full_name__icontains=search)
+                    | Q(user__email__icontains=search)
+                    | Q(grade__icontains=search)
+                    | Q(section__icontains=search)
+                    | Q(field__icontains=search)
+                )
+
+            if grade_q is not None:
+                try:
+                    grade_int = int(grade_q)
+                    profiles = profiles.filter(grade=grade_int)
+                except ValueError:
+                    pass
+
+            if section_q:
+                profiles = profiles.filter(section__iexact=section_q)
+
+            if field_q:
+                profiles = profiles.filter(field__iexact=field_q)
+
+            if account_status:
+                if account_status == "active":
+                    profiles = profiles.filter(user__is_active=True)
+                elif account_status == "inactive":
+                    profiles = profiles.filter(user__is_active=False)
+
+            affected_count = profiles.count()
+            if affected_count == 0:
+                return Response(
+                    {"message": "No students match the given filters."},
+                    status=status.HTTP_200_OK,
+                )
+
+            with transaction.atomic():
+                if action == "delete":
+                    # Delete all matched users & profiles
+                    user_ids = profiles.values_list("user_id", flat=True)
+                    Profile.objects.filter(user_id__in=user_ids).delete()
+                    User.objects.filter(id__in=user_ids).delete()
+                    return Response(
+                        {"deleted_count": affected_count},
+                        status=status.HTTP_200_OK,
+                    )
+
+                elif action == "edit":
+                    edit_data = request.data.get("edit_data", {})
+                    allowed_fields = [
+                        "grade",
+                        "section",
+                        "field",
+                        "account",
+                        "phone_number",
+                        "is_active",
+                    ]
+
+                    update_data = {}
+                    profile_update_data = {}
+
+                    for key, value in edit_data.items():
+                        if key not in allowed_fields:
+                            continue
+                        if key == "field" and value.lower() not in self.FIELD_LIST:
+                            continue  # ignore invalid field
+                        if key == "section":
+                            value = value.upper() if value else value
+                        if key in [
+                            "grade",
+                            "section",
+                            "field",
+                            "account",
+                            "phone_number",
+                        ]:
+                            profile_update_data[key] = value
+                        if key == "is_active":
+                            update_data["is_active"] = bool(value)
+
+                    # Update users
+                    if update_data:
+                        user_ids = profiles.values_list("user_id", flat=True)
+                        User.objects.filter(id__in=user_ids).update(**update_data)
+
+                    # Update profiles
+                    if profile_update_data:
+                        profiles.update(**profile_update_data)
+
+                    return Response(
+                        {
+                            "message": f"{affected_count} students updated successfully",
+                            "updated_fields": list(profile_update_data.keys())
+                            + list(update_data.keys()),
+                        },
+                        status=status.HTTP_200_OK,
+                    )
+
+        except Exception as e:
+            import traceback
+
+            traceback.print_exc()
+            return Response(
+                {"error": str(e), "detail": "Failed to perform bulk operation"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )

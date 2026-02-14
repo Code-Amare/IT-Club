@@ -23,6 +23,7 @@ import {
     FaUserCheck,
     FaUserSlash,
     FaDownload,
+    FaCode, // for field icon
 } from "react-icons/fa";
 import { neonToast } from "../../../Components/NeonToast/NeonToast";
 import styles from "./Students.module.css";
@@ -48,11 +49,13 @@ export default function Students() {
         search: "",
         grade: "",
         section: "",
+        field: "", // NEW: field filter
         accountStatus: "",
     });
     const [filterOptions, setFilterOptions] = useState({
         grades: [],
-        sections: []
+        sections: [],
+        fields: [], // NEW: field options
     });
     const [sortConfig, setSortConfig] = useState({
         sort_by: "-user__date_joined",
@@ -62,6 +65,7 @@ export default function Students() {
     const [loading, setLoading] = useState(true);
     const [studentsLoading, setStudentsLoading] = useState(false);
     const [exporting, setExporting] = useState(false);
+    const [exportingGrades, setExportingGrades] = useState(false);
 
     useEffect(() => {
         if (user.isAuthenticated === null) return;
@@ -99,7 +103,7 @@ export default function Students() {
                 total_count: 0,
                 total_pages: 1,
             });
-            setFilterOptions(data.filter_options || { grades: [], sections: [] });
+            setFilterOptions(data.filter_options || { grades: [], sections: [], fields: [] });
 
         } catch (error) {
             console.error("Error fetching students:", error);
@@ -150,6 +154,7 @@ export default function Students() {
             search: "",
             grade: "",
             section: "",
+            field: "", // NEW: clear field
             accountStatus: "",
         });
         setSortConfig({
@@ -163,10 +168,10 @@ export default function Students() {
         setExporting(true);
         try {
             const params = new URLSearchParams();
-            // No format parameter – backend always returns Excel
             if (filters.search) params.append("search", filters.search);
             if (filters.grade) params.append("grade", filters.grade);
             if (filters.section) params.append("section", filters.section);
+            if (filters.field) params.append("field", filters.field); // NEW
             if (filters.accountStatus) params.append("account_status", filters.accountStatus);
 
             const response = await api.get("/api/management/students/export/", {
@@ -189,6 +194,39 @@ export default function Students() {
             neonToast.error("Failed to export students", "error");
         } finally {
             setExporting(false);
+        }
+    };
+
+    const handleExportGrades = async () => {
+        setExportingGrades(true);
+        try {
+            const params = new URLSearchParams();
+            if (filters.search) params.append("search", filters.search);
+            if (filters.grade) params.append("grade", filters.grade);
+            if (filters.section) params.append("section", filters.section);
+            if (filters.field) params.append("field", filters.field); // NEW
+            if (filters.accountStatus) params.append("account_status", filters.accountStatus);
+
+            const response = await api.get("/api/management/students/grade/export/", {
+                params,
+                responseType: "blob",
+            });
+
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement("a");
+            link.href = url;
+            link.setAttribute("download", `grades_export_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.pdf`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+
+            neonToast.success("Grades export completed successfully", "success");
+        } catch (error) {
+            console.error("Export grades error:", error);
+            neonToast.error("Failed to export grades", "error");
+        } finally {
+            setExportingGrades(false);
         }
     };
 
@@ -328,6 +366,14 @@ export default function Students() {
                                 Export Excel
                             </button>
                             <button
+                                onClick={handleExportGrades}
+                                className={styles.exportButton}
+                                disabled={studentsLoading || exportingGrades}
+                            >
+                                {exportingGrades ? <FaSpinner className={styles.spinner} /> : <FaGraduationCap />}
+                                Export Grades
+                            </button>
+                            <button
                                 onClick={handleClearFilters}
                                 className={styles.clearButton}
                                 disabled={studentsLoading}
@@ -376,6 +422,19 @@ export default function Students() {
                                         <option value="">All Sections</option>
                                         {filterOptions.sections.map(section => (
                                             <option key={section} value={section}>{section}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                {/* NEW Field filter */}
+                                <div className={styles.filterGroup}>
+                                    <label>Field</label>
+                                    <select
+                                        value={filters.field}
+                                        onChange={(e) => handleFilterChange("field", e.target.value)}
+                                    >
+                                        <option value="">All Fields</option>
+                                        {filterOptions.fields.map(field => (
+                                            <option key={field} value={field}>{field}</option>
                                         ))}
                                     </select>
                                 </div>
@@ -437,6 +496,10 @@ export default function Students() {
                                             <th onClick={() => handleSort("section")} className={`${styles.sortable} ${styles.hideOnMobile}`}>
                                                 Section {getSortIcon("section")}
                                             </th>
+                                            {/* NEW Field column */}
+                                            <th onClick={() => handleSort("field")} className={`${styles.sortable} ${styles.hideOnMobile}`}>
+                                                Field {getSortIcon("field")}
+                                            </th>
                                             <th>Attendance</th>
                                             <th onClick={() => handleSort("account_status")} className={styles.sortable}>
                                                 Status {getSortIcon("account_status")}
@@ -476,6 +539,12 @@ export default function Students() {
                                                     </span>
                                                 </td>
                                                 <td className={styles.hideOnMobile}>{student.section || 'N/A'}</td>
+                                                {/* NEW Field cell */}
+                                                <td className={styles.hideOnMobile}>
+                                                    <span className={styles.fieldBadge}>
+                                                        <FaCode className={styles.fieldIcon} /> {student.field || 'N/A'}
+                                                    </span>
+                                                </td>
                                                 <td>
                                                     <div className={styles.attendanceCell}>
                                                         <div className={styles.attendanceProgress}>

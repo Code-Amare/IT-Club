@@ -50,6 +50,7 @@ import AdminAnnouncementDetail from "./Pages/Admin/AnnouncementDetail/Announceme
 import UserAnnouncementDetail from "./Pages/User/AnnouncementDetail/AnnouncementDetail"
 import EditAnnouncement from "./Pages/Admin/EditAnnouncement/EditAnnouncement"
 import UserAnnouncements from './Pages/User/UserAnnouncements/UserAnnouncements'
+import BulkOperations from './Pages/Admin/BulkOperations/BulkOperations'
 
 function App() {
   return (
@@ -101,6 +102,7 @@ function App() {
           <Route path="/admin/announcement/create" element={<CreateAnnouncement />} />
           <Route path="/admin/announcement/:announcementId" element={<AdminAnnouncementDetail />} />
           <Route path="/admin/announcement/edit/:announcementId" element={<EditAnnouncement />} />
+          <Route path="/admin/students/bulk-operation" element={<BulkOperations />} />
         </Route>
         <Route element={<ProtectedRoute requiredRole={["user"]} />}>
           <Route path='/user' element={<UserDashboard />} />

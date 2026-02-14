@@ -26,6 +26,8 @@ from .views import (
     DashboardView,
     StudentDataView,
     SettingUpdateView,
+    GradesRankExportPdfView,
+    StudentsBulkOperationView,
 )
 
 urlpatterns = [
@@ -67,9 +69,17 @@ urlpatterns = [
         StudentsBulkUploadView.as_view(),
         name="students-bulk-upload",
     ),
+    path(
+        "students/bulk/",
+        StudentsBulkOperationView.as_view(),
+        name="students-bulk-operation",
+    ),
     path("stats/", StudentsStatsView.as_view(), name="students-stats"),
     path("students/template/", StudentTemplateView.as_view(), name="student-template"),
     path("students/export/", StudentsExportView.as_view(), name="students-export"),
+    path(
+        "students/grade/export/", GradesRankExportPdfView.as_view(), name="grade-export"
+    ),
     path("languages/", LanguageGetAPIView.as_view(), name="languages-list"),
     path("languages/<int:pk>/", LanguageDetailAPIView.as_view(), name="languages-list"),
     path("languages/create/", LanguageAPIView.as_view(), name="language-create"),
