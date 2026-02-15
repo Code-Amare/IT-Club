@@ -1,4 +1,6 @@
-import pandas as pd
+import csv
+import io
+from openpyxl import load_workbook, Workbook
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -43,7 +45,6 @@ from django.utils import timezone
 from datetime import timedelta
 import math
 from learning_task.models import LearningTaskLimit
-import openpyxl
 import environ
 import cloudinary
 import cloudinary.utils
@@ -76,6 +77,23 @@ cloudinary.config(
 )
 
 User = get_user_model()
+
+
+class SimpleDataFrame:
+    def __init__(self, rows, columns):
+        """
+        rows: a list of dictionaries, one per row
+        columns: a list of column names
+        """
+        self._rows = rows
+        self.columns = columns
+
+    def iterrows(self):
+        """
+        Mimics pandas iterrows(): yields (index, row_dict)
+        """
+        for index, row in enumerate(self._rows):
+            yield index, row
 
 
 class StudentsView(APIView):
@@ -855,11 +873,26 @@ class StudentsBulkUploadView(APIView):
             file = request.FILES["file"]
             file_extension = file.name.split(".")[-1].lower()
 
+            # ---------- READ FILE WITHOUT PANDAS ----------
             try:
                 if file_extension == "csv":
-                    df = pd.read_csv(file)
+                    decoded = file.read().decode("utf-8")
+                    reader = csv.DictReader(io.StringIO(decoded))
+                    rows = list(reader)
+                    df = SimpleDataFrame(rows, reader.fieldnames)
+
                 elif file_extension in ["xlsx", "xls"]:
-                    df = pd.read_excel(file)
+                    wb = load_workbook(file)
+                    sheet = wb.active
+
+                    headers = [cell.value for cell in sheet[1]]
+                    rows = []
+                    for row in sheet.iter_rows(min_row=2, values_only=True):
+                        row_dict = dict(zip(headers, row))
+                        rows.append(row_dict)
+
+                    df = SimpleDataFrame(rows, headers)
+
                 else:
                     return Response(
                         {"error": "Unsupported file format. Use CSV or Excel"},
@@ -871,7 +904,7 @@ class StudentsBulkUploadView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            # Validate required columns
+            # ---------- VALIDATE REQUIRED COLUMNS ----------
             required_columns = [
                 "full_name",
                 "email",
@@ -901,7 +934,7 @@ class StudentsBulkUploadView(APIView):
             emails_in_file = set()
             duplicate_emails_in_file = set()
 
-            # First pass: validate
+            # ---------- FIRST PASS: VALIDATION ----------
             for index, row in df.iterrows():
                 row_errors = {}
 
@@ -984,7 +1017,7 @@ class StudentsBulkUploadView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            # Second pass: create users
+            # ---------- SECOND PASS: CREATE USERS ----------
             with transaction.atomic():
                 existing_emails = set(
                     User.objects.filter(
@@ -1147,41 +1180,54 @@ class StudentsExportView(APIView):
                 elif account_status == "inactive":
                     profiles = profiles.filter(user__is_active=False)
 
-            # Prepare data for pandas
-            data = []
+            # ---------- PREPARE EXCEL ----------
+            wb = Workbook()
+            ws = wb.active
+            ws.title = "Students"
+
+            # Column headers
+            headers = [
+                "Full Name",
+                "Email",
+                "Grade",
+                "Section",
+                "Field",
+                "Account",
+                "Phone Number",
+                "Gender",
+                "Account Status",
+                "Created At",
+                "Last Login",
+                "Date Joined",
+            ]
+            ws.append(headers)
+
+            # Data rows
             for profile in profiles:
-                data.append(
-                    {
-                        "Full Name": profile.user.full_name,
-                        "Email": profile.user.email,
-                        "Grade": profile.grade or "",
-                        "Section": profile.section or "",
-                        "Field": profile.field or "",
-                        "Account": profile.account or "",
-                        "Phone Number": profile.phone_number or "",
-                        "Gender": profile.user.gender or "",
-                        "Account Status": (
-                            "Active" if profile.user.is_active else "Inactive"
-                        ),
-                        "Created At": profile.created_at.strftime("%Y-%m-%d %H:%M:%S"),
-                        "Last Login": (
+                ws.append(
+                    [
+                        profile.user.full_name,
+                        profile.user.email,
+                        profile.grade or "",
+                        profile.section or "",
+                        profile.field or "",
+                        profile.account or "",
+                        profile.phone_number or "",
+                        profile.user.gender or "",
+                        "Active" if profile.user.is_active else "Inactive",
+                        profile.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+                        (
                             profile.user.last_login.strftime("%Y-%m-%d %H:%M:%S")
                             if profile.user.last_login
                             else ""
                         ),
-                        "Date Joined": profile.user.date_joined.strftime(
-                            "%Y-%m-%d %H:%M:%S"
-                        ),
-                    }
+                        profile.user.date_joined.strftime("%Y-%m-%d %H:%M:%S"),
+                    ]
                 )
 
-            # Create DataFrame
-            df = pd.DataFrame(data)
-
-            # Export to Excel
+            # Save to BytesIO
             output = BytesIO()
-            with pd.ExcelWriter(output, engine="openpyxl") as writer:
-                df.to_excel(writer, index=False, sheet_name="Students")
+            wb.save(output)
             output.seek(0)
 
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -1197,7 +1243,8 @@ class StudentsExportView(APIView):
 
         except Exception as e:
             return Response(
-                {"error": str(e), "detail": "Failed to export students"}, status=500
+                {"error": str(e), "detail": "Failed to export students"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
 
@@ -1312,23 +1359,29 @@ class StudentTemplateView(APIView):
 
     def get(self, request):
         try:
-            # Create empty dataframe with just the column names
-            df = pd.DataFrame(
-                columns=[
-                    "full_name",
-                    "email",
-                    "grade",
-                    "section",
-                    "field",
-                    "phone_number",
-                    "account",
-                    "gender",
-                ]
-            )
+            # Column names
+            columns = [
+                "full_name",
+                "email",
+                "grade",
+                "section",
+                "field",
+                "phone_number",
+                "account",
+                "gender",
+            ]
 
-            # Convert to Excel
+            # Create Excel workbook
+            wb = Workbook()
+            ws = wb.active
+            ws.title = "Student Template"
+
+            # Append column headers only
+            ws.append(columns)
+
+            # Save to BytesIO
             output = BytesIO()
-            df.to_excel(output, index=False)
+            wb.save(output)
             output.seek(0)
 
             # Create response
