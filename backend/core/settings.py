@@ -47,7 +47,7 @@ else:
 INSTALLED_APPS = [
     "daphne",
     "channels",
-    "django.contrib.admin",
+    # "django.contrib.admin", # removing admin panel
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
@@ -121,11 +121,11 @@ else:
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.postgresql",
-            "NAME": "postgres",
-            "USER": "postgres",
-            "PASSWORD": "postgres",
-            "HOST": "postgres",
-            "PORT": 5432,
+            "NAME": env("POSTGRES_DB", default="itclub_db"),
+            "USER": env("POSTGRES_USER", default="itclub_user"),
+            "PASSWORD": env("POSTGRES_PASSWORD", default="SuperSecret123"),
+            "HOST": env("POSTGRES_HOST", default="db"),
+            "PORT": env.int("POSTGRES_PORT", default=5432),
         }
     }
 
@@ -206,11 +206,8 @@ if DEBUG:
 else:
     CACHES = {
         "default": {
-            "BACKEND": "django_redis.cache.RedisCache",
-            "LOCATION": env("REDIS_URL", default="redis://127.0.0.1:6379/1"),
-            "OPTIONS": {
-                "CLIENT_CLASS": "django_redis.client.DefaultClient",
-            },
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": f"redis://{env('REDIS_HOST', 'redis')}:{env.int('REDIS_PORT', 6379)}/1",
         }
     }
 

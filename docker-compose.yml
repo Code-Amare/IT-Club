@@ -7,9 +7,12 @@ services:
     container_name: it-club-db
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: itclub_db
+      POSTGRES_USER: itclub_user
+      POSTGRES_PASSWORD: SuperSecret123
+      # POSTGRES_DB: ${POSTGRES_DB}
+      # POSTGRES_USER: ${POSTGRES_USER}
+      # POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -41,7 +44,7 @@ services:
     container_name: it-club-backend
     restart: unless-stopped
     env_file:
-      - .env
+      - ./backend/.env
     depends_on:
       db:
         condition: service_healthy
