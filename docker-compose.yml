@@ -1,0 +1,89 @@
+version: "3.9"
+
+services:
+  # -------------------- PostgreSQL --------------------
+  db:
+    image: postgres:15-alpine
+    container_name: it-club-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - it-club-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # -------------------- Redis --------------------
+  redis:
+    image: redis:7-alpine
+    container_name: it-club-redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    networks:
+      - it-club-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # -------------------- Django Backend --------------------
+  backend:
+    build: ./backend
+    container_name: it-club-backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    expose:
+      - "8000"
+    networks:
+      - it-club-network
+
+  # -------------------- React Frontend --------------------
+  frontend:
+    build: ./frontend
+    container_name: it-club-frontend
+    restart: unless-stopped
+    expose:
+      - "80"
+    networks:
+      - it-club-network
+
+  # -------------------- Nginx Reverse Proxy --------------------
+  nginx:
+    image: nginx:stable-alpine
+    container_name: it-club-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - it-club-network
+
+# -------------------- Volumes --------------------
+volumes:
+  postgres_data:
+  redis_data:
+
+# -------------------- Network --------------------
+networks:
+  it-club-network:
+    driver: bridge
