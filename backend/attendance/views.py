@@ -11,9 +11,7 @@ from .serializers import (
     AttendanceSerializer,
 )
 from django.db import transaction
-import pandas as pd
 import io
-import datetime
 from django.utils import timezone
 from django.http import HttpResponse
 

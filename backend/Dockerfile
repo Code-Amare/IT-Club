@@ -13,7 +13,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     netcat-openbsd \
     && rm -rf /var/lib/apt/lists/*
 
-
 # Upgrade pip
 RUN pip install --upgrade pip
 
@@ -30,6 +29,9 @@ USER appuser
 
 # Expose internal port
 EXPOSE 8000
+
+# Prevent Django from trying to run collectstatic
+ENV DJANGO_SKIP_COLLECTSTATIC=1
 
 # Run production entrypoint
 CMD ["sh", "/app/entrypoint.prod.sh"]

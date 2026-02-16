@@ -1,11 +1,7 @@
 import axios from "axios";
 
-const API_BASE_URL_DESKTOP = import.meta.env.VITE_API_BASE_URL;
-const API_BASE_URL_MOBILE = import.meta.env.VITE_API_BASE_URL_MOBILE;
-let API_BASE_URL = API_BASE_URL_DESKTOP;
-if (!window.location.host.includes("localhost")) {
-  API_BASE_URL = API_BASE_URL_MOBILE;
-}
+let API_BASE_URL = "http://backend:8000/";
+// let API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 function getCookie(name) {
   const value = `; ${document.cookie}`;

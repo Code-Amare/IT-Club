@@ -3,11 +3,8 @@ import { neonToast } from "../../Components/NeonToast/NeonToast";
 import { useUser } from "../../Context/UserContext";
 import { useNotifContext } from "../../Context/NotifContext"
 
-const WS_URL =
-    window.location.hostname === "localhost" ||
-        window.location.hostname === "127.0.0.1"
-        ? import.meta.env.VITE_WS_URL
-        : import.meta.env.VITE_WS_URL_MOBILE;
+const WS_URL = "ws://backend:8000/"
+// const WS_URL = import.meta.env.VITE_WS_URL
 
 export default function Notification() {
     const { user, loading } = useUser();

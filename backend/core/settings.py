@@ -16,7 +16,7 @@ from datetime import timedelta
 import cloudinary
 
 # Initialize environment object
-env = environ.Env()
+env = environ.Env(REDIS_PORT=(int, 6379))
 
 
 # Core settings
@@ -37,9 +37,9 @@ SECRET_KEY = env("SECRET_KEY", default="secret-key")
 DEBUG = env.bool("DEBUG")
 
 if DEBUG:
-    ALLOWED_HOSTS = env.list("ALLOWED_HOSTS")
+    ALLOWED_HOSTS = ["*"]
 else:
-    ALLOWED_HOSTS = ["localhost", "127.0.0.1", "192.168.8.11"]
+    ALLOWED_HOSTS = env.list("ALLOWED_HOSTS")
 
 
 # Application definition
@@ -164,8 +164,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = "static/"
-STATIC_ROOT = BASE_DIR / "staticfiles"
+STATIC_ROOT = None
 
 
 # Default primary key field type
@@ -207,7 +206,7 @@ else:
     CACHES = {
         "default": {
             "BACKEND": "django.core.cache.backends.redis.RedisCache",
-            "LOCATION": f"redis://{env('REDIS_HOST', 'redis')}:{env.int('REDIS_PORT', 6379)}/1",
+            "LOCATION": f"redis://{env('REDIS_HOST', default='redis')}:{env.int('REDIS_PORT', default=6379)}/1",
         }
     }
 

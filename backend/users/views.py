@@ -68,7 +68,6 @@ class SendVerificationCodeView(APIView):
 
     def post(self, request):
 
-
         email = request.data.get("email", "").strip()
         if not email:
             return Response(
@@ -998,7 +997,7 @@ class ToggleNotificationView(APIView):
         user.save()
         return Response(
             {
-                "message": f"Notification {"Enabled" if not is_notif_enabled else "Disabled"} ",
+                "message": f'Notification {"Enabled" if not is_notif_enabled else "Disabled"}',
                 "notif_enabled": not is_notif_enabled,
             }
         )
@@ -1017,7 +1016,7 @@ class TogglePushNotificationView(APIView):
         user.save()
         return Response(
             {
-                "message": f"Push Notification {"Enabled" if not is_push_notif_enabled else "Disabled"} ",
+                "message": f'Push Notification {"Enabled" if not is_push_notif_enabled else "Disabled"}',
                 "push_notif_enabled": not is_push_notif_enabled,
             }
         )

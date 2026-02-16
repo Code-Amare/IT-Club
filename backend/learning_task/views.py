@@ -221,7 +221,7 @@ class TaskReviewAPIView(APIView):
                 async_to_sync(notify_user)(
                     recipient=task_owner,
                     actor=user,
-                    title=f"Learning task {"rated" if user.is_staff else "review"}",
+                    title=f"Learning task {'rated' if user.is_staff else 'review'}",
                     description=(
                         "Your learning task has been rated."
                         if user.is_staff
