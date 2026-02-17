@@ -3,8 +3,7 @@ import { neonToast } from "../../Components/NeonToast/NeonToast";
 import { useUser } from "../../Context/UserContext";
 import { useNotifContext } from "../../Context/NotifContext"
 
-const WS_URL = "ws://backend:8000/"
-// const WS_URL = import.meta.env.VITE_WS_URL
+const WS_URL = `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.host}/`;
 
 export default function Notification() {
     const { user, loading } = useUser();
