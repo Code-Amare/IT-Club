@@ -28,10 +28,17 @@ RUN useradd -m appuser
 USER appuser
 
 # Expose internal port
+
 EXPOSE 8000
 
+
+
 # Prevent Django from trying to run collectstatic
+
 ENV DJANGO_SKIP_COLLECTSTATIC=1
 
+
+
 # Run production entrypoint
+
 CMD ["sh", "/app/entrypoint.prod.sh"]
