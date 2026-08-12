@@ -108,26 +108,33 @@ WSGI_APPLICATION = "core.wsgi.application"
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-
-if DEBUG:
-
-    import dj_database_url
-
-    DATABASES = {
-        "default": dj_database_url.config(default=env("DATABASE_URL")),
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
     }
-else:
+}
 
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.postgresql",
-            "NAME": env("POSTGRES_DB", default="itclub_db"),
-            "USER": env("POSTGRES_USER", default="itclub_user"),
-            "PASSWORD": env("POSTGRES_PASSWORD", default="SuperSecret123"),
-            "HOST": env("POSTGRES_HOST", default="db"),
-            "PORT": env.int("POSTGRES_PORT", default=5432),
-        }
-    }
+# if DEBUG:
+
+#     DATABASES = {
+#         "default": {
+#             "ENGINE": "django.db.backends.sqlite3",
+#             "NAME": BASE_DIR / "db.sqlite3",
+#         }
+#     }
+# else:
+
+#     DATABASES = {
+#         "default": {
+#             "ENGINE": "django.db.backends.postgresql",
+#             "NAME": env("POSTGRES_DB", default="itclub_db"),
+#             "USER": env("POSTGRES_USER", default="itclub_user"),
+#             "PASSWORD": env("POSTGRES_PASSWORD", default="SuperSecret123"),
+#             "HOST": env("POSTGRES_HOST", default="db"),
+#             "PORT": env.int("POSTGRES_PORT", default=5432),
+#         }
+    # }
 
 
 # Password validation
@@ -163,9 +170,13 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
+STATIC_URL = "static/"
 
-STATIC_ROOT = None
+STATICFILES_DIRS = [
+    BASE_DIR / "static",
+]
 
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -216,14 +227,14 @@ SESSION_CACHE_ALIAS = "default"
 
 
 # Email
-EMAIL_BACKEND = env("EMAIL_BACKEND")
-EMAIL_HOST = env("EMAIL_HOST")
-EMAIL_PORT = env.int("EMAIL_PORT")
-EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS")
-EMAIL_HOST_USER = env("EMAIL_HOST_USER")
-EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD")
-EMAIL = env("DEFAULT_FROM_EMAIL")
-DEFAULT_FROM_EMAIL = env("EMAIL_HOST_USER")
+# EMAIL_BACKEND = env("EMAIL_BACKEND")
+# EMAIL_HOST = env("EMAIL_HOST")
+# EMAIL_PORT = env.int("EMAIL_PORT")
+# EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS")
+# EMAIL_HOST_USER = env("EMAIL_HOST_USER")
+# EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD")
+EMAIL = env("EMAIL")
+DEFAULT_FROM_EMAIL = EMAIL
 
 
 # AXES

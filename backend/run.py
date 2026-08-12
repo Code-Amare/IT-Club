@@ -1,10 +1,18 @@
 import subprocess
 import sys
 from pathlib import Path
+import os
 
 BASE_DIR = Path(__file__).resolve().parent
-CERT_FILE = BASE_DIR / "certs" / "localhost+2.pem"
-KEY_FILE = BASE_DIR / "certs" / "localhost+2-key.pem"
+
+CERT_FILE = os.path.abspath(
+    os.path.join(BASE_DIR, "..", "certs", "cert.pem")
+)
+
+KEY_FILE = os.path.abspath(
+    os.path.join(BASE_DIR, "..", "certs", "key.pem")
+)
+
 
 
 def run_server():
