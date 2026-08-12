@@ -969,7 +969,7 @@ class StudentsBulkUploadView(APIView):
                     row_errors["grade"] = ["Grade is required"]
                 else:
                     try:
-                        grade = int(grade_str)
+                        grade = int(float(grade_str))
                         if grade < 1 or grade > 12:
                             row_errors["grade"] = ["Grade must be between 1 and 12"]
                     except (ValueError, TypeError):
@@ -1069,7 +1069,7 @@ class StudentsBulkUploadView(APIView):
 
                             profile = Profile(
                                 user=user,
-                                grade=int(grade_str),
+                                grade = int(float(grade_str)),
                                 section=section.upper(),
                                 field=field.lower(),
                                 account=(

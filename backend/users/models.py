@@ -102,7 +102,8 @@ class Profile(models.Model):
     grade = models.PositiveSmallIntegerField()
     section = models.CharField(max_length=1)
     field = models.CharField(max_length=50, choices=FIELD_CHOICE, default="frontend")
-    account = models.CharField(max_length=100, default="N/A")
+    account = models.CharField(max_length=100, default="N/A", null=True,
+    blank=True,)
     phone_number = models.CharField(max_length=20)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
