@@ -175,6 +175,7 @@ class SendVerificationCodeView(APIView):
             )
 
         except Exception as e:
+            print(e)
             return Response(
                 {"detail": f"Unable to send the code. {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
